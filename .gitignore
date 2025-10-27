@@ -1,0 +1,87 @@
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# CodeIgniter Specific
+application/cache/*
+!application/cache/index.html
+!application/cache/.htaccess
+
+application/logs/*
+!application/logs/index.html
+!application/logs/.htaccess
+
+# Composer
+vendor/
+composer.lock
+
+# Environment & Config Files (QUAN TRỌNG!)
+application/config/database.php
+application/config/config.php.local
+.env
+.env.local
+
+# User Uploads
+uploads/*
+!uploads/.htaccess
+
+# Temporary Files
+tmp/
+temp/
+
+# Node Modules (nếu dùng npm)
+node_modules/
+package-lock.json
+
+# Build Files
+dist/
+build/
+
+# Database Backups
+*.sql.backup
+backup_*.sql
+
+# PHPUnit
+phpunit.xml
+.phpunit.result.cache
+
+# Windows
+ehthumbs.db
+Desktop.ini
+
+# Mac
+.AppleDouble
+.LSOverride
+Icon
+
+# Linux
+.directory
+*~
+
+# Session Files
+sessions/
+application/sessions/*
+!application/sessions/index.html
+
+# Cache
+*.cache
+
+# Sensitive Information
+*.pem
+*.key
+*.cert
+credentials.txt
+secrets/
