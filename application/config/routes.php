@@ -55,3 +55,7 @@ $route['404_override'] = '';
 $route['translate_uri_dashes'] = false;
 
 $route['search'] = 'petugas/cari_member';
+$route['personnel'] = 'personnel/index';
+$route['personnel/add'] = 'personnel/add';
+$route['personnel/edit/(:num)'] = 'personnel/edit/$1';
+$route['personnel/delete/(:num)'] = 'personnel/delete/$1';

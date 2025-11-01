@@ -18,6 +18,8 @@ class Login extends CI_Controller
         if ($this->login->is_logged_in()) {
             $this->login->is_role() === 'admin' ? redirect('admin/') : redirect('leader/');
         } else {
+            // Debug information
+            log_message('error', 'Login attempt started');
             $this->form_validation->set_rules('username', 'Username', 'required');
             $this->form_validation->set_rules('password', 'Password', 'required');
 
@@ -29,6 +31,10 @@ class Login extends CI_Controller
                 $password = $this->input->post('password', true);
 
                 $checking = $this->login->check_login('user', ['username' => $username], ['password' => $password]);
+                
+                // Debug information
+                log_message('error', 'Login check - Username: ' . $username);
+                log_message('error', 'Check result: ' . ($checking !== false ? 'success' : 'failed'));
 
                 if ($checking !== false) {
                     foreach ($checking as $data) {
