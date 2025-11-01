@@ -18,8 +18,8 @@ class LoginModel extends CI_Model
     {
         $this->db->select('*');
         $this->db->from($table);
-        $this->db->where('username', $field1['username']);
-        $this->db->where('password', $field2['password']);
+        $this->db->where($field1);
+        $this->db->where($field2);
         $this->db->limit(1);
         $query = $this->db->get();
         if ($query->num_rows() == 0) {
