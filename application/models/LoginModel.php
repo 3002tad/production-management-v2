@@ -64,12 +64,69 @@ class LoginModel extends CI_Model
                 return $result;
             }
         } else {
-            // Legacy DB without roles table: select only from user
-            $this->db->select('u.user_id, u.username, u.password, u.role as role_name, u.role as role, u.full_name, u.email, u.phone, u.is_active');
+            // Legacy DB without roles table: select only existing columns from user
+            $available = $this->db->list_fields('user');
+
+            // Build select parts dynamically and provide safe aliases expected by rest of app
+            $select = [];
+            // id
+            if (in_array('user_id', $available)) {
+                $select[] = 'u.user_id';
+            } elseif (in_array('id', $available)) {
+                $select[] = 'u.id as user_id';
+            }
+
+            // username & password
+            if (in_array('username', $available)) {
+                $select[] = 'u.username';
+            }
+            if (in_array('password', $available)) {
+                $select[] = 'u.password';
+            }
+
+            // role (legacy text column)
+            if (in_array('role', $available)) {
+                $select[] = "u.role as role_name";
+                $select[] = "u.role as role";
+            }
+
+            // full_name fallback
+            if (in_array('full_name', $available)) {
+                $select[] = 'u.full_name';
+            } else {
+                // fallback to username as full_name to avoid missing property
+                if (in_array('username', $available)) {
+                    $select[] = 'u.username as full_name';
+                }
+            }
+
+            // optional fields
+            if (in_array('email', $available)) {
+                $select[] = 'u.email';
+            }
+            if (in_array('phone', $available)) {
+                $select[] = 'u.phone';
+            }
+            if (in_array('is_active', $available)) {
+                $select[] = 'u.is_active';
+            }
+
+            $selectStr = implode(', ', $select);
+            if (empty($selectStr)) {
+                // minimal safe select
+                $selectStr = 'u.username, u.password';
+            }
+
+            $this->db->select($selectStr);
             $this->db->from($table . ' u');
             $this->db->where($field1);
             $this->db->where($field2);
-            $this->db->where('u.is_active', 1);
+
+            // only add is_active filter if column exists
+            if (in_array('is_active', $available)) {
+                $this->db->where('u.is_active', 1);
+            }
+
             $this->db->limit(1);
 
             $query = $this->db->get();
