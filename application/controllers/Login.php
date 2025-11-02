@@ -16,7 +16,27 @@ class Login extends CI_Controller
     public function index()
     {
         if ($this->login->is_logged_in()) {
-            $this->login->is_role() === 'admin' ? redirect('admin/') : redirect('leader/');
+            // Phân quyền redirect dựa trên role
+            $role = $this->login->is_role();
+            
+            // Support cả 'admin' (legacy) và 'system_admin' (RBAC mới)
+            if ($role === 'admin' || $role === 'system_admin') {
+                redirect('admin/');
+                return;
+            } elseif ($role === 'bod') {
+                redirect('BOD/');
+                return;
+            } elseif ($role === 'leader' || $role === 'line_manager') {
+                redirect('leader/');
+                return;
+            } else {
+                // Role khác không có quyền truy cập - KHÔNG redirect về login để tránh loop
+                $this->session->sess_destroy();
+                // Hiển thị form login với error message
+                $data['error'] = 'Bạn không có quyền truy cập hệ thống.';
+                $this->load->view('login', $data);
+                return;
+            }
         } else {
             $this->form_validation->set_rules('username', 'Username', 'required');
             $this->form_validation->set_rules('password', 'Password', 'required');
@@ -41,10 +61,20 @@ class Login extends CI_Controller
 
                         $this->session->set_userdata($session_data);
 
-                        if ($this->session->userdata('role') === 'admin') {
+                        // Redirect dựa trên role
+                        $role = $this->session->userdata('role');
+                        
+                        // Support cả 'admin' (legacy) và 'system_admin' (RBAC mới)
+                        if ($role === 'admin' || $role === 'system_admin') {
                             redirect('admin/');
-                        } elseif ($this->session->userdata('role') === 'leader') {
+                        } elseif ($role === 'bod') {
+                            redirect('BOD/');
+                        } elseif ($role === 'leader' || $role === 'line_manager') {
                             redirect('leader/');
+                        } else {
+                            // Role khác (warehouse_staff, qc_staff, technical_staff, worker) không có quyền truy cập web
+                            $this->session->sess_destroy();
+                            redirect('login/');
                         }
                     }
                 } else {
@@ -54,5 +84,17 @@ class Login extends CI_Controller
                 $this->load->view('login');
             }
         }
+    }
+
+    /**
+     * Logout - Xóa session và redirect về login
+     */
+    public function logout()
+    {
+        // Xóa toàn bộ session
+        $this->session->sess_destroy();
+        
+        // Redirect về trang login
+        redirect('login/');
     }
 }

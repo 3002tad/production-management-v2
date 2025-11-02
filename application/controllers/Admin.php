@@ -9,7 +9,10 @@ class Admin extends CI_Controller
         parent::__construct();
         $this->load->model('CrudModel', 'crudModel');
         $this->load->library('session');
-        if ($this->session->userdata('role') !== 'admin') {
+        
+        // Support both 'admin' (legacy) và 'system_admin' (RBAC mới)
+        $role = $this->session->userdata('role');
+        if ($role !== 'admin' && $role !== 'system_admin') {
             redirect('login/');
         }
     }
