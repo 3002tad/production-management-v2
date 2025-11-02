@@ -27,7 +27,7 @@
             <div class="d-flex pt-4" method="post">
                 <div class="col-8">
                     <div class="card border-0 d-flex p-4 pt-0 mb-2 bg-gray-100">
-                    <form class="pt-4" action="<?= site_url('admin/addnewmaterial'); ?>" method="post">
+                    <form class="pt-4" action="<?= site_url('warehouse/addnewmaterial'); ?>" method="post">
                         <span><?= lang('table_code'); ?></span></br>
                         <div class="input-group input-group-dynamic mb-4">
                             <label class="form-label"></label>
@@ -68,7 +68,7 @@
                     </div>
                     <div class="d-flex">
                         <div class="pt-2 pl-2">
-                            <a class="btn btn-outline-dark btn-sm mb-0" href="<?= site_url('admin/material'); ?>"><?= lang('btn_back'); ?></a>
+                            <a class="btn btn-outline-dark btn-sm mb-0" href="<?= site_url('warehouse/material'); ?>"><?= lang('btn_back'); ?></a>
                         </div>
                         <div class="pt-2 pl-2">
                             <button class="btn btn-dark btn-sm mb-0" type="submit"><?= lang('btn_save'); ?></button>

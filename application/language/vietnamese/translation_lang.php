@@ -171,6 +171,7 @@ $lang['form_date'] = 'Ngày nhập';
 $lang['form_start_date'] = 'Ngày bắt đầu';
 $lang['form_end_date'] = 'Ngày kết thúc';
 $lang['form_material_name'] = 'Tên nguyên liệu';
+$lang['label_uom'] = 'Đơn vị tính';
 $lang['form_machine_name'] = 'Tên máy móc';
 $lang['form_description'] = 'Mô tả';
 $lang['form_select_customer'] = 'Chọn Khách hàng';
@@ -312,6 +313,8 @@ $lang['form_choose_material'] = 'Chọn Nguyên liệu';
 $lang['label_stock_used'] = 'Tồn kho đã sử dụng';
 $lang['title_create_material_data'] = 'Tạo Dữ liệu Nguyên liệu';
 $lang['form_material_name'] = 'Tên nguyên liệu';
+// Min stock label for materials
+$lang['label_min_stock'] = 'Tồn kho tối thiểu';
 
 // ===== STAFF SPECIFIC =====
 $lang['label_data_staff'] = 'Dữ liệu Nhân viên';
@@ -405,6 +408,10 @@ $lang['note_diameter_x10'] = 'Lưu ý: Nhập giá trị x10 (VD: nhập 5 cho 0
 $lang['unit_pieces'] = 'cái';
 $lang['unit_mm'] = 'mm';
 $lang['unit_gram'] = 'gram';
+$lang['unit_kilogram'] = 'kilogram';
+$lang['unit_meter'] = 'mét';
+$lang['unit_centimeter'] = 'centimet';
+$lang['unit_box'] = 'thùng';
 $lang['unit_pieces_per_hour'] = 'cái/giờ';
 $lang['unit_pieces_per_shift'] = 'cái/ca';
 $lang['form_ink_color'] = 'Màu mực';

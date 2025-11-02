@@ -16,7 +16,25 @@ class Login extends CI_Controller
     public function index()
     {
         if ($this->login->is_logged_in()) {
-            $this->login->is_role() === 'admin' ? redirect('admin/') : redirect('leader/');
+            // Khi đã đăng nhập rồi, ưu tiên điều hướng theo role_id trong session
+            $roleId = (int) $this->session->userdata('role_id');
+            if ($roleId === 4) {
+                return redirect('admin/');
+            } elseif ($roleId === 2) {
+                return redirect('leader/');
+            } elseif ($roleId === 3) {
+                return redirect('warehouse/');
+            }
+
+            // Fallback theo cột text 'role' nếu session chưa có role_id (tương thích dữ liệu cũ)
+            $role = $this->login->is_role();
+            if ($role === 'admin') {
+                return redirect('admin/');
+            } elseif ($role === 'leader') {
+                return redirect('leader/');
+            } elseif ($role === 'warehouse') {
+                return redirect('warehouse/');
+            }
         } else {
             $this->form_validation->set_rules('username', 'Username', 'required');
             $this->form_validation->set_rules('password', 'Password', 'required');
@@ -32,19 +50,35 @@ class Login extends CI_Controller
 
                 if ($checking !== false) {
                     foreach ($checking as $data) {
+                        // Lưu cả role_id và role text để tương thích
                         $session_data = [
-                            'user_id' => $data->user_id,
+                            'user_id'  => $data->user_id,
                             'username' => $data->username,
                             'password' => $data->password,
-                            'role' => $data->role,
+                            'role_id'  => isset($data->role_id) ? (int) $data->role_id : null,
+                            'role'     => $data->role,
                         ];
 
                         $this->session->set_userdata($session_data);
 
-                        if ($this->session->userdata('role') === 'admin') {
-                            redirect('admin/');
-                        } elseif ($this->session->userdata('role') === 'leader') {
-                            redirect('leader/');
+                        // Điều hướng ngay theo role_id nếu có
+                        $rid = (int) $this->session->userdata('role_id');
+                        if ($rid === 4) {
+                            return redirect('admin/');
+                        } elseif ($rid === 2) {
+                            return redirect('leader/');
+                        } elseif ($rid === 3) {
+                            return redirect('warehouse/');
+                        }
+
+                        // Fallback theo role text
+                        $r = $this->session->userdata('role');
+                        if ($r === 'admin') {
+                            return redirect('admin/');
+                        } elseif ($r === 'leader') {
+                            return redirect('leader/');
+                        } elseif ($r === 'warehouse') {
+                            return redirect('warehouse/');
                         }
                     }
                 } else {

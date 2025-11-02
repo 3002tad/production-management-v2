@@ -61,9 +61,21 @@
                         <td class="pl-4">
                             <span class="text-sm font-weight-bold"><?= $value->material_name?></span> </br>
                         </td>
-                        <td class="pl-4">
-                            <span class="text-sm font-weight-bold"><?= $value->used_stock?> <?= lang('unit_gram'); ?></span> </br>
-                        </td>
+                                                <td class="pl-4">
+                                                        <?php 
+                                                            $uh = isset($value->uom) ? $value->uom : 'g';
+                                                            switch ($uh) {
+                                                                case 'kg': $uh_label = lang('unit_kilogram'); break;
+                                                                case 'g': $uh_label = lang('unit_gram'); break;
+                                                                case 'pcs': $uh_label = lang('unit_pieces'); break;
+                                                                case 'm': $uh_label = lang('unit_meter'); break;
+                                                                case 'cm': $uh_label = lang('unit_centimeter'); break;
+                                                                case 'box': $uh_label = lang('unit_box'); break;
+                                                                default: $uh_label = $uh; break;
+                                                            }
+                                                        ?>
+                                                        <span class="text-sm font-weight-bold"><?= $value->used_stock?> <?= $uh_label; ?></span> </br>
+                                                </td>
                         <td class="pl-4">
                             <span class="text-sm font-weight-bold"><?= $value->staff_name?></span> </br>
                         </td>
@@ -94,8 +106,11 @@
                     <thead>
                         <tr>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-0"><?= lang('table_no'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_code'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_material'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_stock'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('label_min_stock'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_action'); ?></th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
@@ -109,13 +124,52 @@
                         </div>
                         </td>
                         <td class="pl-4">
+                            <span class="text-sm font-weight-bold"><?= $value->id_material ?></span>
+                        </td>
+                        <td class="pl-4">
                             <span class="text-sm font-weight-bold"><?= $value->material_name?></span>
                         </td>
                         <td class="pl-4">
-                            <span class="text-sm font-weight-bold"><?= $value->stock?> <?= lang('unit_gram'); ?></span>
+                                                        <?php 
+                                                            $u = isset($value->uom) ? $value->uom : 'g';
+                                                            switch ($u) {
+                                                                case 'kg': $u_label = lang('unit_kilogram'); break;
+                                                                case 'g': $u_label = lang('unit_gram'); break;
+                                                                case 'pcs': $u_label = lang('unit_pieces'); break;
+                                                                case 'm': $u_label = lang('unit_meter'); break;
+                                                                case 'cm': $u_label = lang('unit_centimeter'); break;
+                                                                case 'box': $u_label = lang('unit_box'); break;
+                                                                default: $u_label = $u; break;
+                                                            }
+                                                        ?>
+                                                        <span class="text-sm font-weight-bold"><?= $value->stock?> <?= $u_label; ?></span>
+                        </td>
+                        <td class="pl-4">
+                            <?php 
+                              $u2 = isset($value->uom) ? $value->uom : 'g';
+                              switch ($u2) {
+                                case 'kg': $u2_label = lang('unit_kilogram'); break;
+                                case 'g': $u2_label = lang('unit_gram'); break;
+                                case 'pcs': $u2_label = lang('unit_pieces'); break;
+                                case 'm': $u2_label = lang('unit_meter'); break;
+                                case 'cm': $u2_label = lang('unit_centimeter'); break;
+                                case 'box': $u2_label = lang('unit_box'); break;
+                                default: $u2_label = $u2; break;
+                              }
+                            ?>
+                            <span class="text-sm font-weight-bold"><?= isset($value->min_stock) ? $value->min_stock : 0 ?> <?= $u2_label; ?></span>
+                        </td>
+                        <td class="pl-4">
+                            <a href="<?= site_url('admin/editMaterial/'.$value->id_material); ?>" class="btn btn-info btn-link btn-sm">
+                                <i class="material-icons">edit</i>
+                            </a>
+                            <a href="<?= site_url('admin/deleteMaterialMaster/'.$value->id_material); ?>" onclick="return confirm('<?= lang('msg_confirm_delete_data');?>');" class="btn btn-danger btn-link btn-sm">
+                                <i class="material-icons">close</i>
+                            </a>
                         </td>
                         </tr>
                         <?php  endforeach; endif;?>
+                        </tr>
                     </tbody>
                     </table>
                 </div>

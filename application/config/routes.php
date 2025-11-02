@@ -55,3 +55,12 @@ $route['404_override'] = '';
 $route['translate_uri_dashes'] = false;
 
 $route['search'] = 'petugas/cari_member';
+// Warehouse module routes
+$route['warehouse'] = 'warehouse/index';
+$route['warehouse/material'] = 'warehouse/material';
+$route['warehouse/project'] = 'warehouse/project';
+$route['warehouse/material/addnewmaterial'] = 'warehouse/addNewMaterialForm';
+$route['warehouse/addnewmaterial'] = 'warehouse/addNewMaterial';
+// Warehouse reports
+$route['warehouse/sorting'] = 'warehouse/sorting';
+$route['warehouse/finished'] = 'warehouse/finished';

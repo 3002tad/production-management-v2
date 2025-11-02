@@ -781,16 +781,26 @@ class Admin extends CI_Controller
 
     public function addNewMachine()
     {
-            $add = [
-                'id_machine' => $this->crudModel->generateCode(1, 'id_machine', 'machine'),
-                'machine_name' => trim($this->input->post('machine_name')),
-                'capacity' => trim($this->input->post('capacity')),
-                'mc_status' => trim($this->input->post('mc_status')),
-            ];
+        $request_id = trim($this->input->post('id_material'));
+        $id_material = $request_id !== '' ? $request_id : $this->crudModel->generateCode(1, 'id_material', 'material');
 
-            $this->crudModel->addData('machine', $add);
+        // Check trùng mã
+        $exists = $this->crudModel->getDataWhere('material', 'id_material', $id_material)->num_rows() > 0;
+        if ($exists) {
+            $this->session->set_flashdata('flash', 'code_exists');
+            redirect(site_url('Admin/material/addnewmaterial'));
+            return;
+        }
 
-            redirect(site_url('Admin/machine'));
+        $add = [
+            'id_material' => $id_material,
+            'material_name' => trim($this->input->post('material_name')),
+            'stock' => trim($this->input->post('stock')),
+        ];
+
+        $this->crudModel->addData('material', $add);
+
+        redirect(site_url('Admin/material'));
     }
 
 
@@ -861,36 +871,106 @@ class Admin extends CI_Controller
 
     public function addNewMaterial()
     {
-            $add = [
-                'id_material' => $this->crudModel->generateCode(1, 'id_material', 'material'),
-                'material_name' => trim($this->input->post('material_name')),
-                'stock' => trim($this->input->post('stock')),
-            ];
+        $request_id = trim($this->input->post('id_material'));
+        $id_material = $request_id !== '' ? $request_id : $this->crudModel->generateCode(1, 'id_material', 'material');
+        $uom = trim($this->input->post('uom')) !== '' ? trim($this->input->post('uom')) : 'g';
 
-            $this->crudModel->addData('material', $add);
+        // Check trùng mã
+        $exists = $this->crudModel->getDataWhere('material', 'id_material', $id_material)->num_rows() > 0;
+        if ($exists) {
+            $this->session->set_flashdata('flash', 'code_exists');
+            redirect(site_url('Admin/material/addnewmaterial'));
+            return;
+        }
 
-            redirect(site_url('Admin/material'));
-    }
-
-    public function deleteMaterial()
-    {
-        $id_pmaterial = $this->uri->segment(3);
-
-        $id_material = $this->uri->segment(4);
-
-        $used_stock = $this->crudModel->getDataWhere('p_material', 'id_pmaterial', $id_pmaterial)->row();
-
-        $stock = $this->crudModel->getDataWhere('material', 'id_material', $id_material)->row();
-
-        $update = [
-            'stock' => $stock->stock + (int) $used_stock->used_stock,
+        $add = [
+            'id_material' => $id_material,
+            'material_name' => trim($this->input->post('material_name')),
+            'stock' => trim($this->input->post('stock')),
+            'min_stock' => ($this->input->post('min_stock') !== null && $this->input->post('min_stock') !== '') ? (int) $this->input->post('min_stock') : 0,
+            'uom' => $uom,
         ];
 
-        $this->crudModel->updateData('material', 'id_material', $id_material, $update);
+        $this->crudModel->addData('material', $add);
 
-        $this->crudModel->deleteData('p_material', 'id_pmaterial', $id_pmaterial);
+        redirect(site_url('Admin/material'));
+    }
 
-        redirect(site_url('admin/material'));
+    public function editMaterial()
+    {
+        $id = $this->uri->segment(3);
+        $tampil = $this->crudModel->getDataWhere('material', 'id_material', $id)->row();
+
+        $data = [
+            'detail' => [
+                'id_material' => $tampil->id_material,
+                'material_name' => $tampil->material_name,
+                'stock' => $tampil->stock,
+                'min_stock' => isset($tampil->min_stock) ? $tampil->min_stock : 0,
+                'uom' => isset($tampil->uom) ? $tampil->uom : 'g',
+            ],
+            'content' => 'admin/material/UpdateMaterial',
+            'navlink' => 'material',
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    public function updateMaterial()
+    {
+        $old_id = trim($this->input->post('old_id_material'));
+        $new_id = trim($this->input->post('id_material'));
+        $material_name = trim($this->input->post('material_name'));
+        $stock = trim($this->input->post('stock'));
+    $min_stock = ($this->input->post('min_stock') !== null && $this->input->post('min_stock') !== '') ? (int) $this->input->post('min_stock') : 0;
+    $uom = trim($this->input->post('uom')) !== '' ? trim($this->input->post('uom')) : 'g';
+
+        if ($new_id === '') {
+            $new_id = $old_id;
+        }
+
+        // Nếu đổi mã thì kiểm tra trùng
+        if ($new_id !== $old_id) {
+            $exists = $this->crudModel->getDataWhere('material', 'id_material', $new_id)->num_rows() > 0;
+            if ($exists) {
+                $this->session->set_flashdata('flash', 'code_exists');
+                redirect(site_url('admin/editMaterial/'.$old_id));
+                return;
+            }
+        }
+
+        // Cập nhật bảng material (đổi khóa chính nếu có)
+        $update = [
+            'id_material'   => $new_id,
+            'material_name' => $material_name,
+            'stock'         => $stock,
+            'min_stock'     => $min_stock,
+            'uom'           => $uom,
+        ];
+        $this->crudModel->updateData('material', 'id_material', $old_id, $update);
+
+        // Nếu DB chưa bật ON UPDATE CASCADE, đồng bộ tham chiếu thủ công
+        if ($new_id !== $old_id) {
+            $this->crudModel->updateData('p_material', 'id_material', $old_id, ['id_material' => $new_id]);
+        }
+
+        redirect(site_url('Admin/material'));
+    }
+
+    public function deleteMaterialMaster()
+    {
+        $id_material = $this->uri->segment(3);
+
+        // Nếu có p_material tham chiếu, chặn xoá để tránh ràng buộc dữ liệu
+        $ref = $this->db->query('SELECT * FROM p_material WHERE id_material = '.$id_material)->row();
+        if (!empty($ref)) {
+            $this->session->set_flashdata('flash', 'cannot_delete_material_in_use');
+            redirect(site_url('Admin/material'));
+        }
+
+        $this->crudModel->deleteData('material', 'id_material', $id_material);
+
+        redirect(site_url('Admin/material'));
     }
 
     public function sorting()
