@@ -92,6 +92,15 @@
                             <span class="nav-link-text ms-1"><?= lang('menu_raw_materials'); ?></span>
                         </a>
                     </li>
+          <!-- Human Resources / Staff management (visible to leader) -->
+          <li class="nav-item navbar-expand-xs">
+            <a class="nav-link text-white<?= ($navlink === 'staff') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/staff'); ?>">
+              <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="material-icons opacity-10">people</i>
+              </div>
+                            <span class="nav-link-text ms-1">Nhân viên</span>
+            </a>
+          </li>
 
                     <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
@@ -112,9 +121,27 @@
     </aside>
 
     <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
-        <!-- Main Data -->
-        <?php $this->load->view($content); ?>
-        <!-- End of Main Data -->
+    <!-- Main Data -->
+    <?php
+    // If staff module views were moved into application/modules/staff/views,
+    // prefer loading from that module to keep module structure.
+    try {
+      $ci = get_instance();
+      $module_view_file = APPPATH . 'modules/staff/views/' . basename($content) . '.php';
+      if (isset($navlink) && $navlink === 'staff' && file_exists($module_view_file)) {
+        // Temporarily add module path so loader can find module views
+        $ci->load->add_package_path(APPPATH . 'modules/staff/');
+        $ci->load->view(basename($content));
+        $ci->load->remove_package_path(APPPATH . 'modules/staff/');
+      } else {
+        $ci->load->view($content);
+      }
+    } catch (Exception $e) {
+      // Fallback: try to load content normally
+      $this->load->view($content);
+    }
+    ?>
+    <!-- End of Main Data -->
     </main>
 
     <footer class="footer">
