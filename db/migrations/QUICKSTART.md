@@ -25,7 +25,34 @@ source d:/Code/PTUD/production-management-v2/db/migrations/002_seed_roles_data.s
 source d:/Code/PTUD/production-management-v2/db/migrations/003_seed_modules_data.sql
 source d:/Code/PTUD/production-management-v2/db/migrations/004_seed_permissions_data.sql
 source d:/Code/PTUD/production-management-v2/db/migrations/005_map_role_permissions.sql
+
+# 🔥 OPTIONAL - Migrate HOÀN TOÀN sang RBAC (Breaking Change!)
+# ⚠️ CHỈ CHẠY nếu đã sẵn sàng update code (LoginModel, Controllers, Views)
+# source d:/Code/PTUD/production-management-v2/db/migrations/006_migrate_to_full_rbac.sql
 ```
+
+---
+
+## 🔥 Migration 006 - XÓA cột `role` cũ
+
+### ⚠️ **CẢNH BÁO: BREAKING CHANGE!**
+
+Migration 006 sẽ **XÓA HOÀN TOÀN** cột `role` (enum 'admin','leader') và chuyển sang `role_id` (INT NOT NULL).
+
+**CHỈ CHẠY KHI:**
+- ✅ Đã backup database
+- ✅ Đã chuẩn bị update LoginModel.php
+- ✅ Đã chuẩn bị update Controllers (Admin.php, Leader.php)
+- ✅ Có thời gian fix code ngay sau đó (2-3 giờ)
+
+**NẾU CHƯA SẴN SÀNG:** Bỏ qua migration 006, hệ thống vẫn hoạt động với cả 2 cột (`role` + `role_id`).
+
+```bash
+# Khi đã sẵn sàng:
+source d:/Code/PTUD/production-management-v2/db/migrations/006_migrate_to_full_rbac.sql
+```
+
+---
 
 ## ✅ Kiểm tra nhanh
 

@@ -53,6 +53,7 @@ db/
 │   ├── 003_seed_modules_data.sql
 │   ├── 004_seed_permissions_data.sql
 │   ├── 005_map_role_permissions.sql
+│   ├── 006_migrate_to_full_rbac.sql # 🔥 Breaking Change - XÓA cột role cũ
 │   ├── QUICKSTART.md                # Hướng dẫn chạy nhanh 3 phút
 │   └── README.md                    # Hướng dẫn chi tiết migrations
 │
@@ -116,13 +117,27 @@ source migrations/000_all_in_one_migration.sql
 source migrations/004_seed_permissions_data.sql
 source migrations/005_map_role_permissions.sql
 
--- Option 2: Full (5 phút)
+-- Option 2: Full (5 phút - Khuyến nghị)
 source migrations/001_create_rbac_core_tables.sql
 source migrations/002_seed_roles_data.sql
 source migrations/003_seed_modules_data.sql
 source migrations/004_seed_permissions_data.sql
 source migrations/005_map_role_permissions.sql
+
+-- Option 3: 🔥 MIGRATE HOÀN TOÀN SANG RBAC (Breaking Change!)
+-- ⚠️ CHỈ CHẠY khi đã sẵn sàng update code (LoginModel, Controllers)
+source migrations/006_migrate_to_full_rbac.sql
 ```
+
+**Migration 006 - Lưu ý quan trọng:**
+- ❌ **XÓA hoàn toàn** cột `role` cũ (enum 'admin','leader')
+- ✅ Chuyển đổi 100% sang `role_id` (INT NOT NULL)
+- ⚠️ Code cũ dùng `$user->role` sẽ **BỊ LỖI** ngay lập tức
+- 📋 **Checklist trước khi chạy:**
+  - [ ] Đã backup database
+  - [ ] Đã chuẩn bị update LoginModel.php
+  - [ ] Đã chuẩn bị update Controllers (Admin.php, Leader.php)
+  - [ ] Có 2-3 giờ để fix code ngay sau đó
 
 **Xem chi tiết:** [migrations/README.md](migrations/README.md)
 

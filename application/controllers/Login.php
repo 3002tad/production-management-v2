@@ -16,7 +16,19 @@ class Login extends CI_Controller
     public function index()
     {
         if ($this->login->is_logged_in()) {
-            $this->login->is_role() === 'admin' ? redirect('admin/') : redirect('leader/');
+            // Redirect based on role_name (new RBAC) or role (old system)
+            $role_name = $this->session->userdata('role_name');
+            $old_role = $this->session->userdata('role');
+            
+            if ($role_name) {
+                // New RBAC system
+                $this->redirect_by_role($role_name);
+            } elseif ($old_role) {
+                // Old system fallback
+                $old_role === 'admin' ? redirect('admin/') : redirect('leader/');
+            } else {
+                redirect('login/');
+            }
         } else {
             $this->form_validation->set_rules('username', 'Username', 'required');
             $this->form_validation->set_rules('password', 'Password', 'required');
@@ -32,27 +44,121 @@ class Login extends CI_Controller
 
                 if ($checking !== false) {
                     foreach ($checking as $data) {
+                        // Build session data with RBAC support
                         $session_data = [
                             'user_id' => $data->user_id,
                             'username' => $data->username,
-                            'password' => $data->password,
-                            'role' => $data->role,
+                            'full_name' => $data->full_name ?: $data->username,
+                            'email' => $data->email,
+                            'role_id' => $data->role_id,
+                            'role_name' => $data->role_name,
+                            'role_display_name' => $data->role_display_name,
+                            'level' => $data->level
                         ];
 
                         $this->session->set_userdata($session_data);
 
-                        if ($this->session->userdata('role') === 'admin') {
-                            redirect('admin/');
-                        } elseif ($this->session->userdata('role') === 'leader') {
-                            redirect('leader/');
-                        }
+                        // Update last login timestamp
+                        $this->login->update_last_login($data->user_id);
+
+                        // Log login activity
+                        $this->login->log_activity(
+                            $data->user_id,
+                            $data->username,
+                            'login',
+                            'auth'
+                        );
+
+                        // Redirect based on role (exit() is inside the method)
+                        $this->redirect_by_role($data->role_name);
                     }
                 } else {
+                    $this->session->set_flashdata('error', 'Username atau password salah!');
                     $this->load->view('login');
                 }
             } else {
                 $this->load->view('login');
             }
         }
+    }
+
+    /**
+     * Redirect user based on their role
+     */
+    private function redirect_by_role($role_name)
+    {
+        switch ($role_name) {
+            case 'bod':
+                redirect('bod/'); // BOD has own dashboard
+                exit();
+            case 'system_admin':
+                redirect('admin/');
+                exit();
+            case 'line_manager':
+                redirect('leader/');
+                exit();
+            case 'warehouse_staff':
+                // Check if Warehouse controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Warehouse.php')) {
+                    redirect('warehouse/');
+                    exit();
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                    exit();
+                }
+                break;
+            case 'qc_staff':
+                // Check if QC controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Qc.php')) {
+                    redirect('qc/');
+                    exit();
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                    exit();
+                }
+                break;
+            case 'technical_staff':
+                // Check if Technical controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Technical.php')) {
+                    redirect('technical/');
+                    exit();
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                    exit();
+                }
+                break;
+            case 'worker':
+                // Check if Worker controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Worker.php')) {
+                    redirect('worker/');
+                    exit();
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                    exit();
+                }
+                break;
+            default:
+                redirect('login/');
+                exit();
+        }
+    }
+
+    /**
+     * Logout user
+     */
+    public function logout()
+    {
+        // Log logout activity before destroying session
+        if ($this->session->userdata('user_id')) {
+            $this->login->log_activity(
+                $this->session->userdata('user_id'),
+                $this->session->userdata('username'),
+                'logout',
+                'auth'
+            );
+        }
+
+        $this->session->sess_destroy();
+        redirect('login/');
     }
 }

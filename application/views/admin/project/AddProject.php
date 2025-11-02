@@ -27,7 +27,60 @@
             <div class="d-flex pt-4" method="post">
                 <div class="col-8">
                     <div class="card border-0 d-flex p-4 pt-0 mb-2 bg-gray-100">
-                    <form class="pt-4" action="<?= site_url('admin/addProject'); ?>" method="post">
+                    
+                    <!-- ============================================================= -->
+                    <!-- FLASH MESSAGES - Hiển thị thông báo lỗi/cảnh báo/thành công -->
+                    <!-- Basic Flow Bước 8, AF 4.1.1, AF 6.1.1, Exception 5.2.1       -->
+                    <!-- ============================================================= -->
+                    
+                    <!-- Thông báo LỖI (AF 4.1.1 - Thiếu dữ liệu, Exception 5.2.1 - Lỗi DB) -->
+                    <?php if ($this->session->flashdata('error')): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-circle fa-2x me-3"></i>
+                            <div>
+                                <strong>Lỗi!</strong><br>
+                                <?= $this->session->flashdata('error'); ?>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Thông báo CẢNH BÁO (AF 6.1.1 - Vượt công suất) -->
+                    <?php if ($this->session->flashdata('warning')): ?>
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                            <div>
+                                <strong>Cảnh báo!</strong><br>
+                                <?= $this->session->flashdata('warning'); ?>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Thông báo THÀNH CÔNG (BF Bước 8 - Tạo đơn thành công) -->
+                    <?php if ($this->session->flashdata('success')): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle fa-2x me-3"></i>
+                            <div>
+                                <strong>Thành công!</strong><br>
+                                <?= $this->session->flashdata('success'); ?>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- ============================================================= -->
+                    <!-- FORM TIẾP NHẬN ĐƠN HÀNG                                      -->
+                    <!-- Basic Flow Bước 3                                            -->
+                    <!-- ============================================================= -->
+                    
+                    <form class="pt-4" id="order_form" action="<?= site_url('admin/addProject'); ?>" method="post">
                     
                         <div class="row d-flex">
                             <div class="col-4">
@@ -86,6 +139,19 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- ============================================================= -->
+                        <!-- TRƯỜNG YÊU CẦU KHÁCH HÀNG (Optional)                         -->
+                        <!-- Basic Flow Bước 3 - Yêu cầu của khách hàng (nếu có)          -->
+                        <!-- ============================================================= -->
+                        <span>Yêu cầu của khách hàng (nếu có)</span>
+                        <small class="text-muted"> - Ví dụ: màu sắc, bao bì, thời gian giao đặc biệt...</small>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <textarea name="customer_request" 
+                                      class="form-control" 
+                                      rows="3" 
+                                      placeholder="Nhập các yêu cầu đặc biệt của khách hàng (nếu có)..."></textarea>
+                        </div>
 
                     </div>
                 </div>
@@ -110,9 +176,18 @@
 <div>
 
 <script>
-// Auto-fill diameter khi chọn product
+// ============================================================================
+// JAVASCRIPT VALIDATION & CONFIRM DIALOG
+// Alternative Flow 4.1 - Kiểm tra thiếu dữ liệu bắt buộc
+// Exception 5.1 - Hủy đơn trước khi lưu
+// ============================================================================
+
 $(document).ready(function() {
-    // Lắng nghe sự kiện thay đổi product select
+    
+    // ========================================================================
+    // AUTO-FILL DIAMETER KHI CHỌN PRODUCT
+    // Basic Flow Bước 2 - Hiển thị gợi ý hợp lệ
+    // ========================================================================
     $('#product_select').on('change', function() {
         var selectedOption = $(this).find('option:selected');
         var diameter = selectedOption.data('diameter');
@@ -129,7 +204,7 @@ $(document).ready(function() {
         }
     });
     
-    // Cũng xử lý cho selectpicker khi đã load
+    // Xử lý cho selectpicker khi đã load
     $('.selectpicker').on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) {
         if ($(this).attr('id') === 'product_select') {
             var selectedOption = $(this).find('option:selected');
@@ -143,6 +218,94 @@ $(document).ready(function() {
                 }, 1500);
             }
         }
+    });
+    
+    // ========================================================================
+    // CLIENT-SIDE VALIDATION
+    // Alternative Flow 4.1 - Thiếu dữ liệu bắt buộc
+    // ========================================================================
+    $('#order_form').on('submit', function(e) {
+        // Lấy giá trị từ form
+        const id_cust = $('select[name="id_cust"]').val();
+        const id_product = $('select[name="id_product"]').val();
+        const diameter = $('input[name="diameter"]').val();
+        const qty_request = parseInt($('input[name="qty_request"]').val());
+        const entry_date = $('input[name="entry_date"]').val();
+        
+        let errorMessage = '';
+        
+        // Kiểm tra khách hàng
+        if (!id_cust || id_cust === '') {
+            errorMessage += '• Vui lòng chọn khách hàng\n';
+        }
+        
+        // Kiểm tra sản phẩm
+        if (!id_product || id_product === '') {
+            errorMessage += '• Vui lòng chọn sản phẩm\n';
+        }
+        
+        // Kiểm tra đường kính
+        if (!diameter || diameter === '' || parseFloat(diameter) <= 0) {
+            errorMessage += '• Vui lòng nhập đường kính hợp lệ (> 0)\n';
+        }
+        
+        // Kiểm tra số lượng (AF 4.1 - Số lượng phải > 0)
+        if (!qty_request || isNaN(qty_request) || qty_request <= 0) {
+            e.preventDefault();
+            alert('⚠️ LỖI: Số lượng phải lớn hơn 0\n\nVui lòng nhập lại.');
+            $('input[name="qty_request"]').focus();
+            return false;
+        }
+        
+        // Kiểm tra hạn giao (AF 4.1 - Hạn giao phải >= hôm nay)
+        if (!entry_date || entry_date === '') {
+            errorMessage += '• Vui lòng nhập hạn giao\n';
+        } else {
+            const entryDateObj = new Date(entry_date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (entryDateObj < today) {
+                e.preventDefault();
+                alert('⚠️ LỖI: Hạn giao phải từ hôm nay trở đi\n\nNgày bạn chọn: ' + entry_date + '\nNgày hôm nay: ' + today.toISOString().split('T')[0]);
+                $('input[name="entry_date"]').focus();
+                return false;
+            }
+        }
+        
+        // Nếu có lỗi validation
+        if (errorMessage !== '') {
+            e.preventDefault();
+            alert('⚠️ LỖI: Thiếu dữ liệu bắt buộc\n\n' + errorMessage + '\nVui lòng nhập đầy đủ thông tin.');
+            return false;
+        }
+        
+        // ====================================================================
+        // CONFIRM DIALOG - Exception 5.1: Khách hàng hủy đơn trước khi lưu
+        // ====================================================================
+        const confirmMessage = 
+            '🎯 XÁC NHẬN TẠO ĐƠN HÀNG\n\n' +
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+            '📦 Sản phẩm: ' + $('select[name="id_product"] option:selected').text() + '\n' +
+            '👤 Khách hàng: ' + $('select[name="id_cust"] option:selected').text() + '\n' +
+            '📊 Số lượng: ' + qty_request.toLocaleString() + ' chiếc\n' +
+            '📏 Đường kính: ' + diameter + ' mm\n' +
+            '📅 Hạn giao: ' + entry_date + '\n' +
+            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+            '✅ Bấm OK để LƯU VÀ DUYỆT đơn hàng\n' +
+            '❌ Bấm Cancel để HỦY và quay lại';
+        
+        if (!confirm(confirmMessage)) {
+            // Exception 5.1.2 - Hiển thị thông báo xác nhận
+            // Exception 5.1.3 - Ban giám đốc xác nhận hủy
+            e.preventDefault();
+            alert('❌ Đã hủy tạo đơn hàng.\n\nBạn có thể tiếp tục chỉnh sửa hoặc quay lại.');
+            // Exception 5.1.4 - Kết thúc use case
+            return false;
+        }
+        
+        // Nếu confirm = OK → Submit form (tiếp tục Basic Flow)
+        return true;
     });
 });
 </script>
