@@ -55,3 +55,8 @@ $route['404_override'] = '';
 $route['translate_uri_dashes'] = false;
 
 $route['search'] = 'petugas/cari_member';
+
+// QC Module Routes
+$route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail
+$route['qc/sessions'] = 'qc/session_list';         // List all sessions
+$route['qc/reports'] = 'qc/reports';               // QC Reports

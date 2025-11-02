@@ -7,10 +7,11 @@
 
 -- 1. CREATE QC USER (if not exists from RBAC migration)
 -- Assumes QC role has role_id = 5 from RBAC system
-INSERT IGNORE INTO `users` (`user_id`, `username`, `password`, `full_name`, `email`, `phone`, `role_id`, `is_active`, `created_at`)
-VALUES 
-(NULL, 'qc_inspector', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'QC Inspector', 'qc@production.com', '0987654321', 5, 1, NOW());
--- Password: password
+-- NOTE: Table is `user` (singular), not `users` (plural)
+INSERT INTO `user` (`username`, `password`, `full_name`, `email`, `phone`, `role_id`, `is_active`)
+SELECT 'qc_inspector', 'password', 'QC Inspector', 'qc@production.com', '0987654321', 5, 1
+WHERE NOT EXISTS (SELECT 1 FROM `user` WHERE `username` = 'qc_inspector');
+-- Password: password (plaintext, change in production!)
 
 -- 2. CREATE SAMPLE SHIFT CLOSURES
 INSERT INTO `shift_closures` (`code`, `line_code`, `shift_code`, `project_code`, `lot_code`, `product_code`, `variant`, `qty_finished`, `qty_waste`, `status`, `closed_at`, `closed_by`)

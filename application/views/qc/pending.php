@@ -4,101 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?> - QC Module</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,700,900" />
+    
+    <!-- Material Dashboard CSS -->
+    <link href="<?= site_url('asset/backend/assets/css/material-dashboard.css?v=3.0.0'); ?>" rel="stylesheet" />
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+    
     <style>
         :root {
-            --qc-primary: #2c3e50;
-            --qc-secondary: #16a085;
-            --qc-warning: #f39c12;
-            --qc-danger: #e74c3c;
-            --qc-success: #27ae60;
+            --qc-primary: #344767;
+            --qc-secondary: #1A73E8;
+            --qc-success: #4CAF50;
+            --qc-warning: #fb8c00;
+            --qc-danger: #F44335;
+            --qc-info: #00bcd4;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ecf0f1;
+            font-family: 'Poppins', sans-serif;
         }
         
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 260px;
-            background: var(--qc-primary);
-            color: white;
-            padding: 20px 0;
-            overflow-y: auto;
+        .stat-card {
+            border-radius: 1rem;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
         
-        .sidebar .logo {
-            padding: 0 20px 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 20px;
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 26px -4px rgba(20, 20, 20, 0.15), 0 8px 9px -5px rgba(20, 20, 20, 0.06);
         }
         
-        .sidebar .logo h3 {
-            color: var(--qc-secondary);
-            font-weight: bold;
-            margin: 0;
-        }
-        
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
+        .stat-card .icon-wrapper {
+            width: 64px;
+            height: 64px;
+            border-radius: 0.75rem;
             display: flex;
             align-items: center;
-            transition: all 0.3s;
+            justify-content: center;
+            box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.14), 0 7px 10px -5px rgba(64, 64, 64, 0.4);
         }
         
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background: rgba(22,160,133,0.2);
+        .stat-card .icon-wrapper i {
+            font-size: 32px;
             color: white;
         }
         
-        .sidebar .nav-link i {
-            margin-right: 10px;
-            width: 20px;
+        .stat-number {
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 1.375;
+            margin-bottom: 0.5rem;
         }
         
-        .main-content {
-            margin-left: 260px;
-            padding: 20px;
+        .stat-label {
+            font-size: 0.875rem;
+            color: #7b809a;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.0625rem;
         }
         
-        .top-bar {
-            background: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .stat-sublabel {
+            font-size: 0.875rem;
+            color: #67748e;
+            margin-top: 0.5rem;
         }
         
-        .card-custom {
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .table-container {
+            border-radius: 1rem;
+            overflow: hidden;
         }
         
-        .badge-pending {
-            background-color: var(--qc-warning);
+        .table thead th {
+            background: linear-gradient(195deg, #42424a 0%, #191919 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.0625rem;
+            padding: 1rem;
+            border: none;
         }
         
-        .badge-verified {
-            background-color: var(--qc-success);
+        .table tbody tr {
+            transition: background-color 0.2s;
         }
         
-        .badge-rejected {
-            background-color: var(--qc-danger);
+        .table tbody tr:hover {
+            background-color: rgba(0,0,0,0.02);
         }
         
-        .btn-qc {
-            background: var(--qc-secondary);
+        .badge-status {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        
+        .btn-inspect {
+            background: linear-gradient(195deg, var(--qc-secondary) 0%, #1662C4 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.15s ease-in;
+        }
+        
+        .btn-inspect:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.12), 0 7px 10px -5px rgba(26, 115, 232, 0.4);
+            color: white;
             color: white;
             border: none;
         }
