@@ -2,10 +2,10 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Production</li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('label_production'); ?></li>
                 </ol>
-                <h6 class="font-weight-bolder mb-0">Detail Production</h6>
+                <h6 class="font-weight-bolder mb-0"><?= lang('label_detail_production'); ?></h6>
             </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
@@ -19,11 +19,11 @@
     <div class="pb-4">
         <div class="row">
             <div class="col-10 d-flex align-items-center">
-                <h4 class="mb-0">Production On Process...</h4>
+                <h4 class="mb-0"><?= lang('label_production_on_process'); ?></h4>
             </div>
             <div class="col-2 text-end d-flex">
                 <div class="pl-4">
-                <a href="<?= site_url('leader/detail_production/'.$detail['id_planshift'].'/addsorting'); ?>"class="btn btn-info btn-sm mb-0">COMPLETE</a>
+                <a href="<?= site_url('leader/detail_production/'.$detail['id_planshift'].'/addsorting'); ?>" class="btn btn-info btn-sm mb-0"><?= lang('btn_complete'); ?></a>
                 </div>
             </div>
         </div>
@@ -36,8 +36,8 @@
                 <div class="card-header pb-0 p-3">
                   <div class="row d-flex">
                       <div class="col pb-2 pl-4 align-items-center">
-                      <span class="text-lg">Shiftment Head :  <b><?= $detail['staff_name']?></b><br/></span>
-                      <span class="text-sm mb-0">Detail on this production</span>
+                      <span class="text-lg"><?= lang('label_shiftment_head'); ?> :  <b><?= $detail['staff_name']?></b><br/></span>
+                      <span class="text-sm mb-0"><?= lang('label_detail_on_production'); ?></span>
                       </div>
                   </div>
             </div>
@@ -47,16 +47,16 @@
                     <ul class="list-group">
                         <li class="list-group-item border-0 d-flex p-4 mb-2 bg-gray-100 border-radius-lg">
                         <div class=" d-flex flex-column">
-                            <span class="mb-3 text-sm">Planning : </br><b><?= $detail['plan_name']?></b></span>
-                            <span class="mb-3 text-sm">Product : </br><b><?= $detail['product_name']?></b></span>
+                            <span class="mb-3 text-sm"><?= lang('label_planning'); ?> : </br><b><?= $detail['plan_name']?></b></span>
+                            <span class="mb-3 text-sm"><?= lang('label_product'); ?> : </br><b><?= $detail['product_name']?></b></span>
                         </div>
                         <div class="pl-5 d-flex flex-column">
-                        <span class="mb-3 text-sm">Diameter : </br><b><?= $detail['diameter']?> mm</b></span>
-                            <span class="mb-3 text-sm">Shiftment : </br><b><?= $detail['shift_name']?></b></span>
+                        <span class="mb-3 text-sm"><?= lang('label_diameter'); ?> : </br><b><?= $detail['diameter']?> <?= lang('unit_mm'); ?></b></span>
+                            <span class="mb-3 text-sm"><?= lang('label_shiftment'); ?> : </br><b><?= $detail['shift_name']?></b></span>
                         </div>
                         <div class="pl-5 d-flex flex-column">
-                            <span class="mb-3 text-sm">Start Date : </br><b><?= $detail['start_date']?></b></span>
-                            <span class="mb-3 text-sm">Target : </br><b><?= $detail['qty_target']?> Kg/Shift</b></span>
+                            <span class="mb-3 text-sm"><?= lang('label_start_date'); ?> : </br><b><?= $detail['start_date']?></b></span>
+                            <span class="mb-3 text-sm"><?= lang('label_target'); ?> : </br><b><?= $detail['qty_target']?> <?= lang('unit_pieces_per_shift'); ?></b></span>
                         </div>
 
                         </li>
@@ -75,7 +75,7 @@
                             <span class="text-sm mb-0">Material for this Production</span>
                         </div>
                         <div class="col-4 text-end">
-                            <a href="<?= site_url('leader/material/addmaterial'); ?>" class="btn btn-outline-dark btn-sm mb-0">Add Material</a>
+                            <a href="<?= site_url('leader/material/addmaterial'); ?>" class="btn btn-outline-dark btn-sm mb-0"><?= lang('btn_add_material'); ?></a>
                         </div>
                     </div>
                 </div>
@@ -85,7 +85,7 @@
                     <thead>
                         <tr>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">No</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Material</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_material'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Used</th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Action</th>
                         </tr>
@@ -107,7 +107,7 @@
                             <span class="text-sm font-weight-bold"><?= $value->used_stock?> Kg</span> </br>
                         </td>
                         <td class="">
-                        <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="<?= site_url('leader/deleteMaterial/'.$value->id_pmaterial.'/'.$value->id_material); ?>"><i class="material-icons text-sm me-2">delete</i>Delete</a>
+                        <a class="btn btn-link text-danger text-gradient px-3 mb-0" href="<?= site_url('leader/deleteMaterial/'.$value->id_pmaterial.'/'.$value->id_material); ?>"><i class="material-icons text-sm me-2">delete</i><?= lang('btn_delete'); ?></a>
                         </td>
                         <?php  endforeach; endif;?>
                         </tr>
@@ -126,11 +126,11 @@
             <div class="card-header pb-0 p-3">
             <div class="row">
                 <div class="col-8 pl-4 align-items-center">
-                    <span class="text-lg mb-0"><b>Machines On Process ... </b></span></br>
-                    <span class="text-sm mb-0">Finish machine before complete this production !!</span>
+                    <span class="text-lg mb-0"><b><?= lang('label_machines_on_process'); ?> </b></span></br>
+                    <span class="text-sm mb-0"><?= lang('label_finish_machine_before_complete'); ?></span>
                 </div>
                 <div class="col-4 text-end">
-                    <a href="<?= site_url('leader/machine/addmachine'); ?>" class="btn btn-outline-dark btn-sm mb-0">Add Machine</a>
+                    <a href="<?= site_url('leader/machine/addmachine'); ?>" class="btn btn-outline-dark btn-sm mb-0"><?= lang('btn_add_machine'); ?></a>
                 </div>
             </div>
             <div class="card-body p-3 pb-0">
@@ -139,7 +139,7 @@
                     <thead>
                         <tr>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-0">No</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-2">Machine</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-2"><?= lang('table_machine'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-0">Status</th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-4"></th>
                         </tr>
@@ -166,11 +166,13 @@
 
                         <td class="pl-4">
                         <?php if ( $value->mc_stats == 2) :?>
-                            <a class="btn btn-link text-info text-gradient px-3 mb-0" href="<?= site_url('leader/finishMachine/'.$value->id_pmachine.'/'.$value->id_machine); ?>"><i class="material-icons text-sm me-2">logout</i>Finish</a>
+                            <a class="btn btn-link text-info text-gradient px-3 mb-0" href="<?= site_url('leader/finishMachine/'.$value->id_pmachine.'/'.$value->id_machine); ?>"><i class="material-icons text-sm me-2">logout</i><?= lang('btn_finish'); ?></a>
                         <?php elseif ( $value->mc_stats == 1) : ?>
                             <span class="text-xs font-weight-bold text-success"></span>
-                        </td>
                         <?php endif ;?> 
+                        <!-- Unified 'Chi tiết' link to shift_report worker detail -->
+                        <a class="btn btn-sm btn-outline-primary ms-2" href="<?= site_url('leader/shift-report/view_machine/'.$detail['id_planshift'].'/'.$value->id_machine); ?>"><?= lang('btn_view_details'); ?></a>
+                        </td>
                         <?php  endforeach; endif;?>
                         </tr>
                     </tbody>

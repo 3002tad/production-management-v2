@@ -2,14 +2,14 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Planning</li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('breadcrumb_planning'); ?></li>
                 </ol>
-                <h6 class="font-weight-bolder mb-0">Planning</h6>
+                <h6 class="font-weight-bolder mb-0"><?= lang('breadcrumb_planning'); ?></h6>
             </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
-            <h6 class="text-sm font-weight-bolder mb-0">Production System</h6>
+            <h6 class="text-sm font-weight-bolder mb-0"><?= lang('title_production_system'); ?></h6>
             </div>
             
         </div>
@@ -24,7 +24,7 @@
         <div class="shadow-dark border-radius-lg d-flex px-5 pt-4 pb-3">
             <div class="col-8 d-flex align-items-center"> 
                 <i class="material-icons pr-3">schedule</i>
-                <h6 class="mb-0">Planning Production</h6>
+                <h6 class="mb-0"><?= lang('label_planning_production'); ?></h6>
             </div>     
         </div>
     </div>
@@ -37,14 +37,14 @@
                 <table id="table-data" class="table align-items-center justify-content-center mb-0">
                 <thead>
                         <tr>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">No</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Plan</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Project</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Qty Request</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Qty Target</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Start Date</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Finish Target</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">action</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_no'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_plan'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_project'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_qty_request'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_qty_target'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_start_date'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_finish_target'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_action'); ?></th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
@@ -76,7 +76,7 @@
                             <span class="text-sm font-weight-bold"><?= $value->end_date; ?></span>
                         </td>
                         <td>
-                        <a href="<?= site_url('leader/plan_shift/'.$value->id_plan.'/view'); ?>" rel="tooltip" title="detail"  class="badge bg-gradient-secondary">details</a>
+                        <a href="<?= site_url('leader/plan_shift/'.$value->id_plan.'/view'); ?>" rel="tooltip" title="<?= lang('tooltip_detail'); ?>"  class="badge bg-gradient-secondary"><?= lang('btn_view_details'); ?></a>
                         </td>
                         </tr>
                         <?php endforeach; endif; ?>

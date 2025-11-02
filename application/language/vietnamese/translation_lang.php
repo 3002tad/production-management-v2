@@ -13,7 +13,8 @@ $lang['menu_planning'] = 'Kế hoạch';
 $lang['menu_shiftment'] = 'Làm việc theo ca';
 $lang['menu_staff'] = 'Nhân viên';
 $lang['menu_leader'] = 'Trưởng ca';
-$lang['menu_production'] = 'Sản xuất';
+$lang['menu_production'] = 'Ca sản xuất';
+$lang['menu_view_shift_production'] = 'Xem sản lượng theo ca';
 $lang['menu_machine'] = 'Máy móc';
 $lang['menu_raw_materials'] = 'Nguyên liệu';
 $lang['menu_report'] = 'Báo cáo';
@@ -21,7 +22,7 @@ $lang['menu_warehousing'] = 'Kho';
 
 // ===== SECTION HEADERS =====
 $lang['section_schedule'] = 'LỊCH BIỂU';
-$lang['section_processing'] = 'SẢN XUẤT';
+$lang['section_processing'] = 'CA SẢN XUẤT';
 $lang['section_reports'] = 'BÁO CÁO';
 
 // ===== BREADCRUMB & HEADERS =====
@@ -34,7 +35,7 @@ $lang['breadcrumb_products'] = 'Sản phẩm';
 $lang['breadcrumb_planning'] = 'Kế hoạch';
 $lang['breadcrumb_shiftment'] = 'Làm việc theo ca';
 $lang['breadcrumb_staff'] = 'Nhân viên';
-$lang['breadcrumb_production'] = 'Sản xuất';
+$lang['breadcrumb_production'] = 'Ca sản xuất';
 $lang['breadcrumb_machine'] = 'Máy móc';
 $lang['breadcrumb_material'] = 'Nguyên liệu';
 $lang['breadcrumb_reports'] = 'Báo cáo';
@@ -70,6 +71,7 @@ $lang['table_address'] = 'Địa chỉ';
 $lang['table_phone'] = 'Điện thoại';
 $lang['table_email'] = 'Email';
 $lang['table_action'] = 'Hành động';
+$lang['table_view_production'] = 'Xem sản lượng';
 $lang['table_name'] = 'Tên';
 $lang['table_status'] = 'Trạng thái';
 $lang['table_date'] = 'Ngày';
@@ -86,7 +88,7 @@ $lang['table_product'] = 'Sản phẩm';
 $lang['table_qty_request'] = 'SL yêu cầu';
 $lang['table_planning'] = 'Kế hoạch';
 $lang['table_diameter'] = 'Đường kính';
-$lang['table_production'] = 'Sản xuất';
+$lang['table_production'] = 'Ca sản xuất';
 $lang['table_product_name'] = 'Tên sản phẩm';
 $lang['table_product_details'] = 'Chi tiết sản phẩm';
 $lang['table_product_info'] = 'Thông tin sản phẩm';
@@ -106,7 +108,7 @@ $lang['label_data_products'] = 'Dữ liệu Sản phẩm';
 $lang['label_data_planning'] = 'Dữ liệu Kế hoạch';
 $lang['label_data_shiftment'] = 'Dữ liệu Làm việc theo ca';
 $lang['label_data_staff'] = 'Dữ liệu Nhân viên';
-$lang['label_data_production'] = 'Dữ liệu Sản xuất';
+$lang['label_data_production'] = 'Dữ liệu Ca sản xuất';
 $lang['label_data_machine'] = 'Dữ liệu Máy móc';
 $lang['label_material_used'] = 'Nguyên liệu sử dụng';
 $lang['label_material_history'] = 'Lịch sử nguyên liệu';
@@ -143,7 +145,7 @@ $lang['label_customer_information'] = 'Thông tin Khách hàng';
 $lang['label_customers'] = 'Khách hàng';
 $lang['label_telephone'] = 'Điện thoại';
 $lang['label_shiftment_on_planning'] = 'Ca làm việc trong Kế hoạch này';
-$lang['label_production'] = 'Sản xuất';
+$lang['label_production'] = 'Ca sản xuất';
 $lang['label_diameter'] = 'Đường kính';
 $lang['label_target'] = 'Mục tiêu';
 $lang['label_head'] = 'Trưởng ca';
@@ -366,6 +368,9 @@ $lang['dashboard_finished_products'] = 'Sản phẩm hoàn thành';
 $lang['dashboard_summary_finished'] = 'Tổng kết sản phẩm hoàn thành';
 $lang['dashboard_production_history'] = 'Lịch sử sản xuất';
 
+// ===== UNITS =====
+$lang['unit_kg'] = 'Kg';
+
 // ===== SORTING SPECIFIC =====
 $lang['breadcrumb_sorting'] = 'Phân loại';
 $lang['label_production_report'] = 'Báo cáo Sản xuất';
@@ -397,6 +402,39 @@ $lang['table_customer'] = 'Khách hàng';
 $lang['table_last_date'] = 'Ngày cuối';
 $lang['table_qty_request'] = 'Số lượng Yêu cầu';
 $lang['table_total_finished'] = 'Tổng Hoàn thành';
+
+// ===== SHIFT_REPORT / GENERAL =====
+$lang['label_shift_report_menu'] = 'Xem sản lượng theo ca';
+$lang['label_shift_report_page'] = 'Báo cáo sản lượng';
+$lang['label_shift_report_header'] = 'Báo cáo ca:';
+$lang['btn_sort_asc'] = 'Sắp xếp tăng dần';
+$lang['btn_sort_desc'] = 'Sắp xếp giảm dần';
+$lang['msg_no_data_for_shift'] = 'Chưa có dữ liệu cho ca này.';
+$lang['btn_view_events'] = 'Xem sự kiện';
+$lang['btn_detail'] = 'Chi tiết';
+$lang['modal_events_title'] = 'Sự kiện máy';
+$lang['text_loading'] = 'Đang tải...';
+// Event / messages
+$lang['msg_no_events'] = 'Không có sự kiện nào.';
+$lang['msg_not_logged_in'] = 'Bạn chưa đăng nhập hoặc hết phiên làm việc. Vui lòng đăng nhập lại.';
+$lang['msg_server_error_loading_events'] = 'Lỗi server khi tải sự kiện.';
+$lang['msg_error_loading_events'] = 'Lỗi khi tải sự kiện.';
+
+// ===== SHIFT REPORT TABLE / WORKER =====
+$lang['sr_table_machine'] = 'Máy';
+$lang['sr_table_produced'] = 'Sản lượng';
+$lang['sr_table_target'] = 'Mục tiêu';
+$lang['sr_table_downtime'] = 'Thời gian dừng (s)';
+$lang['sr_table_status'] = 'Trạng thái';
+$lang['sr_table_last_update'] = 'Cập nhật';
+$lang['sr_table_events'] = 'Sự kiện';
+$lang['sr_table_actions'] = 'Hành động';
+$lang['sr_worker_page'] = 'Báo cáo máy';
+$lang['sr_worker_header'] = 'Báo cáo máy trong ca';
+$lang['sr_no_data_machine'] = 'Chưa có dữ liệu cho máy này trong ca.';
+
+// small button labels
+$lang['btn_shift_report'] = 'Sản lượng';
 
 // ===== PRODUCT SPECIFICATIONS (BÚT BI) =====
 $lang['table_diameter'] = 'Đường kính bi';

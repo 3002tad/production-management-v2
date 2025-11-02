@@ -2,10 +2,10 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Machine</li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('breadcrumb_machine'); ?></li>
                 </ol>
-                <h6 class="font-weight-bolder mb-0">Machine</h6>
+                <h6 class="font-weight-bolder mb-0"><?= lang('breadcrumb_machine'); ?></h6>
             </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
@@ -19,10 +19,10 @@
             <div class="shadow-dark border-radius-lg d-flex px-5 pt-4 pb-3">
                 <div class="col-8 d-flex align-items-center">
                 <i class="material-icons pr-3">build</i>
-                    <h6 class="mb-0 pr-4 ">Machine Schedule</h6>
+                    <h6 class="mb-0 pr-4 "><?= lang('label_machine_schedule'); ?></h6>
                 </div>           
                 <div class="col-4 text-end">
-                    <a href="<?= site_url('leader/machine/addnewmachine'); ?>" class="btn badge-sm bg-gradient-secondary mb-0">Add Machine</a>
+                    <a href="<?= site_url('leader/machine/addnewmachine'); ?>" class="btn badge-sm bg-gradient-secondary mb-0"><?= lang('btn_add_machine'); ?></a>
                 </div>
             </div>
         </div>
@@ -32,8 +32,8 @@
         <div class="col-md-7 mt-4 pl-4">
           <div class="card">
             <div class="card-header pb-0 px-3">
-              <h6 class="mb-0">Machine History</h6>
-              <span class="text-sm mb-0">History of machine used on production</span>
+              <h6 class="mb-0"><?= lang('label_machine_history'); ?></h6>
+              <span class="text-sm mb-0"><?= lang('label_machine_history_desc'); ?></span>
 
             </div>
             <div class="card-body p-3">
@@ -42,7 +42,7 @@
                     <thead>
                         <tr>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">No</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Machine</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_machine'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Production</th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Date</th>
                         </tr>
@@ -79,8 +79,8 @@
             <div class="card-header pb-0 px-3">
                 <div class="row">
                     <div class="col-7 pl-4 align-items-center">
-                        <h6 class="mb-0">Machine Status</h6>
-                        <span class="text-sm mb-0">Machine for this Production</span>
+                        <h6 class="mb-0"><?= lang('label_machine_status'); ?></h6>
+                        <span class="text-sm mb-0"><?= lang('label_machine_for_production'); ?></span>
                     </div>
                 </div>
             </div>

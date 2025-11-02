@@ -114,7 +114,7 @@
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">settings_input_component</i>
                             </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_production'); ?></span>
+                            <span class="nav-link-text ms-1"><?= lang('menu_view_shift_production'); ?></span>
                         </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">

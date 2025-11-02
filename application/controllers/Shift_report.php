@@ -46,7 +46,15 @@ class Shift_report extends CI_Controller {
 
         // Always load the detail view; let the view show "Chưa có dữ liệu cho ca này" when report empty
         $report = $this->Shift_report_model->get_shift_report($shift_id);
+        // Resolve a human-friendly shift name (if available) from plan_shift -> shiftment
+        $shift_label_row = $this->db->select('p.id_planshift, p.id_shift, s.shift_name')
+            ->from('plan_shift p')
+            ->join('shiftment s', 's.id_shift = p.id_shift', 'left')
+            ->where('p.id_planshift', $shift_id)
+            ->get()
+            ->row_array();
         $data['shift_id'] = $shift_id;
+        $data['shift_label'] = isset($shift_label_row['shift_name']) && $shift_label_row['shift_name'] ? $shift_label_row['shift_name'] : null;
         $data['report'] = $report; // may be empty array
         // Prefetch recent events per machine to avoid AJAX/auth issues
         $events_map = [];
@@ -132,7 +140,7 @@ class Shift_report extends CI_Controller {
             return;
         }
         try {
-            $sql = "SELECT id, shift_id, machine_id, event_type, detail, ts, created_by FROM shift_machine_events WHERE shift_id = ? AND machine_id = ? ORDER BY ts DESC LIMIT 50";
+            $sql = "SELECT id, id_shift AS shift_id, id_machine AS machine_id, event_type, detail, ts, created_by FROM shift_machine_events WHERE id_shift = ? AND id_machine = ? ORDER BY ts DESC LIMIT 50";
             $q = $this->db->query($sql, [(int)$shift_id, (int)$machine_id]);
             $rows = [];
             if ($q !== false) {

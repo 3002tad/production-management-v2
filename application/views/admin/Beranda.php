@@ -101,10 +101,10 @@
                     <div class="card-body table-responsive pt-0">
                         <table class="table table-hover">
                             <thead class="text-rose">
-                                <th>ID</th>
-                                <th><?= lang('menu_customer'); ?></th>
-                                <th><?= lang('form_quantity'); ?></th>
-                                <th><?= lang('dashboard_finished_products'); ?></th>
+                                <th><?= lang('table_no'); ?></th>
+                                    <th><?= lang('menu_customer'); ?></th>
+                                    <th><?= lang('form_quantity'); ?></th>
+                                    <th><?= lang('dashboard_finished_products'); ?></th>
                             </thead>
                             <tbody>
                             <?php if (!empty($finished)) : $i = 1; foreach ($finished as $value) : ?>
@@ -133,7 +133,7 @@
                     <div class="card-body table-responsive pt-0">
                         <table class="table table-hover">
                             <thead class="text-warning">
-                                <th>ID</th>
+                                <th><?= lang('table_no'); ?></th>
                                 <th><?= lang('menu_planning'); ?></th>
                                 <th><?= lang('menu_shiftment'); ?></th>
                                 <th><?= lang('dashboard_finished_products'); ?></th>

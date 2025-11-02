@@ -2,10 +2,10 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Material</li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('breadcrumb_material'); ?></li>
                 </ol>
-                <h6 class="font-weight-bolder mb-0">Material</h6>
+                <h6 class="font-weight-bolder mb-0"><?= lang('breadcrumb_material'); ?></h6>
             </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
@@ -19,10 +19,10 @@
             <div class="shadow-dark border-radius-lg d-flex px-5 pt-4 pb-3">
                 <div class="col-8 d-flex align-items-center">
                 <i class="material-icons pr-3">view_in_ar</i>
-                    <h6 class="mb-0 pr-4 ">Material Used</h6>
+                    <h6 class="mb-0 pr-4 "><?= lang('label_material_used'); ?></h6>
                 </div>           
                 <div class="col-4 text-end">
-                    <a href="<?= site_url('leader/material/addnewmaterial'); ?>" class="btn badge-sm bg-gradient-secondary mb-0">Add Material</a>
+                    <a href="<?= site_url('leader/material/addnewmaterial'); ?>" class="btn badge-sm bg-gradient-secondary mb-0"><?= lang('btn_add_material'); ?></a>
                 </div>
             </div>
         </div>
@@ -32,8 +32,8 @@
         <div class="col-md-7 mt-4 pl-4">
           <div class="card">
             <div class="card-header pb-0 px-3">
-              <h6 class="mb-0">Material History</h6>
-              <span class="text-sm mb-0">History of material used on production</span>
+              <h6 class="mb-0"><?= lang('label_material_history'); ?></h6>
+              <span class="text-sm mb-0"><?= lang('label_material_history_desc'); ?></span>
 
             </div>
             <div class="card-body p-3">
@@ -83,8 +83,8 @@
             <div class="card-header pb-0 px-3">
                 <div class="row">
                     <div class="col-7 pl-4 align-items-center">
-                    <h6 class="mb-0">Material Status</h6>
-                        <span class="text-sm mb-0">Material for this Production</span>
+                    <h6 class="mb-0"><?= lang('label_material_status'); ?></h6>
+                        <span class="text-sm mb-0"><?= lang('label_material_for_production'); ?></span>
                     </div>
                 </div>
                     </div>

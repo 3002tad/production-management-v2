@@ -73,7 +73,7 @@
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">settings_input_component</i>
                             </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_production'); ?></span>
+                            <span class="nav-link-text ms-1"><?= lang('menu_view_shift_production'); ?></span>
                         </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
@@ -107,12 +107,13 @@
                             <span class="nav-link-text ms-1"><?= lang('menu_report'); ?></span>
                         </a>
                     </li>
-          <li class="nav-item navbar-expand-xs">
+          <!-- Hidden in sidebar but kept in DOM so URL remains available -->
+          <li class="nav-item navbar-expand-xs d-none">
             <a class="nav-link text-white<?= ($navlink === 'shift_report') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/shift-report'); ?>">
               <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">query_stats</i>
               </div>
-              <span class="nav-link-text ms-1">Xem sản lượng theo ca</span>
+              <span class="nav-link-text ms-1"><?= lang('label_shift_report_menu'); ?></span>
             </a>
           </li>
                 </ul>

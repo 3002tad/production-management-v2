@@ -2,14 +2,14 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Planning</li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('breadcrumb_planning'); ?></li>
                 </ol>
-                <h6 class="font-weight-bolder mb-0">Planning</h6>
+                <h6 class="font-weight-bolder mb-0"><?= lang('breadcrumb_planning'); ?></h6>
             </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
-            <h6 class="text-sm font-weight-bolder mb-0">Details Planning</h6>
+            <h6 class="text-sm font-weight-bolder mb-0"><?= lang('label_planning_details'); ?></h6>
             </div>
         </div>
     </nav>
@@ -19,7 +19,7 @@
     <div class="pb-4">
         <div class="row">
             <div class="col-10 d-flex align-items-center">
-                <h4 class="mb-0">Planning Details.</h4>
+                <h4 class="mb-0"><?= lang('label_planning_details'); ?></h4>
             </div>
         </div>
     </div>
@@ -31,11 +31,11 @@
                 <div class="overflow-hidden position-relative border-radius-xl">
                   <div class="card-body position-relative z-index-1 p-3">
                         <div class="d-flex me-4">
-                          <span class="pr-4 mb-0">Planning : </span>
+                          <span class="pr-4 mb-0"><?= lang('label_planning'); ?> : </span>
                           <h5 class="mb-0">&nbsp;<?= $plan['plan_name']?></h5>
                         </div>
                         <div class="d-flex me-4 pt-4">
-                          <span class="mb-0 pr-3">On Project :</span>
+                          <span class="mb-0 pr-3"><?= lang('label_on_project'); ?> :</span>
                           <h6 class="mb-0"><?= $plan['project_name']?></h6>
                         </div>
                       </div>
@@ -46,22 +46,22 @@
             </div>
             <div class="col-xl-6">
               <div class="row">
-                <div class="col-md-5 col-6">
+                    <div class="col-md-5 col-6">
                   <div class="card h-100">
                     <div class="card-body p-3 text-center">
-                    <span class="text-xs m-0 pt-2">Quantity </br> Request</span>
+                    <span class="text-xs m-0 pt-2"><?= lang('table_qty_request'); ?> </span>
                       <h5 class="mb-0 pt-1"><?= $plan['qty_request']?> Kg</h5>
                     </div>
                   </div>
                 </div>
                 <div class="col-md-7 col-6">
                   <div class="card h-100">
-                  <div class="card-body p-1 text-center">
-                      <span class="text-sm m-0 ">Entry Date :</span>
+                      <div class="card-body p-1 text-center">
+                      <span class="text-sm m-0 "><?= lang('table_entry_date'); ?> :</span>
                       <h6 class=" mb-0 "><?= $plan['entry_date']?> </h6>
                     </div>
                     <div class="card-body p-1 text-center">
-                      <span class="text-sm m-0 ">Finish Date :</span>
+                      <span class="text-sm m-0 "><?= lang('label_finish_date'); ?> :</span>
                       <h6 class=" mb-0 "><?= $plan['end_date']?> </h6>
                     </div>
                   </div>
@@ -78,22 +78,22 @@
                   </div>
                 </div>
                 <div class="card-body p-3">
-                  <div class="row">
-                    <div class="col-md mb-md-0 mb-4">
-                    <ul class="list-group">
-                        <li class="list-group-item border-0 d-flex p-4 mb-2 bg-gray-100 border-radius-lg">
-                        <div class="d-flex flex-column">
-                            <span class="mb-3 text-sm">Customers : <b><?= $plan['cust_name']?>  </b></span>
-                            <span class="mb-3 text-sm">Address : <b><?= $plan['address']?>  </b></span>
-                        </div>
-                        <div class="pl-3 d-flex flex-column">
-                            <span class="mb-3 text-sm">Telephone : <b><?= $plan['telp']?>  </b></span>
-                            <span class="mb-3 text-sm">Email : <b><?= $plan['email']?>  </b></span>
-                        </div>
-                        </li>
-                    </ul>
-                    </div>
-                  </div>
+          <div class="row">
+          <div class="col-md mb-md-0 mb-4">
+          <ul class="list-group">
+            <li class="list-group-item border-0 d-flex p-4 mb-2 bg-gray-100 border-radius-lg">
+            <div class="d-flex flex-column">
+              <span class="mb-3 text-sm"><?= lang('label_customer_information'); ?> : <b><?= $plan['cust_name']?>  </b></span>
+              <span class="mb-3 text-sm"><?= lang('form_address'); ?> : <b><?= $plan['address']?>  </b></span>
+            </div>
+            <div class="pl-3 d-flex flex-column">
+              <span class="mb-3 text-sm"><?= lang('label_telephone'); ?> : <b><?= $plan['telp']?>  </b></span>
+              <span class="mb-3 text-sm"><?= lang('form_email'); ?> : <b><?= $plan['email']?>  </b></span>
+            </div>
+            </li>
+          </ul>
+          </div>
+          </div>
                 </div>
               </div>
             </div>
@@ -127,10 +127,10 @@
                     <table id="table-data" class="table align-items-center justify-content-center mb-0">
                     <thead>
                         <tr>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">No</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Plan</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Head</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Start Date</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_no'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_plan'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_shift_head'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_start_date'); ?></th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">

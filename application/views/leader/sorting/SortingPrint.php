@@ -3,8 +3,8 @@
     <div class="p-4">
         <div class="row">
             <div class="col-10 d-flex align-items-center">
-                <h4 class="mb-0 p-2 ">Production Report.</h4>
-                <button onclick="window.print()">Print Out</button>
+                <h4 class="mb-0 p-2 "><?= lang('label_production_report'); ?></h4>
+                <button onclick="window.print()"><?= lang('btn_print_out'); ?></button>
             </div>
         </div>
     </div>
@@ -12,24 +12,24 @@
     <div class="row">
     <div class="card">
     <div class="row">
-        <div class="col-lg-6">
+                <div class="col-lg-6">
                 <div class="col align-items-center p-3 pb-3">
-                    <span class="text-lg">Shiftment Head :  <b><?= $detail['staff_name']?></b><br/></span>
-                    <span class="text-sm mb-0">Detail on this production</span>
+                    <span class="text-lg"><?= lang('label_shiftment_head'); ?> :  <b><?= $detail['staff_name']?></b><br/></span>
+                    <span class="text-sm mb-0"><?= lang('label_detail_on_production'); ?></span>
                 </div>
             <div class="row">
                 <div class="col-6 p-3">
                         <div class="col align-items-center">
-                            <span class="text-md">Finished Goods :  </span>
+                            <span class="text-md"><?= lang('label_finished_goods'); ?> :  </span>
                             <span class="text-xl"><b><?= $detail['finished']?></b> Kg</br></span>
-                            <span class="text-sm mb-0">Detail on this production</span>
+                            <span class="text-sm mb-0"><?= lang('label_detail_on_production'); ?></span>
                         </div>
                 </div>
                 <div class="col-6 p-3">
                         <div class="col align-items-center">
-                            <span class="text-md">Production Waste :  </span>
+                            <span class="text-md"><?= lang('label_production_waste'); ?> :  </span>
                             <span class="text-xl"><b><?= $detail['waste']?></b> Kg</br> </span>
-                            <span class="text-sm mb-0">Detail on this production</span>
+                            <span class="text-sm mb-0"><?= lang('label_detail_on_production'); ?></span>
                         </div>
                 </div>
             </div>
@@ -68,9 +68,9 @@
               <div class="card mt-4">
                 <div class="card-header pb-0 p-3">
                     <div class="row">
-                        <div class="col-8 pl-4 align-items-center">
-                            <span class="text-lg mb-0"><b>Materials Used</b></span></br>
-                            <span class="text-sm mb-0">Material for this Production</span>
+                            <div class="col-8 pl-4 align-items-center">
+                            <span class="text-lg mb-0"><b><?= lang('label_materials_used'); ?></b></span></br>
+                            <span class="text-sm mb-0"><?= lang('label_material_for_production'); ?></span>
                         </div>
                     </div>
                 </div>
@@ -79,9 +79,9 @@
                     <table id="table-data" class="table align-items-center justify-content-center mb-0">
                     <thead>
                         <tr>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">No</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Material</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Used</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_no'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_material'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('label_used'); ?></th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
@@ -114,9 +114,9 @@
           <div class="card pb-4">
             <div class="card-header pb-0 p-3">
             <div class="row">
-                <div class="col-8 pl-4 align-items-center">
-                    <span class="text-lg mb-0"><b>Machines Used</b></span></br>
-                    <span class="text-sm mb-0">History of machine used</span>
+                    <div class="col-8 pl-4 align-items-center">
+                    <span class="text-lg mb-0"><b><?= lang('label_machines_used'); ?></b></span></br>
+                    <span class="text-sm mb-0"><?= lang('label_machine_used_history'); ?></span>
                 </div>
             </div>
             <div class="card-body p-3 pb-0">
@@ -124,9 +124,9 @@
                     <table id="table-data" class="table align-items-center justify-content-center mb-0">
                     <thead>
                         <tr>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-0">No</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-2">Machine</th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-2">Capacity</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-0"><?= lang('table_no'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-2"><?= lang('table_machine'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-2"><?= lang('label_capacity'); ?></th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">

@@ -5,50 +5,60 @@
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
       <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/'); ?>">Trang</a></li>
-      <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Báo cáo sản lượng</li>
+      <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('label_shift_report_page'); ?></li>
     </ol>
-    <h6 class="font-weight-bolder mb-0">Báo cáo ca: <?= htmlspecialchars($shift_id); ?></h6>
+  <h6 class="font-weight-bolder mb-0"><?= lang('label_shift_report_header'); ?> <?= htmlspecialchars(isset($shift_label) && $shift_label ? $shift_label : $shift_id); ?></h6>
   </nav>
 
   <div class="card mt-3">
     <div class="card-body p-3">
       <?php if (empty($report)): ?>
-        <div class="alert alert-info">Chưa có dữ liệu cho ca này.</div>
+        <div class="alert alert-info"><?= lang('msg_no_data_for_shift'); ?></div>
       <?php else: ?>
         <div class="d-flex justify-content-end mb-2">
-          <button id="sortAsc" class="btn btn-sm btn-outline-secondary me-2">Sắp xếp tăng dần</button>
-          <button id="sortDesc" class="btn btn-sm btn-outline-secondary">Sắp xếp giảm dần</button>
+          <button id="sortAsc" class="btn btn-sm btn-outline-secondary me-2"><?= lang('btn_sort_asc'); ?></button>
+          <button id="sortDesc" class="btn btn-sm btn-outline-secondary"><?= lang('btn_sort_desc'); ?></button>
         </div>
         <div class="table-responsive">
           <table class="table align-items-center mb-0">
             <thead>
               <tr>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">#</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Máy</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Sản lượng</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mục tiêu</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thời gian dừng (s)</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Trạng thái</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cập nhật</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Sự kiện</th>
-                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Hành động</th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('table_no'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_machine'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_produced'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_target'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_downtime'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_status'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_last_update'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_events'); ?></th>
+                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_actions'); ?></th>
               </tr>
             </thead>
             <tbody>
-            <?php $i=1; foreach ($report as $r): ?>
+            <?php $i=1; foreach ($report as $r_raw): 
+                // normalize record: allow object or array callers
+                $r = is_array($r_raw) ? $r_raw : (is_object($r_raw) ? (array)$r_raw : []);
+                $machine_name = isset($r['machine_name']) ? $r['machine_name'] : (isset($r['machine_id']) ? $r['machine_id'] : '-');
+                $produced = isset($r['produced_qty']) ? intval($r['produced_qty']) : 0;
+                $target = array_key_exists('target_qty', $r) && $r['target_qty'] !== null ? intval($r['target_qty']) : '-';
+                $downtime = isset($r['downtime_seconds']) ? intval($r['downtime_seconds']) : 0;
+                $status = isset($r['status']) ? $r['status'] : '-';
+                $last = isset($r['last_updated_at']) ? $r['last_updated_at'] : '-';
+                $mid = isset($r['machine_id']) ? intval($r['machine_id']) : '';
+            ?>
               <tr>
                 <td><?= $i++; ?></td>
-                <td><?= htmlspecialchars(isset($r['machine_name']) ? $r['machine_name'] : $r['machine_id']); ?></td>
-                <td><?= intval($r['produced_qty']); ?></td>
-                <td><?= $r['target_qty'] !== null ? intval($r['target_qty']) : '-'; ?></td>
-                <td><?= intval($r['downtime_seconds']); ?></td>
-                <td><?= htmlspecialchars($r['status']); ?></td>
-                <td><?= htmlspecialchars($r['last_updated_at'] ?? '-'); ?></td>
+                <td><?= htmlspecialchars($machine_name); ?></td>
+                <td><?= $produced; ?></td>
+                <td><?= $target; ?></td>
+                <td><?= $downtime; ?></td>
+                <td><?= htmlspecialchars($status); ?></td>
+                <td><?= htmlspecialchars($last); ?></td>
                 <td>
-                  <button type="button" class="btn btn-sm btn-outline-secondary btn-events" data-shift="<?= $shift_id ?>" data-machine="<?= intval($r['machine_id']) ?>">Xem sự kiện</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary btn-events" data-shift="<?= $shift_id ?>" data-machine="<?= $mid ?>"><?= lang('btn_view_events'); ?></button>
                 </td>
                 <td>
-                  <a class="btn btn-sm btn-outline-primary" href="<?= site_url('leader/shift-report/view_machine/'.$shift_id.'/'.intval($r['machine_id'])); ?>">Chi tiết</a>
+                  <a class="btn btn-sm btn-outline-primary" href="<?= site_url('leader/shift-report/view_machine/'.$shift_id.'/'.$mid); ?>"><?= lang('btn_detail'); ?></a>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -65,14 +75,14 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="eventsModalLabel">Sự kiện máy</h5>
+        <h5 class="modal-title" id="eventsModalLabel"><?= lang('modal_events_title'); ?></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div id="eventsList">Đang tải...</div>
+        <div id="eventsList"><?= lang('text_loading'); ?></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= lang('btn_close'); ?></button>
       </div>
     </div>
   </div>
@@ -127,15 +137,15 @@
         var machine = this.getAttribute('data-machine');
         var url = '<?= site_url('leader/shift-report/api/get_machine_events') ?>/' + shift + '/' + machine;
         var eventsList = document.getElementById('eventsList');
-        eventsList.innerHTML = '<div class="text-muted">Đang tải...</div>';
+  eventsList.innerHTML = '<div class="text-muted"><?= lang('text_loading'); ?></div>';
 
         // If we have prefetched events from server-side, use them and avoid AJAX.
         try {
           var pref = window.prefetchedEvents && window.prefetchedEvents[machine];
           // If pref is defined (could be empty array), handle accordingly.
-          if (typeof pref !== 'undefined') {
+            if (typeof pref !== 'undefined') {
             if (!pref || pref.length === 0) {
-              eventsList.innerHTML = '<div class="alert alert-info">Không có sự kiện nào.</div>';
+              eventsList.innerHTML = '<div class="alert alert-info"><?= lang('msg_no_events'); ?></div>';
               showModal();
               return;
             }
@@ -157,7 +167,7 @@
         fetch(url, { credentials: 'same-origin' })
           .then(function(res){
             if (res.status === 401) {
-              eventsList.innerHTML = '<div class="alert alert-warning">Bạn chưa đăng nhập hoặc hết phiên làm việc. Vui lòng đăng nhập lại.</div>';
+              eventsList.innerHTML = '<div class="alert alert-warning"><?= lang('msg_not_logged_in'); ?></div>';
               showModal();
               throw new Error('unauthorized');
             }
@@ -165,7 +175,7 @@
             if (ct.indexOf('application/json') === -1) {
               // might be HTML (redirect to login) -> show error
               return res.text().then(function(txt){
-                eventsList.innerHTML = '<div class="alert alert-danger">Lỗi server khi tải sự kiện.</div>';
+                eventsList.innerHTML = '<div class="alert alert-danger"><?= lang('msg_server_error_loading_events'); ?></div>';
                 showModal();
                 throw new Error('invalid_response');
               });
@@ -174,7 +184,7 @@
           })
           .then(function(data){
             if (!data || data.length === 0) {
-              eventsList.innerHTML = '<div class="alert alert-info">Không có sự kiện nào.</div>';
+              eventsList.innerHTML = '<div class="alert alert-info"><?= lang('msg_no_events'); ?></div>';
               showModal();
               return;
             }
@@ -190,7 +200,7 @@
           })
           .catch(function(err){
             if (err.message === 'unauthorized' || err.message === 'invalid_response') return;
-            eventsList.innerHTML = '<div class="alert alert-danger">Lỗi khi tải sự kiện.</div>';
+            eventsList.innerHTML = '<div class="alert alert-danger"><?= lang('msg_error_loading_events'); ?></div>';
             showModal();
           });
       });

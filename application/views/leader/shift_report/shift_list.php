@@ -14,11 +14,11 @@
                     <tr>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">ID</th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ca</th>
-                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mục tiêu</th>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_target'); ?></th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nhân viên</th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Dây chuyền</th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ngày bắt đầu</th>
-                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Trạng thái</th>
+                      <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"><?= lang('sr_table_status'); ?></th>
                       <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Hành động</th>
                     </tr>
                   </thead>

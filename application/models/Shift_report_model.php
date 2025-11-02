@@ -39,7 +39,9 @@ class Shift_report_model extends CI_Model {
     public function get_shift_report($shift_id)
     {
         // First try: read from dedicated reporting table if exists
-        $this->db->where('shift_id', $shift_id);
+        // use new DB column names (id_shift / id_machine) but alias to old keys so views keep working
+        $this->db->where('id_shift', $shift_id);
+        $this->db->select('id, id_shift AS shift_id, id_machine AS machine_id, produced_qty, target_qty, downtime_seconds, events, status, last_updated_at, recorded_by, created_at');
         $q = $this->db->get('shift_machine_reports');
         $rows = $q->result_array();
         if (!empty($rows)) {
@@ -92,8 +94,9 @@ class Shift_report_model extends CI_Model {
     public function get_machine_report($shift_id, $machine_id)
     {
         // First try dedicated report table
-        $this->db->where('shift_id', $shift_id);
-        $this->db->where('machine_id', $machine_id);
+        $this->db->where('id_shift', $shift_id);
+        $this->db->where('id_machine', $machine_id);
+        $this->db->select('id, id_shift AS shift_id, id_machine AS machine_id, produced_qty, target_qty, downtime_seconds, events, status, last_updated_at, recorded_by, created_at');
         $q = $this->db->get('shift_machine_reports');
         $row = $q->row_array();
         if (!empty($row)) return $row;
@@ -131,8 +134,9 @@ class Shift_report_model extends CI_Model {
     // Get recent events for a machine in a shift
     public function get_machine_events($shift_id, $machine_id, $limit = 10)
     {
-        $this->db->where('shift_id', $shift_id);
-        $this->db->where('machine_id', $machine_id);
+        $this->db->where('id_shift', $shift_id);
+        $this->db->where('id_machine', $machine_id);
+        $this->db->select('id, id_shift AS shift_id, id_machine AS machine_id, event_type, detail, ts, created_by');
         $this->db->order_by('ts', 'DESC');
         $this->db->limit(intval($limit));
         $q = $this->db->get('shift_machine_events');
@@ -163,14 +167,15 @@ class Shift_report_model extends CI_Model {
     {
         $this->db->trans_start();
         $this->db->set('produced_qty', 'produced_qty + ' . intval($delta_qty), FALSE);
-        $this->db->where('shift_id', $shift_id)->where('machine_id', $machine_id);
+        // use canonical DB column names (id_shift / id_machine)
+        $this->db->where('id_shift', $shift_id)->where('id_machine', $machine_id);
         $this->db->update('shift_machine_reports');
 
         // if no row exists, insert one
         if ($this->db->affected_rows() == 0) {
             $insert = [
-                'shift_id' => $shift_id,
-                'machine_id' => $machine_id,
+                'id_shift' => $shift_id,
+                'id_machine' => $machine_id,
                 'produced_qty' => intval($delta_qty),
                 'created_at' => date('Y-m-d H:i:s'),
                 'recorded_by' => $user_id
@@ -186,8 +191,8 @@ class Shift_report_model extends CI_Model {
     public function add_event($shift_id, $machine_id, $event_type, $detail = null, $user_id = null)
     {
         $data = [
-            'shift_id' => $shift_id,
-            'machine_id' => $machine_id,
+            'id_shift' => $shift_id,
+            'id_machine' => $machine_id,
             'event_type' => $event_type,
             'detail' => $detail,
             'created_by' => $user_id,
@@ -209,15 +214,15 @@ class Shift_report_model extends CI_Model {
         $this->db->trans_start();
 
         // Update or insert into shift_machine_reports
-        $this->db->set('downtime_seconds', 'downtime_seconds + ' . $duration, FALSE);
-        $this->db->where('shift_id', $shift_id)->where('machine_id', $machine_id);
-        $this->db->update('shift_machine_reports');
+    $this->db->set('downtime_seconds', 'downtime_seconds + ' . $duration, FALSE);
+    $this->db->where('id_shift', $shift_id)->where('id_machine', $machine_id);
+    $this->db->update('shift_machine_reports');
 
         if ($this->db->affected_rows() == 0) {
             // insert a minimal row if missing
             $insert = [
-                'shift_id' => $shift_id,
-                'machine_id' => $machine_id,
+                'id_shift' => $shift_id,
+                'id_machine' => $machine_id,
                 'produced_qty' => 0,
                 'target_qty' => null,
                 'downtime_seconds' => $duration,
@@ -231,8 +236,8 @@ class Shift_report_model extends CI_Model {
         // Insert an event record
         $detail = "Downtime from " . date('Y-m-d H:i:s', $start) . " to " . date('Y-m-d H:i:s', $end) . ", duration {$duration}s";
         $ev = [
-            'shift_id' => $shift_id,
-            'machine_id' => $machine_id,
+            'id_shift' => $shift_id,
+            'id_machine' => $machine_id,
             'event_type' => 'downtime',
             'detail' => $detail,
             'ts' => date('Y-m-d H:i:s', $start),
@@ -248,7 +253,7 @@ class Shift_report_model extends CI_Model {
     public function aggregate_kpi($shift_id)
     {
         $this->db->select('SUM(produced_qty) as total_produced, SUM(target_qty) as total_target, SUM(downtime_seconds) as total_downtime');
-        $this->db->where('shift_id', $shift_id);
+        $this->db->where('id_shift', $shift_id);
         $q = $this->db->get('shift_machine_reports');
         return $q->row_array();
     }
