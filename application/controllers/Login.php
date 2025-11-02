@@ -16,26 +16,18 @@ class Login extends CI_Controller
     public function index()
     {
         if ($this->login->is_logged_in()) {
-            // Phân quyền redirect dựa trên role
-            $role = $this->login->is_role();
+            // Redirect based on role_name (new RBAC) or role (old system)
+            $role_name = $this->session->userdata('role_name');
+            $old_role = $this->session->userdata('role');
             
-            // Support cả 'admin' (legacy) và 'system_admin' (RBAC mới)
-            if ($role === 'admin' || $role === 'system_admin') {
-                redirect('admin/');
-                return;
-            } elseif ($role === 'bod') {
-                redirect('BOD/');
-                return;
-            } elseif ($role === 'leader' || $role === 'line_manager') {
-                redirect('leader/');
-                return;
+            if ($role_name) {
+                // New RBAC system
+                $this->redirect_by_role($role_name);
+            } elseif ($old_role) {
+                // Old system fallback
+                $old_role === 'admin' ? redirect('admin/') : redirect('leader/');
             } else {
-                // Role khác không có quyền truy cập - KHÔNG redirect về login để tránh loop
-                $this->session->sess_destroy();
-                // Hiển thị form login với error message
-                $data['error'] = 'Bạn không có quyền truy cập hệ thống.';
-                $this->load->view('login', $data);
-                return;
+                redirect('login/');
             }
         } else {
             $this->form_validation->set_rules('username', 'Username', 'required');
@@ -52,32 +44,36 @@ class Login extends CI_Controller
 
                 if ($checking !== false) {
                     foreach ($checking as $data) {
+                        // Build session data with RBAC support
                         $session_data = [
                             'user_id' => $data->user_id,
                             'username' => $data->username,
-                            'password' => $data->password,
-                            'role' => $data->role,
+                            'full_name' => $data->full_name ?: $data->username,
+                            'email' => $data->email,
+                            'role_id' => $data->role_id,
+                            'role_name' => $data->role_name,
+                            'role_display_name' => $data->role_display_name,
+                            'level' => $data->level
                         ];
 
                         $this->session->set_userdata($session_data);
 
-                        // Redirect dựa trên role
-                        $role = $this->session->userdata('role');
-                        
-                        // Support cả 'admin' (legacy) và 'system_admin' (RBAC mới)
-                        if ($role === 'admin' || $role === 'system_admin') {
-                            redirect('admin/');
-                        } elseif ($role === 'bod') {
-                            redirect('BOD/');
-                        } elseif ($role === 'leader' || $role === 'line_manager') {
-                            redirect('leader/');
-                        } else {
-                            // Role khác (warehouse_staff, qc_staff, technical_staff, worker) không có quyền truy cập web
-                            $this->session->sess_destroy();
-                            redirect('login/');
-                        }
+                        // Update last login timestamp
+                        $this->login->update_last_login($data->user_id);
+
+                        // Log login activity
+                        $this->login->log_activity(
+                            $data->user_id,
+                            $data->username,
+                            'login',
+                            'auth'
+                        );
+
+                        // Redirect based on role
+                        $this->redirect_by_role($data->role_name);
                     }
                 } else {
+                    $this->session->set_flashdata('error', 'Username atau password salah!');
                     $this->load->view('login');
                 }
             } else {
@@ -87,14 +83,73 @@ class Login extends CI_Controller
     }
 
     /**
-     * Logout - Xóa session và redirect về login
+     * Redirect user based on their role
+     */
+    private function redirect_by_role($role_name)
+    {
+        switch ($role_name) {
+            case 'bod':
+                redirect('admin/'); // BOD uses admin panel
+                break;
+            case 'system_admin':
+                redirect('admin/');
+                break;
+            case 'line_manager':
+                redirect('leader/');
+                break;
+            case 'warehouse_staff':
+                // Check if Warehouse controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Warehouse.php')) {
+                    redirect('warehouse/');
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                }
+                break;
+            case 'qc_staff':
+                // Check if QC controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Qc.php')) {
+                    redirect('qc/');
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                }
+                break;
+            case 'technical_staff':
+                // Check if Technical controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Technical.php')) {
+                    redirect('technical/');
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                }
+                break;
+            case 'worker':
+                // Check if Worker controller exists, otherwise fallback to leader
+                if (file_exists(APPPATH . 'controllers/Worker.php')) {
+                    redirect('worker/');
+                } else {
+                    redirect('leader/'); // Temporary fallback
+                }
+                break;
+            default:
+                redirect('login/');
+        }
+    }
+
+    /**
+     * Logout user
      */
     public function logout()
     {
-        // Xóa toàn bộ session
+        // Log logout activity before destroying session
+        if ($this->session->userdata('user_id')) {
+            $this->login->log_activity(
+                $this->session->userdata('user_id'),
+                $this->session->userdata('username'),
+                'logout',
+                'auth'
+            );
+        }
+
         $this->session->sess_destroy();
-        
-        // Redirect về trang login
         redirect('login/');
     }
 }

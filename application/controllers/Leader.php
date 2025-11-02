@@ -9,8 +9,32 @@ class Leader extends CI_Controller
         parent::__construct();
         $this->load->model('CrudModel', 'crudModel');
         $this->load->library('session');
-        if ($this->session->userdata('role') !== 'leader') {
+        
+        // Check if user is logged in
+        if (!$this->session->userdata('user_id')) {
             redirect('login/');
+        }
+        
+        // RBAC: Check if user has leader/line manager access
+        // Allow: BOD, System Admin, Line Manager, and temporarily other roles
+        $role_name = $this->session->userdata('role_name');
+        $level = $this->session->userdata('level');
+        $old_role = $this->session->userdata('role'); // Backward compatibility
+        
+        $has_access = false;
+        
+        // New RBAC system
+        if ($role_name) {
+            $allowed_roles = ['bod', 'system_admin', 'line_manager', 'warehouse_staff', 'qc_staff', 'technical_staff'];
+            $has_access = in_array($role_name, $allowed_roles) || ($level >= 50);
+        }
+        // Old system fallback
+        elseif ($old_role === 'leader' || $old_role === 'admin') {
+            $has_access = true;
+        }
+        
+        if (!$has_access) {
+            show_error('Access Denied - Insufficient Permissions', 403, 'Forbidden');
         }
     }
 
