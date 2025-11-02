@@ -9,8 +9,32 @@ class Admin extends CI_Controller
         parent::__construct();
         $this->load->model('CrudModel', 'crudModel');
         $this->load->library('session');
-        if ($this->session->userdata('role') !== 'admin') {
+        
+        // Check if user is logged in
+        if (!$this->session->userdata('user_id')) {
             redirect('login/');
+        }
+        
+        // RBAC: Check if user has admin access
+        // Allow: BOD (level 100) and System Admin (level 90)
+        $role_name = $this->session->userdata('role_name');
+        $level = $this->session->userdata('level');
+        $old_role = $this->session->userdata('role'); // Backward compatibility
+        
+        $has_access = false;
+        
+        // New RBAC system
+        if ($role_name) {
+            $allowed_roles = ['bod', 'system_admin'];
+            $has_access = in_array($role_name, $allowed_roles) || ($level >= 90);
+        }
+        // Old system fallback
+        elseif ($old_role === 'admin') {
+            $has_access = true;
+        }
+        
+        if (!$has_access) {
+            show_error('Access Denied - Admin Only', 403, 'Forbidden');
         }
     }
 
