@@ -22,9 +22,7 @@
                 <h6 class="mb-0"><?= lang('label_data_staff'); ?></h6>
             </div>
             <div class="col-4 text-end">
-                <?php if ($this->session->userdata('role') === 'leader') : ?>
                 <a href="<?= site_url('admin/staff/addstaff'); ?>" class="btn bg-gradient-dark mb-0"><?= lang('btn_add_staff'); ?></a>
-                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -72,14 +70,12 @@
                         </td>
                         <?php endif ;?> 
                         <td class="pl-4">
-                            <?php if ($this->session->userdata('role') === 'leader') : ?>
                             <a href="<?= site_url('admin/staff/'.$value->id_staff.'/update'); ?>" rel="tooltip" title="<?= lang('tooltip_edit'); ?>" class="btn btn-info btn-link btn-sm">
                                 <i class="material-icons">edit</i>
                             </a>
                             <a href="<?= site_url('admin/deleteStaff/'.$value->id_staff); ?>" rel="tooltip" title="<?= lang('tooltip_remove'); ?>" class="btn btn-danger btn-link btn-sm">
                                 <i class="material-icons">close</i>
                             </a>
-                            <?php endif; ?>
                         </td>
                         </tr>
                         <?php endforeach; endif; ?>

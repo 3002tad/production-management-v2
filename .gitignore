@@ -24,9 +24,6 @@ application/logs/*
 !application/logs/index.html
 !application/logs/.htaccess
 
-# Documentation 
-/docs/
-
 # Composer
 vendor/
 composer.lock

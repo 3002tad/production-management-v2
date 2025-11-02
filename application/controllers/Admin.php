@@ -4,58 +4,56 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Admin extends CI_Controller
 {
+    /**
+     * @var CI_DB_query_builder
+     */
+    public $db;
+
+    /**
+     * @var CI_Session
+     */
+    public $session;
+
+    /**
+     * @var CI_URI
+     */
+    public $uri;
+
+    /**
+     * @var CI_Input
+     */
+    public $input;
+
+    /**
+     * @var CI_Form_validation
+     */
+    public $form_validation;
+
+    /**
+     * @var LoginModel
+     */
+    public $login;
+
+    /**
+     * @var CrudModel
+     */
+    public $crudModel;
     public function __construct()
     {
         parent::__construct();
+        $this->load->database();
         $this->load->model('CrudModel', 'crudModel');
+        $this->load->model('LoginModel', 'login');
         $this->load->library('session');
-        
-        // Check if user is logged in
-        if (!$this->session->userdata('user_id')) {
-            redirect('login/');
-        }
-        
-        // RBAC: Check if user has admin access
-        // Allow: BOD (level 100) and System Admin (level 90)
-        $role_name = $this->session->userdata('role_name');
+
+        // Accept new RBAC role_name values or legacy 'role'
+        $role_name = $this->session->userdata('role_name') ?: $this->session->userdata('role');
         $level = $this->session->userdata('level');
-        $old_role = $this->session->userdata('role'); // Backward compatibility
-        
-        // DEBUG: Show session data
-        if ($role_name === null) {
-            echo '<pre style="background: #f00; color: #fff; padding: 10px;">';
-            echo "=== DEBUG: Session Data ===\n";
-            print_r($this->session->userdata());
-            echo "\n=== Check Database ===\n";
-            echo "Please run: UPDATE user SET role_id = 1 WHERE username = 'bod';\n";
-            echo '</pre>';
-            die('Session không có role_name! Hãy logout và login lại.');
-        }
-        
-        $has_access = false;
-        
-        // New RBAC system
-        if ($role_name) {
-            $allowed_roles = ['bod', 'system_admin'];
-            $has_access = in_array($role_name, $allowed_roles) || ($level >= 90);
-        }
-        // Old system fallback
-        elseif ($old_role === 'admin') {
-            $has_access = true;
-        }
-        
-        if (!$has_access) {
-            echo '<pre style="background: #f00; color: #fff; padding: 10px;">';
-            echo "=== ACCESS DENIED DEBUG ===\n";
-            echo "role_name: " . var_export($role_name, true) . "\n";
-            echo "level: " . var_export($level, true) . "\n";
-            echo "allowed_roles: " . var_export(['bod', 'system_admin'], true) . "\n";
-            echo "has_access: " . var_export($has_access, true) . "\n";
-            echo "\nNếu bạn là BOD:\n";
-            echo "1. Chạy SQL: UPDATE user SET role_id = 1 WHERE username = 'bod';\n";
-            echo "2. Logout và login lại\n";
-            echo '</pre>';
-            show_error('Access Denied - Admin Only', 403, 'Forbidden');
+
+        $allowed = ['bod', 'system_admin', 'admin'];
+
+        if (! (in_array($role_name, $allowed) || ($level !== null && $level >= 90)) ) {
+            redirect('login/');
         }
     }
 
@@ -598,12 +596,6 @@ class Admin extends CI_Controller
     {
         if ($this->uri->segment(3) === 'addstaff') {
 
-            // Only leaders can access add staff UI
-            if ($this->session->userdata('role') !== 'leader') {
-                // redirect non-leaders to staff list
-                redirect(site_url('Admin/staff'));
-            }
-
             $data = [
                 'staff' => $this->db->query('SELECT * FROM staff')->result(),
                 'content' => 'admin/staff/addstaff',
@@ -611,11 +603,6 @@ class Admin extends CI_Controller
                 ];
 
         } elseif ($this->uri->segment(4) === 'update') {
-
-            // Only leaders can access update staff UI
-            if ($this->session->userdata('role') !== 'leader') {
-                redirect(site_url('Admin/staff'));
-            }
 
             $id = $this->uri->segment(3);
             
@@ -646,10 +633,6 @@ class Admin extends CI_Controller
 
     public function addStaff()
     {
-        // Protect action: only leader can add staff
-        if ($this->session->userdata('role') !== 'leader') {
-            show_error('Unauthorized', 403);
-        }
         $add = [
             'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
             'staff_name' => trim($this->input->post('staff_name')),
@@ -657,7 +640,6 @@ class Admin extends CI_Controller
             'email' => trim($this->input->post('email')),
         ];
 
-        // skills removed — do not include skills field
         $this->crudModel->addData('staff', $add);
 
         redirect(site_url('Admin/staff'));
@@ -665,10 +647,6 @@ class Admin extends CI_Controller
 
     public function updateStaff()
     {
-        // Protect action: only leader can update staff
-        if ($this->session->userdata('role') !== 'leader') {
-            show_error('Unauthorized', 403);
-        }
         $id_staff = $this->input->post('id_staff');
 
         $update = [
@@ -678,7 +656,6 @@ class Admin extends CI_Controller
             'email' => trim($this->input->post('email')),
         ];
 
-        // skills removed — do not update skills field
         $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
 
         redirect(site_url('Admin/staff'));
@@ -686,10 +663,6 @@ class Admin extends CI_Controller
 
     public function deleteStaff()
     {
-        // Protect action: only leader can delete staff
-        if ($this->session->userdata('role') !== 'leader') {
-            show_error('Unauthorized', 403);
-        }
         $id_staff = $this->uri->segment(3);
 
         $this->crudModel->deleteData('staff', 'id_staff', $id_staff);

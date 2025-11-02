@@ -4,6 +4,40 @@ defined('BASEPATH') or exit('no direct script access allowed');
 
 class Login extends CI_Controller
 {
+    /**
+     * @var CI_DB_query_builder
+     */
+    public $db;
+
+    /**
+     * @var CI_Session
+     */
+    public $session;
+
+    /**
+     * @var CI_URI
+     */
+    public $uri;
+
+    /**
+     * @var CI_Input
+     */
+    public $input;
+
+    /**
+     * @var CI_Form_validation
+     */
+    public $form_validation;
+
+    /**
+     * @var LoginModel
+     */
+    public $login;
+
+    /**
+     * @var CrudModel
+     */
+    public $crudModel;
     public function __construct()
     {
         parent::__construct();
@@ -16,18 +50,27 @@ class Login extends CI_Controller
     public function index()
     {
         if ($this->login->is_logged_in()) {
-            // Redirect based on role_name (new RBAC) or role (old system)
-            $role_name = $this->session->userdata('role_name');
-            $old_role = $this->session->userdata('role');
-            
-            if ($role_name) {
-                // New RBAC system
-                $this->redirect_by_role($role_name);
-            } elseif ($old_role) {
-                // Old system fallback
-                $old_role === 'admin' ? redirect('admin/') : redirect('leader/');
+            // Prefer the new RBAC key 'role_name', fall back to legacy 'role'
+            $role = $this->session->userdata('role_name') ?: $this->session->userdata('role');
+
+            // Map role names to controllers
+            if (in_array($role, ['admin', 'system_admin', 'bod'])) {
+                redirect('admin/');
+            } elseif (in_array($role, ['leader', 'line_manager'])) {
+                redirect('leader/');
+            } elseif (in_array($role, ['warehouse', 'warehouse_staff'])) {
+                redirect('warehouse/');
+            } elseif (in_array($role, ['qc_staff'])) {
+                redirect('qc/');
+            } elseif (in_array($role, ['technical_staff'])) {
+                redirect('technical/');
+            } elseif (in_array($role, ['worker'])) {
+                redirect('worker/');
             } else {
-                redirect('login/');
+                // Unknown role: destroy session to avoid redirect loops and show login form
+                $this->session->sess_destroy();
+                $this->load->view('login');
+                return;
             }
         } else {
             $this->form_validation->set_rules('username', 'Username', 'required');
@@ -43,37 +86,28 @@ class Login extends CI_Controller
                 $checking = $this->login->check_login('user', ['username' => $username], ['password' => $password]);
 
                 if ($checking !== false) {
-                    foreach ($checking as $data) {
-                        // Build session data with RBAC support
-                        $session_data = [
-                            'user_id' => $data->user_id,
-                            'username' => $data->username,
-                            'full_name' => $data->full_name ?: $data->username,
-                            'email' => $data->email,
-                            'role_id' => $data->role_id,
-                            'role_name' => $data->role_name,
-                            'role_display_name' => $data->role_display_name,
-                            'level' => $data->level
-                        ];
+                    // LoginModel::check_login returns a single user object (or false).
+                    // Use the returned object directly instead of foreach (which yields scalar values
+                    // for object properties and caused "Trying to get property of non-object").
+                    $role_name = isset($checking->role_name) ? $checking->role_name : (isset($checking->role) ? $checking->role : null);
 
-                        $this->session->set_userdata($session_data);
+                    $session_data = [
+                        'user_id' => $checking->user_id,
+                        'username' => $checking->username,
+                        // Do NOT store the password in session for security reasons.
+                        'role' => $role_name,
+                        // Keep role_name too because some code (e.g., LoginModel::is_role) reads this key.
+                        'role_name' => $role_name,
+                    ];
 
-                        // Update last login timestamp
-                        $this->login->update_last_login($data->user_id);
+                    $this->session->set_userdata($session_data);
 
-                        // Log login activity
-                        $this->login->log_activity(
-                            $data->user_id,
-                            $data->username,
-                            'login',
-                            'auth'
-                        );
-
-                        // Redirect based on role (exit() is inside the method)
-                        $this->redirect_by_role($data->role_name);
+                    if ($this->session->userdata('role') === 'admin') {
+                        redirect('admin/');
+                    } elseif ($this->session->userdata('role') === 'leader') {
+                        redirect('leader/');
                     }
                 } else {
-                    $this->session->set_flashdata('error', 'Username atau password salah!');
                     $this->load->view('login');
                 }
             } else {
@@ -83,82 +117,15 @@ class Login extends CI_Controller
     }
 
     /**
-     * Redirect user based on their role
-     */
-    private function redirect_by_role($role_name)
-    {
-        switch ($role_name) {
-            case 'bod':
-                redirect('bod/'); // BOD has own dashboard
-                exit();
-            case 'system_admin':
-                redirect('admin/');
-                exit();
-            case 'line_manager':
-                redirect('leader/');
-                exit();
-            case 'warehouse_staff':
-                // Check if Warehouse controller exists, otherwise fallback to leader
-                if (file_exists(APPPATH . 'controllers/Warehouse.php')) {
-                    redirect('warehouse/');
-                    exit();
-                } else {
-                    redirect('leader/'); // Temporary fallback
-                    exit();
-                }
-                break;
-            case 'qc_staff':
-                // Check if QC controller exists, otherwise fallback to leader
-                if (file_exists(APPPATH . 'controllers/Qc.php')) {
-                    redirect('qc/');
-                    exit();
-                } else {
-                    redirect('leader/'); // Temporary fallback
-                    exit();
-                }
-                break;
-            case 'technical_staff':
-                // Check if Technical controller exists, otherwise fallback to leader
-                if (file_exists(APPPATH . 'controllers/Technical.php')) {
-                    redirect('technical/');
-                    exit();
-                } else {
-                    redirect('leader/'); // Temporary fallback
-                    exit();
-                }
-                break;
-            case 'worker':
-                // Check if Worker controller exists, otherwise fallback to leader
-                if (file_exists(APPPATH . 'controllers/Worker.php')) {
-                    redirect('worker/');
-                    exit();
-                } else {
-                    redirect('leader/'); // Temporary fallback
-                    exit();
-                }
-                break;
-            default:
-                redirect('login/');
-                exit();
-        }
-    }
-
-    /**
-     * Logout user
+     * Logout the current user: clear session and redirect to login page
      */
     public function logout()
     {
-        // Log logout activity before destroying session
-        if ($this->session->userdata('user_id')) {
-            $this->login->log_activity(
-                $this->session->userdata('user_id'),
-                $this->session->userdata('username'),
-                'logout',
-                'auth'
-            );
-        }
-
+        // remove specific userdata keys then destroy the session
+        $this->session->unset_userdata(['user_id', 'username', 'role', 'role_name']);
         $this->session->sess_destroy();
-        redirect('login/');
+
+        // redirect to login page
+        redirect('login');
     }
 }

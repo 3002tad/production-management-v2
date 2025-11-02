@@ -4,41 +4,56 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Leader extends CI_Controller
 {
+    /**
+     * @var CI_DB_query_builder
+     */
+    public $db;
+
+    /**
+     * @var CI_Session
+     */
+    public $session;
+
+    /**
+     * @var CI_URI
+     */
+    public $uri;
+
+    /**
+     * @var CI_Input
+     */
+    public $input;
+
+    /**
+     * @var CI_Form_validation
+     */
+    public $form_validation;
+
+    /**
+     * @var LoginModel
+     */
+    public $login;
+
+    /**
+     * @var CrudModel
+     */
+    public $crudModel;
     public function __construct()
     {
         parent::__construct();
+        $this->load->database();
         $this->load->model('CrudModel', 'crudModel');
+        $this->load->model('LoginModel', 'login');
         $this->load->library('session');
-        $this->load->helper('form');
-        // Allow loading StaffModel and module views from application/modules/staff
-        $this->load->add_package_path(APPPATH . 'modules/staff/');
-        if ($this->session->userdata('role') !== 'leader') {
-        
-        // Check if user is logged in
-        if (!$this->session->userdata('user_id')) {
-            redirect('login/');
-        }
-        
-        // RBAC: Check if user has leader/line manager access
-        // Allow: BOD, System Admin, Line Manager, and temporarily other roles
-        $role_name = $this->session->userdata('role_name');
+
+        // Accept new RBAC role_name values or legacy 'role'
+        $role_name = $this->session->userdata('role_name') ?: $this->session->userdata('role');
         $level = $this->session->userdata('level');
-        $old_role = $this->session->userdata('role'); // Backward compatibility
-        
-        $has_access = false;
-        
-        // New RBAC system
-        if ($role_name) {
-            $allowed_roles = ['bod', 'system_admin', 'line_manager', 'warehouse_staff', 'qc_staff', 'technical_staff'];
-            $has_access = in_array($role_name, $allowed_roles) || ($level >= 50);
-        }
-        // Old system fallback
-        elseif ($old_role === 'leader' || $old_role === 'admin') {
-            $has_access = true;
-        }
-        
-        if (!$has_access) {
-            show_error('Access Denied - Insufficient Permissions', 403, 'Forbidden');
+
+        $allowed = ['bod', 'system_admin', 'line_manager', 'leader', 'warehouse_staff', 'qc_staff', 'technical_staff'];
+
+        if (! (in_array($role_name, $allowed) || ($level !== null && $level >= 50)) ) {
+            redirect('login/');
         }
     }
 
@@ -568,177 +583,5 @@ class Leader extends CI_Controller
         $this->session->unset_userdata('role');
         $this->session->unset_userdata('user_id');
         redirect('login/');
-    }
-
-    /**
-     * Staff management for leader (list, add, edit, delete, search)
-     */
-    public function staff()
-    {
-        // list / add form / edit form routing by URI
-        if ($this->uri->segment(3) === 'add') {
-            $data = [
-                'title' => 'Thêm nhân sự mới',
-                'content' => 'leader/staff/add',
-                'navlink' => 'staff',
-            ];
-
-            $this->load->view('leader/vbackend', $data);
-
-        } elseif ($this->uri->segment(4) === 'edit') {
-            $id = $this->uri->segment(3);
-            $this->load->model('StaffModel');
-            $staff = $this->StaffModel->getById($id);
-
-            if (!$staff) {
-                show_404();
-            }
-
-            $data = [
-                'title' => 'Sửa thông tin nhân sự',
-                'staff' => $staff,
-                'content' => 'leader/staff/edit',
-                'navlink' => 'staff',
-            ];
-
-            $this->load->view('leader/vbackend', $data);
-
-        } else {
-            $this->load->model('StaffModel');
-            $data = [
-                'title' => 'Quản lý nhân sự',
-                'staffs' => $this->StaffModel->getAll(),
-                'content' => 'leader/staff/list',
-                'navlink' => 'staff',
-            ];
-
-            $this->load->view('leader/vbackend', $data);
-        }
-    }
-
-    public function addStaff()
-    {
-        // only leader can add (constructor already checks role)
-        $this->load->model('StaffModel');
-
-        $this->load->library('form_validation');
-        $this->form_validation->set_rules('staff_name', 'Tên nhân viên', 'required');
-
-        if ($this->form_validation->run() === FALSE) {
-            // show add form with validation errors
-            $errors = '';
-            if (function_exists('validation_errors')) {
-                $errors = validation_errors();
-            } else {
-                $errors = $this->form_validation->error_string();
-            }
-            $data = [
-                'title' => 'Thêm nhân sự mới',
-                'content' => 'leader/staff/add',
-                'navlink' => 'staff',
-                'validation_errors' => $errors,
-            ];
-            $this->load->view('leader/vbackend', $data);
-            return;
-        }
-
-        $add = [
-            'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
-            'staff_name' => trim($this->input->post('staff_name')),
-            'phone' => trim($this->input->post('phone')),
-            'email' => trim($this->input->post('email')),
-            'st_status' => $this->input->post('st_status') !== null ? (int)$this->input->post('st_status') : 1,
-        ];
-        // skills field removed — not saving skills from forms
-
-        $this->StaffModel->insert($add);
-        $this->session->set_flashdata('success', 'Thêm nhân viên thành công');
-        redirect(site_url('leader/staff'));
-    }
-
-    public function updateStaff()
-    {
-        $this->load->model('StaffModel');
-        $this->load->library('form_validation');
-        $this->form_validation->set_rules('staff_name', 'Tên nhân viên', 'required');
-
-        $id = $this->input->post('id_staff'); // Changed from 'id' to 'id_staff'
-
-        if ($this->form_validation->run() === FALSE) {
-            // reload edit form with validation errors
-            $errors = '';
-            if (function_exists('validation_errors')) {
-                $errors = validation_errors();
-            } else {
-                $errors = $this->form_validation->error_string();
-            }
-            $staff = $this->StaffModel->getById($id);
-            $data = [
-                'title' => 'Sửa thông tin nhân sự',
-                'staff' => $staff,
-                'content' => 'leader/staff/edit',
-                'navlink' => 'staff',
-                'validation_errors' => $errors,
-            ];
-            $this->load->view('leader/vbackend', $data);
-            return;
-        }
-
-        $update = [
-            'staff_name' => trim($this->input->post('staff_name')),
-            'phone' => trim($this->input->post('phone')),
-            'email' => trim($this->input->post('email')),
-            'st_status' => $this->input->post('st_status') !== null ? (int)$this->input->post('st_status') : 1,
-        ];
-        // skills field removed — not updating skills from forms
-
-        if ($this->StaffModel->update($id, $update)) {
-            $this->session->set_flashdata('success', 'Cập nhật nhân viên thành công');
-            $this->db->cache_delete_all(); // Xóa cache để đảm bảo dữ liệu mới được hiển thị
-            redirect(site_url('leader/staff'));
-        } else {
-            $this->session->set_flashdata('error', 'Không thể cập nhật thông tin nhân sự');
-            redirect(site_url('leader/staff/' . $id . '/edit'));
-        }
-    }
-
-    public function deleteStaff()
-    {
-        $id = $this->uri->segment(3);
-        $this->load->model('StaffModel');
-        $this->StaffModel->delete($id);
-        $this->session->set_flashdata('success', 'Xóa nhân viên thành công');
-        redirect(site_url('leader/staff'));
-    }
-
-    /**
-     * Deactivate staff (set st_status = 0)
-     */
-    public function deactivateStaff()
-    {
-        $id = $this->uri->segment(3);
-        $this->load->model('StaffModel');
-        $update = ['st_status' => 0];
-        if ($this->StaffModel->update($id, $update)) {
-            $this->session->set_flashdata('success', 'Ngừng hoạt động nhân viên thành công');
-        } else {
-            $this->session->set_flashdata('error', 'Không thể ngừng hoạt động nhân viên');
-        }
-        redirect(site_url('leader/staff'));
-    }
-
-    public function searchStaff()
-    {
-        $keyword = $this->input->get('keyword');
-        $this->load->model('StaffModel');
-        $data = [
-            'title' => 'Tìm kiếm nhân sự',
-            'staffs' => $this->StaffModel->search($keyword),
-            'content' => 'leader/staff/list',
-            'navlink' => 'staff',
-            'keyword' => $keyword,
-        ];
-
-        $this->load->view('leader/vbackend', $data);
     }
 }

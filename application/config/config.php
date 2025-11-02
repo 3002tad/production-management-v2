@@ -24,7 +24,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 | a PHP script and you can easily do that on your own.
 |
 */
-$config['base_url'] = 'http://localhost/production-management-v2/';
+$config['base_url'] = 'http://localhost:8080/production-management-v2-testing/';
 
 /*
 |--------------------------------------------------------------------------
@@ -325,7 +325,7 @@ $config['cache_query_string'] = false;
 | https://codeigniter.com/user_guide/libraries/encryption.html
 |
 */
-$config['encryption_key'] = 'production-management-v2-key';
+$config['encryption_key'] = '';
 
 /*
 |--------------------------------------------------------------------------
@@ -381,12 +381,11 @@ $config['encryption_key'] = 'production-management-v2-key';
 $config['sess_driver'] = 'files';
 $config['sess_cookie_name'] = 'ci_session';
 $config['sess_expiration'] = 7200;
-$config['sess_save_path'] = sys_get_temp_dir();
+$config['sess_save_path'] = APPPATH . 'sessions';
 $config['sess_match_ip'] = false;
 $config['sess_time_to_update'] = 300;
 $config['sess_regenerate_destroy'] = false;
-
-/*
+$config['encryption_key'] = 'your_encryption_key_here';/*
 |--------------------------------------------------------------------------
 | Cookie Related Variables
 |--------------------------------------------------------------------------

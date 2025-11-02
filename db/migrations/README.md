@@ -9,11 +9,10 @@ Thư mục này chứa các file SQL migration để triển khai hệ thống *
 | # | File | Mô tả | Status |
 |---|------|-------|--------|
 | 001 | `001_create_rbac_core_tables.sql` | Tạo bảng RBAC core (roles, modules, permissions, role_permissions, audit_log) và cập nhật bảng user | ⭐ Core |
-| 002 | `002_seed_roles_data.sql` | Insert 7 vai trò chính + tạo sample users + migrate data cũ | ⭐ Core |
+| 002 | `002_seed_roles_data.sql` | Insert 7 vai trò chính + tạo sample users | ⭐ Core |
 | 003 | `003_seed_modules_data.sql` | Insert 18 modules + 10 sub-modules (tổng 28) | ⭐ Core |
 | 004 | `004_seed_permissions_data.sql` | Insert 174+ permissions cho tất cả modules | ⭐ Core |
 | 005 | `005_map_role_permissions.sql` | Map permissions cho 7 roles theo nghiệp vụ | ⭐ Core |
-| 006 | `006_migrate_to_full_rbac.sql` | **XÓA cột `role` cũ** - Migrate HOÀN TOÀN sang RBAC | 🔥 Breaking Change |
 
 ## 🚀 Hướng dẫn Chạy Migrations
 
@@ -29,9 +28,6 @@ source d:/Code/PTUD/production-management-v2/db/migrations/002_seed_roles_data.s
 source d:/Code/PTUD/production-management-v2/db/migrations/003_seed_modules_data.sql
 source d:/Code/PTUD/production-management-v2/db/migrations/004_seed_permissions_data.sql
 source d:/Code/PTUD/production-management-v2/db/migrations/005_map_role_permissions.sql
-
-# Bước 3: 🔥 MIGRATE HOÀN TOÀN SANG RBAC (Xóa cột role cũ)
-source d:/Code/PTUD/production-management-v2/db/migrations/006_migrate_to_full_rbac.sql
 ```
 
 ### **Option 2: Chạy qua phpMyAdmin**
@@ -266,114 +262,6 @@ Sau khi hoàn thành PHASE 1, tiếp tục:
 4. ⏭️ **PHASE 4: Update Views**
    - Thêm `can()` checks vào views
    - Ẩn/hiện buttons theo permissions
-
----
-
-## 🔥 BREAKING CHANGES - Migration 006
-
-### ⚠️ **Cảnh báo quan trọng**
-
-Migration `006_migrate_to_full_rbac.sql` sẽ **XÓA HOÀN TOÀN** cột `role` cũ (enum 'admin','leader'):
-
-```sql
--- CŨ (sẽ bị xóa):
-CREATE TABLE `user` (
-  `user_id` int(11),
-  `username` varchar(11),
-  `password` varchar(11),
-  `role` enum('admin','leader') NOT NULL  -- ❌ BỊ XÓA
-)
-
--- MỚI (sau migration 006):
-CREATE TABLE `user` (
-  `user_id` int(11),
-  `username` varchar(11),
-  `password` varchar(11),
-  `role_id` INT NOT NULL,  -- ✅ REQUIRED
-  `full_name` VARCHAR(100),
-  `email` VARCHAR(100),
-  ...
-  FOREIGN KEY (role_id) REFERENCES roles(role_id)
-)
-```
-
-### 📋 Code cần update sau khi chạy migration 006:
-
-#### **1. LoginModel.php** - Đổi SELECT column
-```php
-// CŨ - SẼ LỖI:
-$this->db->select('user_id, username, password, role');
-
-// MỚI:
-$this->db->select('u.user_id, u.username, u.password, u.role_id, r.role_name, r.role_display_name');
-$this->db->join('roles r', 'r.role_id = u.role_id', 'left');
-```
-
-#### **2. Controllers (Admin.php, Leader.php)** - Đổi check permission
-```php
-// CŨ - SẼ LỖI:
-if ($this->session->userdata('role') != 'admin') {
-    redirect('login');
-}
-
-// MỚI:
-if ($this->session->userdata('role_id') != 4) { // 4 = system_admin
-    redirect('login');
-}
-
-// HOẶC tốt hơn - dùng RBAC:
-if (!$this->auth->require_permission('user.manage')) {
-    show_error('Access denied');
-}
-```
-
-#### **3. Session handling** - Đổi userdata key
-```php
-// CŨ - SẼ LỖI:
-$this->session->set_userdata([
-    'user_id' => $user->user_id,
-    'username' => $user->username,
-    'role' => $user->role  // ❌ Column không tồn tại
-]);
-
-// MỚI:
-$this->session->set_userdata([
-    'user_id' => $user->user_id,
-    'username' => $user->username,
-    'role_id' => $user->role_id,           // ✅
-    'role_name' => $user->role_name,       // ✅
-    'role_display_name' => $user->role_display_name  // ✅
-]);
-```
-
-#### **4. Views** - Đổi cách hiển thị role
-```php
-<!-- CŨ - SẼ LỖI: -->
-<p>Role: <?= $this->session->userdata('role') ?></p>
-
-<!-- MỚI: -->
-<p>Vai trò: <?= $this->session->userdata('role_display_name') ?></p>
-```
-
-### 🎯 Checklist trước khi chạy migration 006:
-
-- [ ] ✅ Đã backup database
-- [ ] ✅ Đã chạy migrations 001-005 thành công
-- [ ] ✅ Đã test login với tài khoản admin/leader
-- [ ] ✅ Đã chuẩn bị sẵn code update cho LoginModel
-- [ ] ✅ Đã chuẩn bị sẵn code update cho Controllers
-- [ ] ✅ Có thời gian để update toàn bộ code (≈ 2-3 giờ)
-- [ ] ⚠️ Đã thông báo team về breaking change
-
-### 🚀 Sau khi chạy migration 006:
-
-1. **Immediately update LoginModel.php** - App sẽ không login được nếu chưa update
-2. **Update tất cả controllers** có check `$this->session->userdata('role')`
-3. **Test login** với từng role (admin, leader, bod, warehouse, etc.)
-4. **Update views** nếu có hiển thị role
-5. **Commit changes** lên Git với message rõ ràng
-
----
 
 ## 📚 Documentation
 
