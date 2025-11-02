@@ -21,17 +21,6 @@ class Admin extends CI_Controller
         $level = $this->session->userdata('level');
         $old_role = $this->session->userdata('role'); // Backward compatibility
         
-        // DEBUG: Show session data
-        if ($role_name === null) {
-            echo '<pre style="background: #f00; color: #fff; padding: 10px;">';
-            echo "=== DEBUG: Session Data ===\n";
-            print_r($this->session->userdata());
-            echo "\n=== Check Database ===\n";
-            echo "Please run: UPDATE user SET role_id = 1 WHERE username = 'bod';\n";
-            echo '</pre>';
-            die('Session không có role_name! Hãy logout và login lại.');
-        }
-        
         $has_access = false;
         
         // New RBAC system
@@ -45,16 +34,6 @@ class Admin extends CI_Controller
         }
         
         if (!$has_access) {
-            echo '<pre style="background: #f00; color: #fff; padding: 10px;">';
-            echo "=== ACCESS DENIED DEBUG ===\n";
-            echo "role_name: " . var_export($role_name, true) . "\n";
-            echo "level: " . var_export($level, true) . "\n";
-            echo "allowed_roles: " . var_export(['bod', 'system_admin'], true) . "\n";
-            echo "has_access: " . var_export($has_access, true) . "\n";
-            echo "\nNếu bạn là BOD:\n";
-            echo "1. Chạy SQL: UPDATE user SET role_id = 1 WHERE username = 'bod';\n";
-            echo "2. Logout và login lại\n";
-            echo '</pre>';
             show_error('Access Denied - Admin Only', 403, 'Forbidden');
         }
     }

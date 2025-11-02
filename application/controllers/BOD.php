@@ -3,7 +3,7 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * Bod Controller - Ban Giám Đốc (Board of Directors)
+ * BOD Controller - Ban Giám Đốc (Board of Directors)
  * 
  * Controller chuyên dụng cho Ban Giám Đốc
  * Xử lý các use case:
@@ -16,7 +16,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
  * @author Do Cong Danh
  * @date 2025-11-02
  */
-class Bod extends CI_Controller
+class BOD extends CI_Controller
 {
     /**
      * Constructor - Kiểm tra phân quyền Ban Giám Đốc
@@ -28,28 +28,10 @@ class Bod extends CI_Controller
         $this->load->model('OrderModel');
         $this->load->library('session');
         
-        // Kiểm tra phân quyền RBAC
-        if (!$this->session->userdata('user_id')) {
+        // Kiểm tra phân quyền: Chỉ cho phép role = 'bod' hoặc 'admin'
+        $user_role = $this->session->userdata('role');
+        if (!in_array($user_role, ['bod', 'admin'])) {
             redirect('login/');
-            exit();
-        }
-
-        $role_name = $this->session->userdata('role_name');
-        $level = $this->session->userdata('level');
-        
-        // Chỉ cho phép BOD role (level 100)
-        if ($role_name !== 'bod' && $level < 100) {
-            // Redirect về trang phù hợp với role
-            if ($role_name === 'system_admin') {
-                redirect('admin/');
-                exit();
-            } else if ($level >= 50) {
-                redirect('leader/');
-                exit();
-            } else {
-                redirect('login/');
-                exit();
-            }
         }
     }
 
