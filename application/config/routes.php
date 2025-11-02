@@ -55,3 +55,15 @@ $route['404_override'] = '';
 $route['translate_uri_dashes'] = false;
 
 $route['search'] = 'petugas/cari_member';
+
+// Shift production report routes
+$route['shift-report'] = 'shift_report/index';
+$route['shift-report/view/(:num)'] = 'shift_report/view/$1';
+$route['shift-report/view_machine/(:num)/(:num)'] = 'shift_report/view_machine/$1/$2';
+$route['shift-report/api/(:any)'] = 'shift_report/api_$1';
+
+// Also allow leader-prefixed URLs for consistency with other leader features
+$route['leader/shift-report'] = 'shift_report/index';
+$route['leader/shift-report/view/(:num)'] = 'shift_report/view/$1';
+$route['leader/shift-report/view_machine/(:num)/(:num)'] = 'shift_report/view_machine/$1/$2';
+$route['leader/shift-report/api/(:any)'] = 'shift_report/api_$1';
