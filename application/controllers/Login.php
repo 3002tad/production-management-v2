@@ -69,7 +69,7 @@ class Login extends CI_Controller
                             'auth'
                         );
 
-                        // Redirect based on role
+                        // Redirect based on role (exit() is inside the method)
                         $this->redirect_by_role($data->role_name);
                     }
                 } else {
@@ -89,48 +89,57 @@ class Login extends CI_Controller
     {
         switch ($role_name) {
             case 'bod':
-                redirect('admin/'); // BOD uses admin panel
-                break;
+                redirect('bod/'); // BOD has own dashboard
+                exit();
             case 'system_admin':
                 redirect('admin/');
-                break;
+                exit();
             case 'line_manager':
                 redirect('leader/');
-                break;
+                exit();
             case 'warehouse_staff':
                 // Check if Warehouse controller exists, otherwise fallback to leader
                 if (file_exists(APPPATH . 'controllers/Warehouse.php')) {
                     redirect('warehouse/');
+                    exit();
                 } else {
                     redirect('leader/'); // Temporary fallback
+                    exit();
                 }
                 break;
             case 'qc_staff':
                 // Check if QC controller exists, otherwise fallback to leader
                 if (file_exists(APPPATH . 'controllers/Qc.php')) {
                     redirect('qc/');
+                    exit();
                 } else {
                     redirect('leader/'); // Temporary fallback
+                    exit();
                 }
                 break;
             case 'technical_staff':
                 // Check if Technical controller exists, otherwise fallback to leader
                 if (file_exists(APPPATH . 'controllers/Technical.php')) {
                     redirect('technical/');
+                    exit();
                 } else {
                     redirect('leader/'); // Temporary fallback
+                    exit();
                 }
                 break;
             case 'worker':
                 // Check if Worker controller exists, otherwise fallback to leader
                 if (file_exists(APPPATH . 'controllers/Worker.php')) {
                     redirect('worker/');
+                    exit();
                 } else {
                     redirect('leader/'); // Temporary fallback
+                    exit();
                 }
                 break;
             default:
                 redirect('login/');
+                exit();
         }
     }
 
