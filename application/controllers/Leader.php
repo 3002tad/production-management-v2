@@ -12,11 +12,11 @@ class Leader extends CI_Controller
         $this->load->helper('form');
         // Allow loading StaffModel and module views from application/modules/staff
         $this->load->add_package_path(APPPATH . 'modules/staff/');
-        if ($this->session->userdata('role') !== 'leader') {
         
         // Check if user is logged in
         if (!$this->session->userdata('user_id')) {
             redirect('login/');
+            return;
         }
         
         // RBAC: Check if user has leader/line manager access

@@ -28,10 +28,32 @@ class BOD extends CI_Controller
         $this->load->model('OrderModel');
         $this->load->library('session');
         
-        // Kiểm tra phân quyền: Chỉ cho phép role = 'bod' hoặc 'admin'
-        $user_role = $this->session->userdata('role');
-        if (!in_array($user_role, ['bod', 'admin'])) {
+        // Check if user is logged in
+        if (!$this->session->userdata('user_id')) {
             redirect('login/');
+            return;
+        }
+        
+        // RBAC: Check if user has BOD access
+        // Allow: BOD (role_name = 'bod', level 100) and System Admin (level >= 90)
+        $role_name = $this->session->userdata('role_name');
+        $level = $this->session->userdata('level');
+        $old_role = $this->session->userdata('role'); // Backward compatibility
+        
+        $has_access = false;
+        
+        // New RBAC system
+        if ($role_name) {
+            $allowed_roles = ['bod', 'system_admin'];
+            $has_access = in_array($role_name, $allowed_roles) || ($level >= 90);
+        }
+        // Old system fallback
+        elseif ($old_role === 'admin' || $old_role === 'bod') {
+            $has_access = true;
+        }
+        
+        if (!$has_access) {
+            show_error('Access Denied - BOD Only', 403, 'Forbidden');
         }
     }
 

@@ -89,7 +89,12 @@ class Login extends CI_Controller
     {
         switch ($role_name) {
             case 'bod':
-                redirect('admin/'); // BOD uses admin panel
+                // BOD has dedicated controller and dashboard
+                if (file_exists(APPPATH . 'controllers/BOD.php')) {
+                    redirect('bod/');
+                } else {
+                    redirect('admin/'); // Fallback to admin if BOD controller not found
+                }
                 break;
             case 'system_admin':
                 redirect('admin/');
