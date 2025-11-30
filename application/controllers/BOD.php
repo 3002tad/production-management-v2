@@ -103,6 +103,443 @@ class BOD extends CI_Controller
     }
 
     /**
+     * Quản lý Khách hàng - UC1
+     * Pattern: Giống như project() - routing based on URI segments
+     */
+    public function customer()
+    {
+        $this->load->model('CustomerModel');
+        $this->load->model('OrderModel');
+        
+        if ($this->uri->segment(3) === 'add') 
+        {
+            $data = [
+                'content' => 'bod/customer/customer_add',
+                'navlink' => 'customer',
+            ];
+        }
+        elseif ($this->uri->segment(3) === 'edit') 
+        {
+            $id = $this->uri->segment(4);
+            $customer = $this->CustomerModel->getCustomerById($id);
+            if (!$customer) {
+                show_404();
+            }
+            $data = [
+                'customer' => $customer,
+                'content' => 'bod/customer/customer_edit',
+                'navlink' => 'customer',
+            ];
+        }
+        elseif ($this->uri->segment(3) === 'view') 
+        {
+            $id = $this->uri->segment(4);
+            $customer = $this->CustomerModel->getCustomerById($id);
+            if (!$customer) {
+                show_404();
+            }
+            $data = [
+                'customer' => $customer,
+                'orders' => $this->OrderModel->getOrdersByCustomer($id),
+                'content' => 'bod/customer/customer_view',
+                'navlink' => 'customer',
+            ];
+        }
+        elseif ($this->uri->segment(3) === 'delete') 
+        {
+            $id = $this->uri->segment(4);
+            $customer = $this->CustomerModel->getCustomerById($id);
+            if (!$customer) {
+                show_404();
+            }
+            $data = [
+                'customer' => $customer,
+                'content' => 'bod/customer/customer_delete_confirm',
+                'navlink' => 'customer',
+            ];
+        }
+        else 
+        {
+            $data = [
+                'data' => $this->CustomerModel->getAllCustomers(),
+                'content' => 'bod/customer/Customer',
+                'navlink' => 'customer',
+            ];
+        }
+        
+        $this->load->view('bod/vbackend', $data);
+    }
+
+    /**
+     * Quản lý Sản phẩm - UC2
+     * Pattern: Giống như project() - routing based on URI segments
+     */
+    public function product()
+    {
+        $this->load->model('ProductModel');
+        $this->load->model('OrderModel');
+        
+        if ($this->uri->segment(3) === 'add') 
+        {
+            $data = [
+                'materials' => $this->ProductModel->getMaterialsList(),
+                'diameters' => $this->ProductModel->getDiameters(),
+                'content' => 'bod/product/product_add',
+                'navlink' => 'product',
+            ];
+        }
+        elseif ($this->uri->segment(3) === 'edit') 
+        {
+            $id = $this->uri->segment(4);
+            $product = $this->ProductModel->getProductById($id);
+            if (!$product) {
+                show_404();
+            }
+            $data = [
+                'product' => $product,
+                'materials' => $this->ProductModel->getMaterialsList(),
+                'diameters' => $this->ProductModel->getDiameters(),
+                'content' => 'bod/product/product_edit',
+                'navlink' => 'product',
+            ];
+        }
+        elseif ($this->uri->segment(3) === 'view') 
+        {
+            $id = $this->uri->segment(4);
+            $product = $this->ProductModel->getProductById($id);
+            if (!$product) {
+                show_404();
+            }
+            $data = [
+                'product' => $product,
+                'orders' => $this->OrderModel->getOrdersByProduct($id),
+                'content' => 'bod/product/product_view',
+                'navlink' => 'product',
+            ];
+        }
+        elseif ($this->uri->segment(3) === 'delete') 
+        {
+            $id = $this->uri->segment(4);
+            $product = $this->ProductModel->getProductById($id);
+            if (!$product) {
+                show_404();
+            }
+            $data = [
+                'product' => $product,
+                'content' => 'bod/product/product_delete_confirm',
+                'navlink' => 'product',
+            ];
+        }
+        else 
+        {
+            $data = [
+                'data' => $this->ProductModel->getAllProducts(),
+                'content' => 'bod/product/Product',
+                'navlink' => 'product',
+            ];
+        }
+        
+        $this->load->view('bod/vbackend', $data);
+    }
+
+    /**
+     * Store Customer - POST handler for add form
+     */
+    public function storeCustomer()
+    {
+        try {
+            $this->load->model('CustomerModel');
+            
+            $cust_name = trim($this->input->post('cust_name'));
+            $data = [
+                'cust_name' => $cust_name,
+                'address'   => trim($this->input->post('address')),
+                'telp'      => trim($this->input->post('telp')),
+                'email'     => trim($this->input->post('email')),
+                'notes'     => trim($this->input->post('notes')),
+                'is_active' => 1,
+            ];
+            
+            $result = $this->CustomerModel->addCustomer($data);
+            
+            if (isset($result['success']) && $result['success'] === true) {
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Thành công!',
+                    'message' => 'Thêm khách hàng thành công',
+                    'cust_name' => $cust_name
+                ]));
+                redirect(site_url('BOD/customer?msg=success'));
+            } else {
+                throw new Exception($result['message'] ?? 'Không thể thêm khách hàng vào database');
+            }
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi thêm khách hàng',
+                'details' => [$e->getMessage()]
+            ]));
+            redirect(site_url('BOD/customer/add?msg=error'));
+        }
+    }
+
+    /**
+     * Update Customer - POST handler for edit form
+     */
+    public function updateCustomer()
+    {
+        try {
+            $this->load->model('CustomerModel');
+            
+            $id = $this->input->post('id_cust');
+            $cust_name = trim($this->input->post('cust_name'));
+            $data = [
+                'cust_name' => $cust_name,
+                'address'   => trim($this->input->post('address')),
+                'telp'      => trim($this->input->post('telp')),
+                'email'     => trim($this->input->post('email')),
+                'notes'     => trim($this->input->post('notes')),
+                'is_active' => (int) $this->input->post('is_active'),
+            ];
+            
+            $result = $this->CustomerModel->updateCustomer($id, $data);
+            
+            if (isset($result['success']) && $result['success'] === true) {
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Thành công!',
+                    'message' => 'Cập nhật khách hàng thành công',
+                    'cust_name' => $cust_name
+                ]));
+                redirect(site_url('BOD/customer?msg=success'));
+            } else {
+                throw new Exception($result['message'] ?? 'Không thể cập nhật khách hàng');
+            }
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi cập nhật khách hàng',
+                'details' => [$e->getMessage()]
+            ]));
+            redirect(site_url('BOD/customer/edit/' . $id . '?msg=error'));
+        }
+    }
+
+    /**
+     * Destroy Customer - POST handler for delete
+     */
+    public function destroyCustomer()
+    {
+        try {
+            $this->load->model('CustomerModel');
+            
+            $id = $this->input->post('id_cust');
+            $cust_name = $this->input->post('cust_name');
+            
+            $result = $this->CustomerModel->deleteCustomer($id);
+            
+            if (isset($result['success']) && $result['success'] === true) {
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Thành công!',
+                    'message' => 'Xóa khách hàng thành công',
+                    'cust_name' => $cust_name
+                ]));
+                redirect(site_url('BOD/customer?msg=success'));
+            } else {
+                throw new Exception($result['message'] ?? 'Không thể xóa khách hàng (Có đơn hàng liên quan)');
+            }
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi xóa khách hàng',
+                'details' => [$e->getMessage()]
+            ]));
+            redirect(site_url('BOD/customer?msg=error'));
+        }
+    }
+
+    /**
+     * Store Product - POST handler for add form
+     */
+    public function storeProduct()
+    {
+        try {
+            $this->load->model('ProductModel');
+            
+            $product_name = trim($this->input->post('product_name'));
+            $product_data = [
+                'product_name' => $product_name,
+                'summary'      => trim($this->input->post('summary')),
+                'application'  => trim($this->input->post('application')),
+                'diameter'     => trim($this->input->post('diameter')),
+                'is_active'    => 1,
+            ];
+            
+            // VALIDATION - Check data before processing BOM
+            $validation_result = $this->ProductModel->validateProductData($product_data);
+            
+            if (!$validation_result['valid']) {
+                $this->session->set_flashdata('error_js', json_encode([
+                    'message' => $validation_result['message']
+                ]));
+                redirect(site_url('BOD/product/add?msg=error'));
+                return;
+            }
+            
+            // BOM data - xử lý cả material names và material IDs
+            $bom_material_names = $this->input->post('bom_material_names'); // Tên nguyên liệu (text input)
+            $bom_material_ids = $this->input->post('bom_materials'); // ID nguyên liệu (hidden input)
+            $bom_quantities = $this->input->post('bom_quantities');
+            $bom_units = $this->input->post('bom_units');
+            
+            if ($bom_material_names && is_array($bom_material_names)) {
+                $bom_data = [];
+                
+                foreach ($bom_material_names as $key => $material_name) {
+                    $material_name = trim($material_name);
+                    if (!empty($material_name)) {
+                        $id_material = !empty($bom_material_ids[$key]) ? $bom_material_ids[$key] : null;
+                        
+                        $bom_data[] = [
+                            'id_material' => $id_material,
+                            'material_name' => $material_name,
+                            'quantity' => floatval($bom_quantities[$key] ?? 0),
+                            'unit' => $bom_units[$key] ?? 'g',
+                        ];
+                    }
+                }
+                
+                // Pass array to model - model will validate and encode to JSON
+                $product_data['bom'] = !empty($bom_data) ? $bom_data : null;
+            }
+            
+            $result = $this->ProductModel->addProduct($product_data);
+            
+            if (isset($result['success']) && $result['success'] === true) {
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Thành công!',
+                    'message' => 'Thêm sản phẩm thành công',
+                    'product_name' => $product_name
+                ]));
+                redirect(site_url('BOD/product?msg=success'));
+            } else {
+                // Nếu model return error, ném exception để catch block xử lý
+                throw new Exception($result['message'] ?? 'Không thể thêm sản phẩm vào database');
+            }
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi thêm sản phẩm',
+                'details' => [$e->getMessage()]
+            ]));
+            redirect(site_url('BOD/product/add?msg=error'));
+        }
+    }
+
+    /**
+     * Update Product - POST handler for edit form
+     */
+    public function updateProduct()
+    {
+        try {
+            $this->load->model('ProductModel');
+            
+            $id = $this->input->post('id_product');
+            $product_name = trim($this->input->post('product_name'));
+            $product_data = [
+                'product_name' => $product_name,
+                'summary'      => trim($this->input->post('summary')),
+                'application'  => trim($this->input->post('application')),
+                'diameter'     => trim($this->input->post('diameter')),
+                'is_active'    => (int) $this->input->post('is_active'),
+            ];
+            
+            // VALIDATION - Check data before processing BOM
+            $validation_result = $this->ProductModel->validateProductData($product_data, $id);
+            
+            if (!$validation_result['valid']) {
+                $this->session->set_flashdata('error_js', json_encode([
+                    'message' => $validation_result['message']
+                ]));
+                redirect(site_url('BOD/product/edit/' . $id . '?msg=error'));
+                return;
+            }
+            
+            // BOM data - xử lý cả material names và material IDs
+            $bom_material_names = $this->input->post('bom_material_names'); // Tên nguyên liệu (text input)
+            $bom_material_ids = $this->input->post('bom_materials'); // ID nguyên liệu (hidden input)
+            $bom_quantities = $this->input->post('bom_quantities');
+            $bom_units = $this->input->post('bom_units');
+            
+            if ($bom_material_names && is_array($bom_material_names)) {
+                $bom_data = [];
+                
+                foreach ($bom_material_names as $key => $material_name) {
+                    $material_name = trim($material_name);
+                    if (!empty($material_name)) {
+                        $id_material = !empty($bom_material_ids[$key]) ? $bom_material_ids[$key] : null;
+                        
+                        $bom_data[] = [
+                            'id_material' => $id_material,
+                            'material_name' => $material_name,
+                            'quantity' => floatval($bom_quantities[$key] ?? 0),
+                            'unit' => $bom_units[$key] ?? 'g',
+                        ];
+                    }
+                }
+                
+                // Pass array to model - model will validate and encode to JSON
+                $product_data['bom'] = !empty($bom_data) ? $bom_data : null;
+            }
+            
+            $result = $this->ProductModel->updateProduct($id, $product_data);
+            
+            if (isset($result['success']) && $result['success'] === true) {
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Thành công!',
+                    'message' => 'Cập nhật sản phẩm thành công',
+                    'product_name' => $product_name
+                ]));
+                redirect(site_url('BOD/product?msg=success'));
+            } else {
+                throw new Exception($result['message'] ?? 'Không thể cập nhật sản phẩm');
+            }
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi cập nhật sản phẩm',
+                'details' => [$e->getMessage()]
+            ]));
+            redirect(site_url('BOD/product/edit/' . $id . '?msg=error'));
+        }
+    }
+
+    /**
+     * Destroy Product - POST handler for delete
+     */
+    public function destroyProduct()
+    {
+        try {
+            $this->load->model('ProductModel');
+            
+            $id = $this->input->post('id_product');
+            $product_name = $this->input->post('product_name');
+            
+            $result = $this->ProductModel->deleteProduct($id);
+            
+            if (isset($result['success']) && $result['success'] === true) {
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Thành công!',
+                    'message' => 'Xóa sản phẩm thành công',
+                    'product_name' => $product_name
+                ]));
+                redirect(site_url('BOD/product?msg=success'));
+            } else {
+                throw new Exception($result['message'] ?? 'Không thể xóa sản phẩm (Đang được sử dụng trong đơn hàng)');
+            }
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi xóa sản phẩm',
+                'details' => [$e->getMessage()]
+            ]));
+            redirect(site_url('BOD/product?msg=error'));
+        }
+    }
+
+    /**
      * Quản lý Dự án / Đơn hàng
      * Use Case: Tiếp nhận & Tạo đơn hàng bút bi
      */
@@ -200,10 +637,13 @@ class BOD extends CI_Controller
 
             $risk_flag = 0;
             $warning_message = null;
+            $recommendations = [];
+            
             if (!$capacity_check['feasible']) {
                 // AF 6.1.1: Cảnh báo
                 $risk_flag = 1;
                 $warning_message = $capacity_check['message'];
+                $recommendations = $capacity_check['recommendations'] ?? [];
             }
 
             // Tạo tên project tự động
@@ -233,16 +673,43 @@ class BOD extends CI_Controller
 
             if ($result['success']) {
                 // Basic Flow - Bước 8: Thông báo thành công
-                // Nếu có cảnh báo vượt công suất, hiển thị warning thay vì success
+                // AF 6.1: Nếu có cảnh báo vượt công suất
                 if ($risk_flag == 1 && $warning_message) {
+                    // Hiển thị CẢ 2 toast: Warning trước → Success sau
+                    // 1. Cảnh báo vượt công suất (hiển thị trước)
+                    
+                    // Tạo đề xuất chi tiết dựa trên recommendations
+                    $shortage = $recommendations['shortage'] ?? 0;
+                    $shifts_needed = $recommendations['shifts_needed'] ?? 0;
+                    
+                    $recommendation_text = '<br><br><strong>💡 Đề xuất giải pháp:</strong><br>';
+                    $recommendation_text .= sprintf(
+                        '• <strong>Phương án 1:</strong> Tăng ca - Cần thêm <strong>%d ca</strong> để sản xuất đủ %s đơn vị<br>',
+                        $shifts_needed,
+                        number_format($shortage)
+                    );
+                    $recommendation_text .= sprintf(
+                        '• <strong>Phương án 2:</strong> Nhập hàng - Cần nhập thành phẩm <strong>%s đơn vị</strong> để bù thiếu hụt<br>',
+                        number_format($shortage)
+                    );
+                    $recommendation_text .= '• <strong>Phương án 3:</strong> Thương lượng gia hạn với khách hàng';
+                    
                     $this->session->set_flashdata('warning_js', json_encode([
-                        'title' => 'Đã lưu nhưng có cảnh báo!',
-                        'message' => $warning_message,
-                        'project_name' => $project_name,
-                        'risk_flag' => $risk_flag
+                        'title' => '⚠️ Cảnh báo vượt công suất!',
+                        'message' => $warning_message . $recommendation_text,
+                        'duration' => 3000 // 3 giây (test nhanh)
                     ]));
-                    redirect(site_url('BOD/project?msg=warning'));
+                    // 2. Thông báo đã lưu thành công (hiển thị sau)
+                    $this->session->set_flashdata('success_js', json_encode([
+                        'title' => 'Đã lưu đơn hàng!',
+                        'message' => 'Đơn hàng "' . $project_name . '" đã được lưu và đánh dấu NGUY CƠ TRỄ HẠN.',
+                        'project_name' => $project_name,
+                        'risk_flag' => $risk_flag,
+                        'delay' => 3500 // 3.5s delay (hiện sau warning 3s)
+                    ]));
+                    redirect(site_url('BOD/project?msg=warning_then_success'));
                 } else {
+                    // Bình thường: Chỉ hiển thị success
                     $this->session->set_flashdata('success_js', json_encode([
                         'title' => 'Thành công!',
                         'message' => $result['message'],
@@ -302,27 +769,73 @@ class BOD extends CI_Controller
                 $this->input->post('entry_date')
             );
 
+            $risk_flag = !$capacity_check['feasible'] ? 1 : 0;
+            $warning_message = null;
+            $recommendations = [];
+            
+            if (!$capacity_check['feasible']) {
+                $warning_message = $capacity_check['message'];
+                $recommendations = $capacity_check['recommendations'] ?? [];
+            }
+
+            $project_name = trim($this->input->post('project_name'));
+            
             $update = [
-                'project_name'     => trim($this->input->post('project_name')),
+                'project_name'     => $project_name,
                 'entry_date'       => trim($this->input->post('entry_date')),
                 'id_cust'          => trim($this->input->post('id_cust')),
                 'id_product'       => trim($this->input->post('id_product')),
                 'diameter'         => trim($this->input->post('diameter')),
                 'qty_request'      => trim($this->input->post('qty_request')),
-                'risk_flag'        => !$capacity_check['feasible'] ? 1 : 0,
+                'risk_flag'        => $risk_flag,
                 'customer_request' => trim($this->input->post('customer_request')),
             ];
 
             $this->crudModel->updateData('project', 'id_project', $id_project, $update);
             
-            $this->session->set_flashdata('success_js', json_encode([
-                'title' => 'Cập nhật thành công!',
-                'message' => 'Đơn hàng đã được cập nhật',
-                'project_name' => $this->input->post('project_name'),
-                'risk_flag' => $update['risk_flag']
-            ]));
-
-            redirect(site_url('BOD/project?msg=updated'));
+            // Nếu vượt công suất, hiển thị cả warning và success
+            if ($risk_flag == 1 && $warning_message) {
+                // Tạo đề xuất chi tiết
+                $shortage = $recommendations['shortage'] ?? 0;
+                $shifts_needed = $recommendations['shifts_needed'] ?? 0;
+                
+                $recommendation_text = '<br><br><strong>💡 Đề xuất giải pháp:</strong><br>';
+                $recommendation_text .= sprintf(
+                    '• <strong>Phương án 1:</strong> Tăng ca - Cần thêm <strong>%d ca</strong> để sản xuất đủ %s đơn vị<br>',
+                    $shifts_needed,
+                    number_format($shortage)
+                );
+                $recommendation_text .= sprintf(
+                    '• <strong>Phương án 2:</strong> Nhập hàng - Cần nhập thành phẩm <strong>%s đơn vị</strong> để bù thiếu hụt<br>',
+                    number_format($shortage)
+                );
+                $recommendation_text .= '• <strong>Phương án 3:</strong> Thương lượng gia hạn với khách hàng';
+                
+                $this->session->set_flashdata('warning_js', json_encode([
+                    'title' => '⚠️ Cảnh báo vượt công suất!',
+                    'message' => $warning_message . $recommendation_text,
+                    'duration' => 3000 // 3 giây (test nhanh)
+                ]));
+                
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Đã cập nhật đơn hàng!',
+                    'message' => 'Đơn hàng "' . $project_name . '" đã được cập nhật và đánh dấu NGUY CƠ TRỄ HẠN.',
+                    'project_name' => $project_name,
+                    'risk_flag' => $risk_flag,
+                    'delay' => 3500 // 3.5s delay
+                ]));
+                
+                redirect(site_url('BOD/project?msg=warning_then_success'));
+            } else {
+                $this->session->set_flashdata('success_js', json_encode([
+                    'title' => 'Cập nhật thành công!',
+                    'message' => 'Đơn hàng đã được cập nhật',
+                    'project_name' => $project_name,
+                    'risk_flag' => $risk_flag
+                ]));
+                
+                redirect(site_url('BOD/project?msg=success'));
+            }
 
         } catch (Exception $e) {
             $this->session->set_flashdata('error_js', json_encode([
@@ -343,6 +856,7 @@ class BOD extends CI_Controller
     public function deleteProject()
     {
         $id_project = $this->uri->segment(3);
+        $hasError = false;
         
         try {
             $this->crudModel->deleteData('project', 'id_project', $id_project);
@@ -354,6 +868,7 @@ class BOD extends CI_Controller
                 'risk_flag' => 0
             ]));
         } catch (Exception $e) {
+            $hasError = true;
             $this->session->set_flashdata('error_js', json_encode([
                 'message' => 'Không thể xóa đơn hàng',
                 'details' => [
@@ -363,37 +878,7 @@ class BOD extends CI_Controller
             ]));
         }
 
-        redirect(site_url('BOD/project?msg=action'));
-    }
-
-    /**
-     * Quản lý Khách hàng
-     * TODO: Implement full CRUD for Customer management
-     */
-    public function customer()
-    {
-        $data = [
-            'data' => $this->crudModel->getData('customer')->result(),
-            'content' => 'bod/customer/Customer',
-            'navlink' => 'customer',
-        ];
-        
-        $this->load->view('bod/vbackend', $data);
-    }
-
-    /**
-     * Quản lý Sản phẩm
-     * TODO: Implement full CRUD for Product management
-     */
-    public function product()
-    {
-        $data = [
-            'data' => $this->crudModel->getData('product')->result(),
-            'content' => 'bod/product/Product',
-            'navlink' => 'product',
-        ];
-        
-        $this->load->view('bod/vbackend', $data);
+        redirect(site_url('BOD/project?msg=' . ($hasError ? 'error' : 'success')));
     }
 
     /**

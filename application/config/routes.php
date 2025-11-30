@@ -56,7 +56,17 @@ $route['translate_uri_dashes'] = false;
 
 $route['search'] = 'petugas/cari_member';
 
+// =====================================================
+// BOD Module Routes (UC1, UC2, UC7)
+// =====================================================
+// Sử dụng _remap() trong BOD.php để forward requests
+// - BOD/customer/*  => bod/Customer controller
+// - BOD/product/*   => bod/Product controller
+// - BOD/project/*   => BOD::project* methods (giữ nguyên)
+
+// =====================================================
 // QC Module Routes
+// =====================================================
 $route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail
 $route['qc/sessions'] = 'qc/session_list';         // List all sessions
 $route['qc/reports'] = 'qc/reports';               // QC Reports

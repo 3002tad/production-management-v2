@@ -320,15 +320,36 @@ class OrderModel extends CI_Model
             ];
         } else {
             // ALTERNATIVE FLOW 6.1: Vượt công suất
+            $shortage = $qty_request - $remaining_capacity;
+            
+            // Tính số ca cần tăng thêm (dựa trên công suất hiện tại)
+            $shifts_needed = ceil($shortage / ($total_capacity * $efficiency));
+            
+            // Tính số ngày cần thêm nếu giữ nguyên ca
+            $extra_days = ceil($shortage / ($total_capacity * $shifts_per_day * $efficiency));
+            
             return [
                 'feasible' => false, 
                 'message' => sprintf(
-                    'Vượt công suất %s đơn vị. Cần %s, chỉ còn %s khả dụng',
-                    number_format($qty_request - $remaining_capacity),
+                    '<strong>Vượt công suất %s đơn vị</strong><br>' .
+                    '📊 Yêu cầu: %s | Khả dụng: %s | Thiếu: %s<br>' .
+                    '🏭 Hiện tại: %s máy hoạt động, công suất %s đơn vị/ca<br>' .
+                    '📅 Thời gian: %.1f ngày (%d ca × 3 ca/ngày)',
+                    number_format($shortage),
                     number_format($qty_request),
-                    number_format($remaining_capacity)
+                    number_format($remaining_capacity),
+                    number_format($shortage),
+                    $available_machines,
+                    number_format($total_capacity),
+                    $date_diff,
+                    floor($date_diff)
                 ),
-                'details' => $details
+                'details' => $details,
+                'recommendations' => [
+                    'shifts_needed' => $shifts_needed,
+                    'extra_days' => $extra_days,
+                    'shortage' => $shortage
+                ]
             ];
         }
     }

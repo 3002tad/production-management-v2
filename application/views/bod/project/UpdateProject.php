@@ -283,24 +283,27 @@ $(document).ready(function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Kiểm tra URL parameter - CHỈ hiển thị toast khi có ?msg=
     var urlParams = new URLSearchParams(window.location.search);
-    var hasMsg = urlParams.has('msg');
+    var msgType = urlParams.get('msg'); // Get msg value
     
     // SessionStorage backup
     var toastShown = sessionStorage.getItem('toast_shown_updateproject');
     
-    if (hasMsg && !toastShown) {
+    if (msgType && !toastShown) {
         <?php if ($this->session->flashdata('error_js')): ?>
-            const errorData = <?= $this->session->flashdata('error_js'); ?>;
-            showToast({
-                type: 'error',
-                title: 'Lỗi!',
-                message: errorData.message,
-                details: errorData.details || [],
-                duration: 6000
-            });
-            
-            sessionStorage.setItem('toast_shown_updateproject', 'true');
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // ERROR - Only if msg=error
+            if (msgType === 'error') {
+                const errorData = <?= $this->session->flashdata('error_js'); ?>;
+                showToast({
+                    type: 'error',
+                    title: 'Lỗi!',
+                    message: errorData.message,
+                    details: errorData.details || [],
+                    duration: 6000
+                });
+                
+                sessionStorage.setItem('toast_shown_updateproject', 'true');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         <?php endif; ?>
     }
     

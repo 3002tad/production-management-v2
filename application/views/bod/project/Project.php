@@ -260,63 +260,83 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Kiểm tra xem có URL parameter ?msg= không (chỉ hiển thị khi redirect từ action)
+    // Kiểm tra URL parameter ?msg= và giá trị cụ thể
     var urlParams = new URLSearchParams(window.location.search);
-    var hasMsg = urlParams.has('msg');
+    var msgType = urlParams.get('msg'); // 'success', 'warning_then_success', 'error', etc.
     
-    // Hoặc kiểm tra sessionStorage để tránh hiển thị lại khi refresh
+    // Kiểm tra sessionStorage để tránh hiển thị lại khi refresh
     var toastShown = sessionStorage.getItem('toast_shown_' + window.location.pathname);
     
-    if (hasMsg && !toastShown) {
+    // Chỉ hiển thị toast khi:
+    // 1. Có msg parameter trong URL (redirect từ action)
+    // 2. Chưa được hiển thị trong session này
+    if (msgType && !toastShown) {
         <?php if ($this->session->flashdata('success_js')): ?>
-            // Parse dữ liệu từ session
-            const successData = <?= $this->session->flashdata('success_js'); ?>;
+            // Chỉ hiển thị success toast nếu msg=success hoặc msg=warning_then_success
+            if (msgType === 'success' || msgType === 'warning_then_success') {
+                // Parse dữ liệu từ session
+                const successData = <?= $this->session->flashdata('success_js'); ?>;
+                
+                // Hàm hiển thị success toast
+                const showSuccessToast = () => {
+                showToast({
+                    type: 'success',
+                    title: successData.title,
+                    message: successData.message,
+                    details: successData.project_name ? [
+                        '📦 Mã đơn hàng: ' + successData.project_name,
+                        successData.risk_flag == 1 ? '⚠️ Đã đánh dấu: NGUY CƠ TRỄ HẠN' : ''
+                    ].filter(d => d) : [],
+                    duration: 3000
+                });
+                
+                sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            };
             
-            // Tạo toast notification
-            showToast({
-                type: 'success',
-                title: successData.title,
-                message: successData.message,
-                details: [
-                    '📦 Mã đơn hàng: ' + successData.project_name
-                    // Đã bỏ thông tin risk_flag vì nó sẽ hiển thị riêng trong warning toast
-                ],
-                duration: 3000 // 3 giây
-            });
-            
-            // Đánh dấu đã hiển thị
-            sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
-            
-            // Xóa parameter khỏi URL (clean URL)
-            window.history.replaceState({}, document.title, window.location.pathname);
+                // Nếu có delay (hiển thị sau warning), chờ trước khi hiển thị
+                if (successData.delay && successData.delay > 0) {
+                    setTimeout(showSuccessToast, successData.delay);
+                } else {
+                    showSuccessToast();
+                }
+            }
         <?php endif; ?>
 
         <?php if ($this->session->flashdata('warning_js')): ?>
-            const warningData = <?= $this->session->flashdata('warning_js'); ?>;
-            showToast({
-                type: 'warning',
-                title: 'Cảnh báo!',
-                message: warningData.message,
-                duration: 4000
-            });
-            
-            sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Chỉ hiển thị warning toast nếu msg=warning hoặc msg=warning_then_success
+            if (msgType === 'warning' || msgType === 'warning_then_success') {
+                const warningData = <?= $this->session->flashdata('warning_js'); ?>;
+                
+                // Hiển thị warning toast
+                    showToast({
+                    type: 'warning',
+                    title: warningData.title || 'Cảnh báo!',
+                    message: warningData.message,
+                    duration: warningData.duration || 6000
+                });
+                
+                sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         <?php endif; ?>
 
         <?php if ($this->session->flashdata('error_js')): ?>
-            const errorData = <?= $this->session->flashdata('error_js'); ?>;
-            showToast({
-                type: 'error',
-                title: 'Lỗi!',
-                message: errorData.message,
-                duration: 5000
-            });
-            
-            sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // Chỉ hiển thị error toast nếu msg=error
+            if (msgType === 'error') {
+                const errorData = <?= $this->session->flashdata('error_js'); ?>;
+                    showToast({
+                    type: 'error',
+                    title: 'Lỗi!',
+                    message: errorData.message,
+                    duration: 5000
+                });
+                
+                sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         <?php endif; ?>
-    }
+    } // END: if (hasMsg && !toastShown)
     
     // Xóa flag khi navigate sang trang khác (cho phép toast hiện lại lần sau)
     window.addEventListener('beforeunload', function() {

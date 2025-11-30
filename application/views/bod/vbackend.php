@@ -173,7 +173,17 @@
 
     <div class="container-fluid py-4">
       <!-- DYNAMIC CONTENT LOADED HERE -->
-      <?php $this->load->view($content); ?>
+      <?php 
+      // Extract all variables from controller and pass to child view
+      // This ensures $data, $customer, $product, etc. are available in child views
+      $child_vars = [];
+      foreach (get_defined_vars() as $key => $value) {
+          if ($key !== 'this' && $key !== 'content' && $key !== 'navlink') {
+              $child_vars[$key] = $value;
+          }
+      }
+      $this->load->view($content, $child_vars); 
+      ?>
 
       <!-- Footer -->
       <footer class="footer py-4">
