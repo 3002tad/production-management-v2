@@ -31,6 +31,26 @@
     <div class="row">
         <div class="card">
         <div class="card-body pt-4 p-3">
+            <div class="mb-3 d-flex justify-content-between">
+                <form class="d-flex" method="post" action="<?= site_url('leader/staff'); ?>">
+                    <input type="text" name="search_code" class="form-control form-control-sm mr-2" placeholder="Tìm theo mã NV">
+                    <input type="text" name="search_skill" class="form-control form-control-sm mr-2" placeholder="Tìm theo kỹ năng">
+                    <button class="btn btn-sm btn-primary" type="submit">Tìm</button>
+                    <a href="<?= site_url('leader/staff'); ?>" class="btn btn-sm btn-secondary ml-2">Hủy</a>
+                </form>
+            </div>
+
+            <?php if ($this->session->flashdata('search_not_found')): ?>
+                <div class="alert alert-warning d-flex align-items-center justify-content-between">
+                    <div>
+                        <?= $this->session->flashdata('error'); ?>
+                    </div>
+                    <div>
+                        <a href="<?= site_url('leader/staff'); ?>" class="btn btn-sm btn-primary mr-2">Nhập lại</a>
+                        <a href="<?= site_url('leader/staff'); ?>" class="btn btn-sm btn-secondary">Hủy</a>
+                    </div>
+                </div>
+            <?php endif; ?>
             <div class="table-responsive p-0">
                 <table id="table-data" class="table align-items-center justify-content-center mb-0">
                     <thead>

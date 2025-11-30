@@ -30,7 +30,20 @@
                         <?php if ($this->session->flashdata('error')): ?>
                             <div class="alert alert-danger" role="alert"><?= $this->session->flashdata('error'); ?></div>
                         <?php endif; ?>
+
+                        <?php if ($this->session->flashdata('code_exists')): ?>
+                            <div class="mb-3">
+                                <a href="<?= site_url('leader/staff/addstaff'); ?>" class="btn btn-sm btn-primary mr-2">Nhập lại</a>
+                                <a href="<?= site_url('leader/staff'); ?>" class="btn btn-sm btn-secondary">Hủy</a>
+                            </div>
+                        <?php endif; ?>
                         <form class="pt-4" action="<?= site_url('leader/addstaff'); ?>" method="post">
+                        <span><?= lang('label_staff_code'); ?> (Mã nhân viên)</span></br>
+                        <div class="input-group input-group-dynamic mb-2">
+                            <label class="form-label"></label>
+                            <input type="text" name="id_staff_custom" value="" class="form-control" required placeholder="Nhập mã nhân viên, ví dụ: NV001">
+                        </div>
+
                         <span><?= lang('table_staff_name'); ?></span></br>
                         <div class="input-group input-group-dynamic mb-4">
                             <label class="form-label"></label>

@@ -46,10 +46,28 @@ class Login extends CI_Controller
             if ($checking !== false) {
                 foreach ($checking as $data_user) {
                     // Build session data - backward compatible với database cũ
+                    // Resolve role name: some databases store `role` (string),
+                    // others store `role_id` (FK to `roles.role_name`).
+                    $resolvedRole = null;
+                    if (!empty($data_user->role)) {
+                        $resolvedRole = strtolower(trim($data_user->role));
+                    } elseif (!empty($data_user->role_id)) {
+                        // Lookup role_name from `roles` table
+                        $roleRow = $this->db->select('role_name')->from('roles')->where('role_id', $data_user->role_id)->limit(1)->get()->row();
+                        if ($roleRow && !empty($roleRow->role_name)) {
+                            $resolvedRole = strtolower(trim($roleRow->role_name));
+                        }
+                    }
+
+                    // Backward compatibility: if still empty, fall back to 'worker'
+                    if (empty($resolvedRole)) {
+                        $resolvedRole = 'worker';
+                    }
+
                     $session_data = [
                         'user_id' => $data_user->user_id,
                         'username' => $data_user->username,
-                        'role' => isset($data_user->role) ? $data_user->role : 'user'
+                        'role' => $resolvedRole
                     ];
 
                     $this->session->set_userdata($session_data);
@@ -65,9 +83,9 @@ class Login extends CI_Controller
                         'auth'
                     );
 
-                    // Get role for redirect
-                    $roleName = isset($data_user->role) ? $data_user->role : 'user';
-                    
+                    // Get role for redirect (use resolved role mapping)
+                    $roleName = $resolvedRole;
+
                     // Redirect based on role
                     $this->redirect_by_role($roleName);
                     exit();
@@ -136,7 +154,7 @@ class Login extends CI_Controller
                 exit();
             case 'worker':
                 // Redirect worker to incident report page (UC15_BCSC)
-                redirect('uc15_qlns/uc15_bcsc/');
+                redirect('uc15_bcsc/uc15_bcsc');
                 exit();
             default:
                 // Unknown role - redirect to leader as default

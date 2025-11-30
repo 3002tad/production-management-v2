@@ -39,15 +39,19 @@
         <hr class="horizontal light mt-0 mb-2">
             <div class="col-14">
                 <ul class="navbar-nav">
+                  
                     <li class="nav-item">
-                        <a class="nav-link text-white<?= ($navlink === 'beranda') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_qlns/uc15_bcsc'); ?>">
+                        <a class="nav-link text-white<?= ($navlink === 'beranda') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">dashboard</i>
                             </div>
                             <span class="nav-link-text ms-1">Báo cáo sự cố</span>
                         </a>
                     </li>
+                    
 
+                    <!-- HÀNH ĐỘNG section hidden -->
+                    <!-- 
                     <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
                     <span class="nav-link-text ms-1 p-2">HÀNH ĐỘNG</span>
@@ -56,7 +60,7 @@
                     <hr class="horizontal light mt-0 mb-2">
 
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white" href="<?= site_url('uc15_qlns/uc15_bcsc/add'); ?>">
+                        <a class="nav-link text-white" href="<?= site_url('uc15_bcsc/uc15_bcsc/add'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">add_circle</i>
                             </div>
@@ -65,7 +69,7 @@
                     </li>
 
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white" href="<?= site_url('uc15_qlns/uc15_bcsc'); ?>">
+                        <a class="nav-link text-white" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">list</i>
                             </div>
@@ -74,19 +78,23 @@
                     </li>
 
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white" href="<?= site_url('uc15_qlns/uc15_bcsc'); ?>">
+                        <a class="nav-link text-white" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">assessment</i>
                             </div>
                             <span class="nav-link-text ms-1">Thống kê sự cố</span>
                         </a>
                     </li>
+                    -->
                 </ul>
             </div>
         <div class="sidenav-footer mx-3 ">
+            <!-- Logo image hidden -->
+            <!-- 
             <div class="card card-plain shadow-none rounded-lg mb-4 pb-2">
             <img src="<?= site_url('asset/backend/assets/img/logos/argon-white.png'); ?>" class="navbar-brand" alt="...">
             </div>
+            -->
             <a href="<?= site_url('login/logout'); ?>" class="btn btn-dark btn-sm mb-0 w-100">Đăng xuất</a>
         </div>
   </aside>

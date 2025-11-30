@@ -126,7 +126,7 @@
           </a>
         </li>
         <li class="nav-item navbar-expand-xs">
-          <a class="nav-link text-white<?= ($navlink === 'incident') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_qlns/uc15_bcsc'); ?>">
+          <a class="nav-link text-white<?= ($navlink === 'incident') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">report_problem</i>
             </div>

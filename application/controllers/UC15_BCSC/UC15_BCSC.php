@@ -34,14 +34,28 @@ class UC15_BCSC extends CI_Controller
 
     /**
      * Check if user can perform action based on role
+     * 
+     * Permissions:
+     * - worker: add, edit, delete, view
+     * - technical: view, edit, update_status
+     * - leader: view only
+     * - admin: view only
+     * - bod: view only
      */
     private function check_permission($action)
     {
+        // Primary role permissions. Also include common role-name aliases
         $permissions = [
             'worker' => ['add', 'edit', 'delete', 'view'],
-            'technical' => ['view', 'update_status'],
+            'technical' => ['view', 'edit', 'update_status'],
+            // aliases for technical staff role name variations
+            'technical_staff' => ['view', 'edit', 'update_status'],
             'leader' => ['view'],
+            // alias often used in sessions
+            'line_manager' => ['view'],
             'admin' => ['view'],
+            // include system admin as read-only for this module (can be elevated if needed)
+            'system_admin' => ['view'],
             'bod' => ['view'],
         ];
 
@@ -101,9 +115,11 @@ class UC15_BCSC extends CI_Controller
         }
 
         $this->form_validation->set_rules('id_machine', 'Mã máy', 'required');
-        $this->form_validation->set_rules('id_planshift', 'Mã dây chuyền', 'required');
+        $this->form_validation->set_rules('id_planshift', 'Mã dây chuyền', 'numeric'); // Optional field
+        $this->form_validation->set_rules('category', 'Loại sự cố', 'required|in_list[equipment,quality,safety,other]');
+        $this->form_validation->set_rules('severity_level', 'Mức độ nghiêm trọng', 'required|in_list[1,2,3,4]');
         $this->form_validation->set_rules('incident_description', 'Ghi rõ sự cố', 'required|min_length[10]');
-        $this->form_validation->set_rules('status', 'Trạng thái', 'required|in_list[0,1]');
+        $this->form_validation->set_rules('status', 'Trạng thái', 'required');
 
         $this->form_validation->set_message('required', '{field} không được để trống');
         $this->form_validation->set_message('min_length', '{field} phải có ít nhất 10 ký tự');
@@ -118,10 +134,13 @@ class UC15_BCSC extends CI_Controller
         $data = [
             'user_id' => $this->session->userdata('user_id'),
             'id_machine' => $this->input->post('id_machine'),
-            'id_planshift' => $this->input->post('id_planshift'),
+            'id_planshift' => $this->input->post('id_planshift') ?: null,
+            'category' => $this->input->post('category'),
+            'severity_level' => $this->input->post('severity_level'),
             'incident_description' => $this->input->post('incident_description'),
             'media_path' => $upload_data['file_path'],
             'status' => $this->input->post('status'),
+            'assignee_id' => $this->input->post('assignee_id') ?: null,
             'created_at' => date('Y-m-d H:i:s'),
         ];
 
@@ -129,10 +148,10 @@ class UC15_BCSC extends CI_Controller
 
         if ($result) {
             $this->session->set_flashdata('success', 'Báo cáo sự cố đã được tạo thành công');
-            redirect('uc15_qlns/uc15_bcsc');
+            redirect('uc15_bcsc/uc15_bcsc');
         } else {
             $this->session->set_flashdata('error', 'Lỗi khi tạo báo cáo sự cố');
-            redirect('uc15_qlns/uc15_bcsc/add');
+            redirect('uc15_bcsc/uc15_bcsc/add');
         }
     }
 
@@ -142,7 +161,7 @@ class UC15_BCSC extends CI_Controller
     public function edit($id)
     {
         if (!$this->check_permission('edit')) {
-            show_error('Access Denied - Only Worker can edit incident reports', 403, 'Forbidden');
+            show_error('Access Denied - Only Worker and Technical can edit incident reports', 403, 'Forbidden');
         }
 
         $incident = $this->bcscModel->get_by_id($id);
@@ -168,7 +187,7 @@ class UC15_BCSC extends CI_Controller
     public function update($id)
     {
         if (!$this->check_permission('edit')) {
-            show_error('Access Denied - Only Worker can edit incident reports', 403, 'Forbidden');
+            show_error('Access Denied - Only Worker and Technical can edit incident reports', 403, 'Forbidden');
         }
 
         $incident = $this->bcscModel->get_by_id($id);
@@ -177,7 +196,9 @@ class UC15_BCSC extends CI_Controller
         }
 
         $this->form_validation->set_rules('id_machine', 'Mã máy', 'required');
-        $this->form_validation->set_rules('id_planshift', 'Mã dây chuyền', 'required');
+        $this->form_validation->set_rules('id_planshift', 'Mã dây chuyền', 'numeric'); // Optional field
+        $this->form_validation->set_rules('category', 'Loại sự cố', 'required|in_list[equipment,quality,safety,other]');
+        $this->form_validation->set_rules('severity_level', 'Mức độ nghiêm trọng', 'required|in_list[1,2,3,4]');
         $this->form_validation->set_rules('incident_description', 'Ghi rõ sự cố', 'required|min_length[10]');
 
         if ($this->form_validation->run() === false) {
@@ -189,7 +210,9 @@ class UC15_BCSC extends CI_Controller
 
         $data = [
             'id_machine' => $this->input->post('id_machine'),
-            'id_planshift' => $this->input->post('id_planshift'),
+            'id_planshift' => $this->input->post('id_planshift') ?: null,
+            'category' => $this->input->post('category'),
+            'severity_level' => $this->input->post('severity_level'),
             'incident_description' => $this->input->post('incident_description'),
             'updated_at' => date('Y-m-d H:i:s'),
         ];
@@ -206,10 +229,10 @@ class UC15_BCSC extends CI_Controller
 
         if ($result) {
             $this->session->set_flashdata('success', 'Báo cáo sự cố đã được cập nhật thành công');
-            redirect('uc15_qlns/uc15_bcsc');
+            redirect('uc15_bcsc/uc15_bcsc');
         } else {
             $this->session->set_flashdata('error', 'Lỗi khi cập nhật báo cáo sự cố');
-            redirect('uc15_qlns/uc15_bcsc/edit/' . $id);
+            redirect('uc15_bcsc/uc15_bcsc/edit/' . $id);
         }
     }
 
@@ -228,9 +251,9 @@ class UC15_BCSC extends CI_Controller
         }
 
         $status = $this->input->post('status');
-        if (!in_array($status, [0, 1])) {
+        if (!in_array($status, [0, 1, 2])) {
             $this->session->set_flashdata('error', 'Trạng thái không hợp lệ');
-            redirect('uc15_qlns/uc15_bcsc');
+            redirect('uc15_bcsc/uc15_bcsc');
             return;
         }
 
@@ -239,15 +262,25 @@ class UC15_BCSC extends CI_Controller
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
+        // If status is completed (1), set resolved_at timestamp
+        if ($status == 1) {
+            $data['resolved_at'] = date('Y-m-d H:i:s');
+        }
+
+        // Add optional resolution notes if provided
+        if ($this->input->post('resolution_notes')) {
+            $data['resolution_notes'] = $this->input->post('resolution_notes');
+        }
+
         $result = $this->bcscModel->update($id, $data);
 
         if ($result) {
-            $status_text = ($status == 1) ? 'Đã hoàn thành' : 'Chưa hoàn thành';
+            $status_text = ($status == 1) ? 'Đã hoàn thành' : (($status == 2) ? 'Đang xử lý' : 'Chưa hoàn thành');
             $this->session->set_flashdata('success', 'Trạng thái đã được cập nhật thành: ' . $status_text);
-            redirect('uc15_qlns/uc15_bcsc');
+            redirect('uc15_bcsc/uc15_bcsc');
         } else {
             $this->session->set_flashdata('error', 'Lỗi khi cập nhật trạng thái');
-            redirect('uc15_qlns/uc15_bcsc');
+            redirect('uc15_bcsc/uc15_bcsc');
         }
     }
 
@@ -301,10 +334,10 @@ class UC15_BCSC extends CI_Controller
 
         if ($result) {
             $this->session->set_flashdata('success', 'Báo cáo sự cố đã được xóa thành công');
-            redirect('uc15_qlns/uc15_bcsc');
+            redirect('uc15_bcsc/uc15_bcsc');
         } else {
             $this->session->set_flashdata('error', 'Lỗi khi xóa báo cáo sự cố');
-            redirect('uc15_qlns/uc15_bcsc');
+            redirect('uc15_bcsc/uc15_bcsc');
         }
     }
 

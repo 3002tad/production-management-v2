@@ -23,7 +23,8 @@ class Admin extends CI_Controller
         $role = strtolower(trim((string)$role));
         
         // Allowed roles for Admin page
-        $allowed_roles = ['admin', 'bod'];
+        // Include 'system_admin' so system administrators can access the Admin area
+        $allowed_roles = ['admin', 'bod', 'system_admin'];
         
         if (!in_array($role, $allowed_roles, true)) {
             show_error('Access Denied - Admin Only. Your role: ' . var_export($role, true), 403, 'Forbidden');

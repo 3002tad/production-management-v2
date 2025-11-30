@@ -24,7 +24,7 @@
                         <h6 class="mb-0">Báo cáo sự cố</h6>
                     </div>
                     <?php if ($user_role === 'worker'): ?>
-                        <a href="<?= site_url('uc15_qlns/uc15_bcsc/add'); ?>" class="btn bg-gradient-dark mb-0">
+                        <a href="<?= site_url('uc15_bcsc/uc15_bcsc/add'); ?>" class="btn bg-gradient-dark mb-0">
                             <i class="material-icons text-white">add</i> Thêm báo cáo
                         </a>
                     <?php endif; ?>
@@ -38,8 +38,10 @@
                             <tr>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">STT</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Người báo cáo</th>
-                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Tên máy</th>
-                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Mô tả sự cố</th>
+                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Máy</th>
+                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Loại sự cố</th>
+                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Mức độ</th>
+                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Mô tả</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Trạng thái</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Ngày tạo</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Hành động</th>
@@ -63,30 +65,60 @@
                                             <span class="text-sm font-weight-bold"><?= $incident->machine_name ?? 'N/A'; ?></span>
                                         </td>
                                         <td class="pl-4">
-                                            <span class="text-sm"><?= substr($incident->incident_description, 0, 50); ?><?= strlen($incident->incident_description) > 50 ? '...' : ''; ?></span>
+                                            <?php 
+                                                $category_map = [
+                                                    'equipment' => ['Thiết bị', 'primary'],
+                                                    'quality' => ['Chất lượng', 'info'],
+                                                    'safety' => ['An toàn', 'danger'],
+                                                    'other' => ['Khác', 'secondary']
+                                                ];
+                                                $cat = $category_map[$incident->category] ?? ['N/A', 'secondary'];
+                                            ?>
+                                            <span class="badge bg-<?= $cat[1]; ?>"><?= $cat[0]; ?></span>
                                         </td>
                                         <td class="pl-4">
-                                            <?php if ($incident->status == 1): ?>
-                                                <span class="badge bg-success">Đã hoàn thành</span>
-                                            <?php else: ?>
-                                                <span class="badge bg-warning">Chưa hoàn thành</span>
-                                            <?php endif; ?>
+                                            <?php 
+                                                $severity_map = [
+                                                    1 => ['Thấp', 'success'],
+                                                    2 => ['Trung bình', 'warning'],
+                                                    3 => ['Cao', 'danger'],
+                                                    4 => ['Nghiêm trọng', 'dark']
+                                                ];
+                                                $sev = $severity_map[$incident->severity_level] ?? ['N/A', 'secondary'];
+                                            ?>
+                                            <span class="badge bg-<?= $sev[1]; ?>"><?= $sev[0]; ?></span>
+                                        </td>
+                                        <td class="pl-4">
+                                            <span class="text-sm"><?= substr($incident->incident_description, 0, 40); ?><?= strlen($incident->incident_description) > 40 ? '...' : ''; ?></span>
+                                        </td>
+                                        <td class="pl-4">
+                                            <?php 
+                                                if ($incident->status == 1) {
+                                                    echo '<span class="badge bg-success">✓ Hoàn thành</span>';
+                                                } elseif ($incident->status == 2) {
+                                                    echo '<span class="badge bg-info">⏳ Đang xử lý</span>';
+                                                } else {
+                                                    echo '<span class="badge bg-warning">⏸ Chờ xử lý</span>';
+                                                }
+                                            ?>
                                         </td>
                                         <td class="pl-4">
                                             <span class="text-sm"><?= date('d/m/Y H:i', strtotime($incident->created_at)); ?></span>
                                         </td>
                                         <td>
-                                            <a href="<?= site_url('uc15_qlns/uc15_bcsc/detail/' . $incident->id); ?>" rel="tooltip" title="Xem chi tiết" class="badge bg-gradient-info">Xem</a>
+                                            <a href="<?= site_url('uc15_bcsc/uc15_bcsc/detail/' . $incident->id); ?>" rel="tooltip" title="Xem chi tiết" class="badge bg-gradient-info">Xem</a>
+                                            <?php if ($user_role === 'worker' || $user_role === 'technical'): ?>
+                                                <a href="<?= site_url('uc15_bcsc/uc15_bcsc/edit/' . $incident->id); ?>" rel="tooltip" title="Sửa" class="badge bg-gradient-warning">Sửa</a>
+                                            <?php endif; ?>
                                             <?php if ($user_role === 'worker'): ?>
-                                                <a href="<?= site_url('uc15_qlns/uc15_bcsc/edit/' . $incident->id); ?>" rel="tooltip" title="Sửa" class="badge bg-gradient-warning">Sửa</a>
-                                                <a href="<?= site_url('uc15_qlns/uc15_bcsc/delete/' . $incident->id); ?>" rel="tooltip" title="Xóa" class="badge bg-gradient-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?');">Xóa</a>
+                                                <a href="<?= site_url('uc15_bcsc/uc15_bcsc/delete/' . $incident->id); ?>" rel="tooltip" title="Xóa" class="badge bg-gradient-danger" onclick="return confirm('Bạn chắc chắn muốn xóa?');">Xóa</a>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-4">
+                                    <td colspan="9" class="text-center text-muted py-4">
                                         <i class="material-icons" style="font-size: 48px; opacity: 0.3;">folder_open</i>
                                         <p class="text-sm mt-2">Không có báo cáo sự cố nào</p>
                                     </td>

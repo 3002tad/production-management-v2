@@ -9,16 +9,16 @@
                     </h6>
                     <div class="d-flex gap-2">
                         <?php if ($can_edit): ?>
-                            <a href="<?= site_url('uc15_qlns/uc15_bcsc/edit/' . $incident->id); ?>" class="btn btn-sm bg-gradient-warning mb-0">
+                            <a href="<?= site_url('uc15_bcsc/uc15_bcsc/edit/' . $incident->id); ?>" class="btn btn-sm bg-gradient-warning mb-0">
                                 <i class="material-icons text-white me-1">edit</i>Sửa
                             </a>
                         <?php endif; ?>
                         <?php if ($can_delete): ?>
-                            <a href="<?= site_url('uc15_qlns/uc15_bcsc/delete/' . $incident->id); ?>" class="btn btn-sm bg-gradient-danger mb-0" onclick="return confirm('Bạn chắc chắn muốn xóa?');">
+                            <a href="<?= site_url('uc15_bcsc/uc15_bcsc/delete/' . $incident->id); ?>" class="btn btn-sm bg-gradient-danger mb-0" onclick="return confirm('Bạn chắc chắn muốn xóa?');">
                                 <i class="material-icons text-white me-1">delete</i>Xóa
                             </a>
                         <?php endif; ?>
-                        <a href="<?= site_url('uc15_qlns/uc15_bcsc'); ?>" class="btn btn-sm btn-secondary mb-0">
+                        <a href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>" class="btn btn-sm btn-secondary mb-0">
                             <i class="material-icons text-white me-1">arrow_back</i>Quay lại
                         </a>
                     </div>
@@ -127,12 +127,13 @@
                             </h6>
                         </div>
                         <div class="card-body">
-                            <form method="post" action="<?= site_url('uc15_qlns/uc15_bcsc/update_status/' . $incident->id); ?>" class="row align-items-end">
+                            <form method="post" action="<?= site_url('uc15_bcsc/uc15_bcsc/update_status/' . $incident->id); ?>" class="row align-items-end">
                                 <div class="col-md-8">
                                     <label class="form-label">Trạng thái mới</label>
                                     <select name="status" class="form-control" required>
-                                        <option value="0" <?= ($incident->status == 0) ? 'selected' : ''; ?>>Chưa hoàn thành</option>
-                                        <option value="1" <?= ($incident->status == 1) ? 'selected' : ''; ?>>Đã hoàn thành</option>
+                                        <option value="0" <?= ($incident->status == 0) ? 'selected' : ''; ?>>⏸ Chờ xử lý - Pending</option>
+                                        <option value="2" <?= ($incident->status == 2) ? 'selected' : ''; ?>>⏳ Đang xử lý - In Progress</option>
+                                        <option value="1" <?= ($incident->status == 1) ? 'selected' : ''; ?>>✓ Đã hoàn thành - Completed</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">

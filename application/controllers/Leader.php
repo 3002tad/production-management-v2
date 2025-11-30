@@ -23,7 +23,9 @@ class Leader extends CI_Controller
         $role = strtolower(trim((string)$role));
         
         // Allowed roles for Leader page
-        $allowed_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin'];
+        // NOTE: adding 'technical' / 'technical_staff' allows technical users to access leader pages.
+        // If you want to keep leader pages strictly for leadership, remove these.
+        $allowed_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin', 'technical', 'technical_staff'];
         
         if (!in_array($role, $allowed_roles, true)) {
             log_message('error', 'Leader access denied for user ' . $this->session->userdata('username') . ' with role=' . $role);
@@ -606,11 +608,44 @@ class Leader extends CI_Controller
                 ];
 
         } else {
-            $data = [
-                'staff' => $this->db->query('SELECT * FROM staff')->result(),
-                'content' => 'leader/staff/staff',
-                'navlink' => 'staff',
+            // Support search by staff code or skill
+            $search_code = $this->input->post('search_code');
+            $search_skill = $this->input->post('search_skill');
+
+            if ($search_code || $search_skill) {
+                $this->db->from('staff');
+                if ($search_code) {
+                    $this->db->where('id_staff', $search_code);
+                }
+                if ($search_skill) {
+                    // some projects store skill column; use LIKE for partial match
+                    $this->db->like('skill', $search_skill);
+                }
+                $results = $this->db->get()->result();
+
+                    if (empty($results)) {
+                        // No results - show error and options to retry or cancel
+                        $this->session->set_flashdata('error', 'Không tìm thấy nhân viên với tiêu chí tìm kiếm. Vui lòng nhập lại hoặc hủy.');
+                        $this->session->set_flashdata('search_not_found', true);
+                        $data = [
+                            'staff' => [],
+                            'content' => 'leader/staff/staff',
+                            'navlink' => 'staff',
+                        ];
+                } else {
+                    $data = [
+                        'staff' => $results,
+                        'content' => 'leader/staff/staff',
+                        'navlink' => 'staff',
+                    ];
+                }
+            } else {
+                $data = [
+                    'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                    'content' => 'leader/staff/staff',
+                    'navlink' => 'staff',
                 ];
+            }
         }
 
         $this->load->view('leader/vbackend', $data);
@@ -618,27 +653,43 @@ class Leader extends CI_Controller
 
     public function addStaff()
     {
+        $staff_code = trim($this->input->post('id_staff_custom'));
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
         $email = trim($this->input->post('email'));
         $st_status = trim($this->input->post('st_status', 1));
 
-        // Validate phone: must start with 0 and be 10 digits
-        if (!preg_match('/^0\d{9}$/', $phone)) {
-            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
+        // Validate phone: allow + and digits, length 7-15
+        if (!preg_match('/^\+?\d{7,15}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại không hợp lệ (7-15 chữ số, có thể có +)');
             redirect(site_url('leader/staff/addstaff'));
             return;
         }
 
-        // Validate email: must end with @mail.com
-        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
-            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
+        // Validate email using filter_var
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->session->set_flashdata('error', 'Email không hợp lệ');
             redirect(site_url('leader/staff/addstaff'));
             return;
+        }
+
+        // Check staff code uniqueness if provided
+        if (!empty($staff_code)) {
+            $exists = $this->db->where('id_staff', $staff_code)->get('staff')->row();
+            if ($exists) {
+                // Provide retry/cancel options via flash message and redirect back
+                $this->session->set_flashdata('error', 'Mã nhân viên đã tồn tại. Vui lòng chọn "Nhập lại" hoặc "Hủy".');
+                $this->session->set_flashdata('code_exists', true);
+                redirect(site_url('leader/staff/addstaff'));
+                return;
+            }
+        } else {
+            // Generate code if not provided
+            $staff_code = $this->crudModel->generateCode(1, 'id_staff', 'staff');
         }
 
         $add = [
-            'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
+            'id_staff' => $staff_code,
             'staff_name' => $staff_name,
             'phone' => $phone,
             'email' => $email,
@@ -659,17 +710,16 @@ class Leader extends CI_Controller
         $phone = trim($this->input->post('phone'));
         $email = trim($this->input->post('email'));
         $st_status = trim($this->input->post('st_status', 1));
-
-        // Validate phone
-        if (!preg_match('/^0\d{9}$/', $phone)) {
-            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
+        // Validate phone: allow + and digits, length 7-15
+        if (!preg_match('/^\+?\d{7,15}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại không hợp lệ (7-15 chữ số, có thể có +)');
             redirect(site_url('leader/staff/'.$id_staff.'/update'));
             return;
         }
 
-        // Validate email
-        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
-            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
+        // Validate email using filter_var
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->session->set_flashdata('error', 'Email không hợp lệ');
             redirect(site_url('leader/staff/'.$id_staff.'/update'));
             return;
         }
