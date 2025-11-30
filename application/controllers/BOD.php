@@ -34,22 +34,12 @@ class Bod extends CI_Controller
             exit();
         }
 
-        $role_name = $this->session->userdata('role_name');
-        $level = $this->session->userdata('level');
+        $role = strtolower(trim((string)$this->session->userdata('role')));
         
-        // Chỉ cho phép BOD role (level 100)
-        if ($role_name !== 'bod' && $level < 100) {
-            // Redirect về trang phù hợp với role
-            if ($role_name === 'system_admin') {
-                redirect('admin/');
-                exit();
-            } else if ($level >= 50) {
-                redirect('leader/');
-                exit();
-            } else {
-                redirect('login/');
-                exit();
-            }
+        // Chỉ cho phép BOD role
+        if ($role !== 'bod') {
+            show_error('Access Denied - BOD Only', 403, 'Forbidden');
+            exit();
         }
     }
 

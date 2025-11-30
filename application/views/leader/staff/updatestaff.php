@@ -30,12 +30,12 @@
                     <?php if ($this->session->flashdata('error')): ?>
                         <div class="alert alert-danger" role="alert"><?= $this->session->flashdata('error'); ?></div>
                     <?php endif; ?>
-                    <form class="pt-4" action="<?= site_url('admin/updatestaff'); ?>" method="post">
+                    <form class="pt-4" action="<?= site_url('leader/updatestaff'); ?>" method="post">
                         <span><?= lang('table_staff_name'); ?></span></br>
                         <div class="input-group input-group-dynamic mb-4">
                             <label class="form-label"></label>
                             <input type="hidden" name="id_staff" value="<?= $detail['id_staff']; ?>">
-                            <input type="text" name="staff_name" value="<?= $detail['staff_name']; ?>" class="form-control">                  
+                            <input type="text" name="staff_name" value="<?= $detail['staff_name']; ?>" class="form-control" required>                  
                         </div>
                         <div class="row d-flex">
                             <div class="col-4">
@@ -55,21 +55,19 @@
                             </div>
                             </div>
                         </div>
-                        <?php if (!isset($is_read_only) || !$is_read_only): ?>
-                            <div class="row d-flex">
-                                <div class="col-6">
-                                    <span><?= lang('table_status'); ?></span></br>
-                                    <div class="input-group input-group-dynamic mb-4">
-                                        <label class="form-label"></label>
-                                        <select name="st_status" class="form-control" required>
-                                            <option value="1" <?= ($detail['st_status'] == 1) ? 'selected' : ''; ?>>Sẵn sàng</option>
-                                            <option value="2" <?= ($detail['st_status'] == 2) ? 'selected' : ''; ?>>Đã xếp lịch</option>
-                                            <option value="3" <?= ($detail['st_status'] == 3) ? 'selected' : ''; ?>>Ngừng hoạt động</option>
-                                        </select>
-                                    </div>
+                        <div class="row d-flex">
+                            <div class="col-6">
+                                <span><?= lang('table_status'); ?></span></br>
+                                <div class="input-group input-group-dynamic mb-4">
+                                    <label class="form-label"></label>
+                                    <select name="st_status" class="form-control" required>
+                                        <option value="1" <?= ($detail['st_status'] == 1) ? 'selected' : ''; ?>>Sẵn sàng</option>
+                                        <option value="2" <?= ($detail['st_status'] == 2) ? 'selected' : ''; ?>>Đã xếp lịch</option>
+                                        <option value="3" <?= ($detail['st_status'] == 3) ? 'selected' : ''; ?>>Ngừng hoạt động</option>
+                                    </select>
                                 </div>
                             </div>
-                        <?php endif; ?>
+                        </div>
 
                     </div>
                 </div>
@@ -79,7 +77,7 @@
                     </div>
                     <div class="d-flex">
                         <div class="pt-2 pl-2">
-                            <a class="btn btn-outline-dark btn-sm mb-0" href="<?= site_url('admin/project'); ?>"><?= lang('btn_back'); ?></a>
+                            <a class="btn btn-outline-dark btn-sm mb-0" href="<?= site_url('leader/staff'); ?>"><?= lang('btn_back'); ?></a>
                         </div>
                         <div class="pt-2 pl-2">
                             <button class="btn btn-dark btn-sm mb-0" type="submit"><?= lang('btn_save'); ?></button>

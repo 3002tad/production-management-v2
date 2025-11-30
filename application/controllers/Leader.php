@@ -16,25 +16,18 @@ class Leader extends CI_Controller
         }
         
         // RBAC: Check if user has leader/line manager access
-        // Allow: BOD, System Admin, Line Manager, and temporarily other roles
-        $role_name = $this->session->userdata('role_name');
-        $level = $this->session->userdata('level');
-        $old_role = $this->session->userdata('role'); // Backward compatibility
-        
-        $has_access = false;
-        
-        // New RBAC system
-        if ($role_name) {
-            $allowed_roles = ['bod', 'system_admin', 'line_manager', 'warehouse_staff', 'qc_staff', 'technical_staff'];
-            $has_access = in_array($role_name, $allowed_roles) || ($level >= 50);
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
         }
-        // Old system fallback
-        elseif ($old_role === 'leader' || $old_role === 'admin') {
-            $has_access = true;
-        }
+        $role = strtolower(trim((string)$role));
         
-        if (!$has_access) {
-            show_error('Access Denied - Insufficient Permissions', 403, 'Forbidden');
+        // Allowed roles for Leader page
+        $allowed_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin'];
+        
+        if (!in_array($role, $allowed_roles, true)) {
+            log_message('error', 'Leader access denied for user ' . $this->session->userdata('username') . ' with role=' . $role);
+            show_error('Access Denied - Insufficient Permissions. Your role: ' . var_export($role, true), 403, 'Forbidden');
         }
     }
 
@@ -557,6 +550,194 @@ class Leader extends CI_Controller
         ];
 
         $this->load->view('leader/vbackend', $data);
+    }
+
+    // =====================================================
+    // STAFF MANAGEMENT (Quản lý Nhân sự)
+    // Only Leader has full CRUD access
+    // =====================================================
+    
+    public function staff()
+    {
+        if ($this->uri->segment(3) === 'addstaff') {
+
+            $data = [
+                'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                'content' => 'leader/staff/addstaff',
+                'navlink' => 'staff',
+                ];
+
+        } elseif ($this->uri->segment(4) === 'update') {
+
+            $id = $this->uri->segment(3);
+            
+            $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
+
+            $data = [
+                'detail' => [
+                    'id_staff' => $tampil->id_staff,
+                    'staff_name' => $tampil->staff_name,
+                    'phone' => $tampil->phone,
+                    'email' => $tampil->email,
+                    'st_status' => $tampil->st_status,
+                ],
+
+                'content' => 'leader/staff/updatestaff',
+                'navlink' => 'staff',
+                ];
+
+        } elseif ($this->uri->segment(4) === 'delete') {
+
+            $id = $this->uri->segment(3);
+            
+            $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
+
+            $data = [
+                'detail' => [
+                    'id_staff' => $tampil->id_staff,
+                    'staff_name' => $tampil->staff_name,
+                    'phone' => $tampil->phone,
+                    'email' => $tampil->email,
+                    'st_status' => $tampil->st_status,
+                ],
+
+                'content' => 'leader/staff/deletestaff',
+                'navlink' => 'staff',
+                ];
+
+        } else {
+            $data = [
+                'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                'content' => 'leader/staff/staff',
+                'navlink' => 'staff',
+                ];
+        }
+
+        $this->load->view('leader/vbackend', $data);
+    }
+
+    public function addStaff()
+    {
+        $staff_name = trim($this->input->post('staff_name'));
+        $phone = trim($this->input->post('phone'));
+        $email = trim($this->input->post('email'));
+        $st_status = trim($this->input->post('st_status', 1));
+
+        // Validate phone: must start with 0 and be 10 digits
+        if (!preg_match('/^0\d{9}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
+            redirect(site_url('leader/staff/addstaff'));
+            return;
+        }
+
+        // Validate email: must end with @mail.com
+        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
+            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
+            redirect(site_url('leader/staff/addstaff'));
+            return;
+        }
+
+        $add = [
+            'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
+            'staff_name' => $staff_name,
+            'phone' => $phone,
+            'email' => $email,
+            'st_status' => $st_status,
+        ];
+
+        $this->crudModel->addData('staff', $add);
+
+        $this->session->set_flashdata('flash', 'ditambah');
+
+        redirect(site_url('leader/staff'));
+    }
+
+    public function updateStaff()
+    {
+        $id_staff = $this->input->post('id_staff');
+        $staff_name = trim($this->input->post('staff_name'));
+        $phone = trim($this->input->post('phone'));
+        $email = trim($this->input->post('email'));
+        $st_status = trim($this->input->post('st_status', 1));
+
+        // Validate phone
+        if (!preg_match('/^0\d{9}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
+            redirect(site_url('leader/staff/'.$id_staff.'/update'));
+            return;
+        }
+
+        // Validate email
+        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
+            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
+            redirect(site_url('leader/staff/'.$id_staff.'/update'));
+            return;
+        }
+
+            // Check phone uniqueness (exclude current staff)
+            $exists = $this->db->where('phone', $phone)->where('id_staff !=', $id_staff)->get('staff')->row();
+            if ($exists) {
+                $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại cho nhân viên khác');
+                redirect(site_url('leader/staff/'.$id_staff.'/update'));
+                return;
+            }
+
+            $update = [
+            'staff_name' => $staff_name,
+            'phone' => $phone,
+            'email' => $email,
+            'st_status' => $st_status,
+        ];
+
+        $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
+
+        $this->session->set_flashdata('flash', 'diubah');
+
+        redirect(site_url('leader/staff'));
+    }
+
+    public function deleteStaff()
+    {
+        $id_staff = $this->uri->segment(3);
+
+        $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
+
+        $this->session->set_flashdata('flash', 'dihapus');
+
+        redirect(site_url('leader/staff'));
+    }
+
+    public function toggleStaffStatus()
+    {
+        // Chuyển trạng thái tuần tự: 1 -> 2 -> 3 -> 1
+        $id_staff = $this->uri->segment(3);
+
+        $staff = $this->crudModel->getDataWhere('staff', 'id_staff', $id_staff)->row();
+        if (empty($staff)) {
+            $this->session->set_flashdata('error', 'Nhân sự không tồn tại');
+            redirect(site_url('leader/staff'));
+            return;
+        }
+
+        // Cycle through three statuses
+        if ($staff->st_status == 1) {
+            $new_status = 2; // Đã xếp lịch
+        } elseif ($staff->st_status == 2) {
+            $new_status = 3; // Ngừng hoạt động
+        } else {
+            $new_status = 1; // Sẵn sàng
+        }
+
+        $update = [
+            'st_status' => $new_status,
+        ];
+
+        $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
+
+        $status_text = ($new_status == 1) ? 'Sẵn sàng' : (($new_status == 2) ? 'Đã xếp lịch' : 'Ngừng hoạt động');
+        $this->session->set_flashdata('flash', 'Trạng thái nhân sự đã thay đổi thành ' . $status_text);
+
+        redirect(site_url('leader/staff'));
     }
 
     public function logout()

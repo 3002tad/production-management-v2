@@ -16,19 +16,12 @@ class Warehouse extends CI_Controller
         }
         
         // RBAC: Check if user has warehouse access
-        // Allow: BOD, System Admin, Warehouse Staff
-        $role_name = $this->session->userdata('role_name');
-        $level = $this->session->userdata('level');
+        $role = strtolower(trim((string)$this->session->userdata('role')));
         
-        $has_access = false;
+        // Allowed roles for Warehouse
+        $allowed_roles = ['warehouse_staff', 'admin', 'bod', 'leader'];
         
-        // New RBAC system
-        if ($role_name) {
-            $allowed_roles = ['bod', 'system_admin', 'warehouse_staff'];
-            $has_access = in_array($role_name, $allowed_roles) || ($level >= 90);
-        }
-        
-        if (!$has_access) {
+        if (!in_array($role, $allowed_roles, true)) {
             show_error('Access Denied - Warehouse Staff Only', 403, 'Forbidden');
         }
     }

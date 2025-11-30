@@ -16,46 +16,17 @@ class Admin extends CI_Controller
         }
         
         // RBAC: Check if user has admin access
-        // Allow: BOD (level 100) and System Admin (level 90)
-        $role_name = $this->session->userdata('role_name');
-        $level = $this->session->userdata('level');
-        $old_role = $this->session->userdata('role'); // Backward compatibility
-        
-        // DEBUG: Show session data
-        if ($role_name === null) {
-            echo '<pre style="background: #f00; color: #fff; padding: 10px;">';
-            echo "=== DEBUG: Session Data ===\n";
-            print_r($this->session->userdata());
-            echo "\n=== Check Database ===\n";
-            echo "Please run: UPDATE user SET role_id = 1 WHERE username = 'bod';\n";
-            echo '</pre>';
-            die('Session không có role_name! Hãy logout và login lại.');
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
         }
+        $role = strtolower(trim((string)$role));
         
-        $has_access = false;
+        // Allowed roles for Admin page
+        $allowed_roles = ['admin', 'bod'];
         
-        // New RBAC system
-        if ($role_name) {
-            $allowed_roles = ['bod', 'system_admin'];
-            $has_access = in_array($role_name, $allowed_roles) || ($level >= 90);
-        }
-        // Old system fallback
-        elseif ($old_role === 'admin') {
-            $has_access = true;
-        }
-        
-        if (!$has_access) {
-            echo '<pre style="background: #f00; color: #fff; padding: 10px;">';
-            echo "=== ACCESS DENIED DEBUG ===\n";
-            echo "role_name: " . var_export($role_name, true) . "\n";
-            echo "level: " . var_export($level, true) . "\n";
-            echo "allowed_roles: " . var_export(['bod', 'system_admin'], true) . "\n";
-            echo "has_access: " . var_export($has_access, true) . "\n";
-            echo "\nNếu bạn là BOD:\n";
-            echo "1. Chạy SQL: UPDATE user SET role_id = 1 WHERE username = 'bod';\n";
-            echo "2. Logout và login lại\n";
-            echo '</pre>';
-            show_error('Access Denied - Admin Only', 403, 'Forbidden');
+        if (!in_array($role, $allowed_roles, true)) {
+            show_error('Access Denied - Admin Only. Your role: ' . var_export($role, true), 403, 'Forbidden');
         }
     }
 
@@ -596,8 +567,19 @@ class Admin extends CI_Controller
 
     public function staff()
     {
-        if ($this->uri->segment(3) === 'addstaff') {
+        // RBAC: Leader được thêm, sửa, xóa, cập nhật trạng thái; admin và bod chỉ xem
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
+        }
+        $role = strtolower(trim((string)$role));
+        $is_leader = ($role === 'leader');
+        $is_read_only = in_array($role, ['admin', 'bod']);
 
+        if ($this->uri->segment(3) === 'addstaff') {
+            if (!$is_leader) {
+                show_error('Access Denied - Only Leader can add staff', 403, 'Forbidden');
+            }
             $data = [
                 'staff' => $this->db->query('SELECT * FROM staff')->result(),
                 'content' => 'admin/staff/addstaff',
@@ -605,21 +587,22 @@ class Admin extends CI_Controller
                 ];
 
         } elseif ($this->uri->segment(4) === 'update') {
-
+            if (!$is_leader) {
+                show_error('Access Denied - Only Leader can update staff', 403, 'Forbidden');
+            }
             $id = $this->uri->segment(3);
-            
             $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
-
             $data = [
                 'detail' => [
                     'id_staff' => $tampil->id_staff,
                     'staff_name' => $tampil->staff_name,
                     'phone' => $tampil->phone,
                     'email' => $tampil->email,
+                    'st_status' => $tampil->st_status,
                 ],
-
                 'content' => 'admin/staff/updatestaff',
                 'navlink' => 'staff',
+                'is_read_only' => !$is_leader,
                 ];
 
         } else {
@@ -627,6 +610,7 @@ class Admin extends CI_Controller
                 'staff' => $this->db->query('SELECT * FROM staff')->result(),
                 'content' => 'admin/staff/staff',
                 'navlink' => 'staff',
+                'is_read_only' => !$is_leader,
                 ];
         }
 
@@ -635,11 +619,47 @@ class Admin extends CI_Controller
 
     public function addStaff()
     {
+        // RBAC: Only Leader can add staff
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
+        }
+        $role = strtolower(trim((string)$role));
+        if ($role !== 'leader') {
+            show_error('Access Denied - Only Leader can add staff', 403, 'Forbidden');
+        }
+        $staff_name = trim($this->input->post('staff_name'));
+        $phone = trim($this->input->post('phone'));
+        $email = trim($this->input->post('email'));
+
+        // Validate phone format
+        if (!preg_match('/^0\d{9}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
+            redirect(site_url('admin/staff/addstaff'));
+            return;
+        }
+
+        // Validate email
+        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
+            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
+            redirect(site_url('admin/staff/addstaff'));
+            return;
+        }
+
+        // Check phone uniqueness
+        $exists = $this->db->where('phone', $phone)->get('staff')->row();
+        if ($exists) {
+            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại cho nhân viên khác');
+            redirect(site_url('admin/staff/addstaff'));
+            return;
+        }
+
         $add = [
             'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
-            'staff_name' => trim($this->input->post('staff_name')),
-            'phone' => trim($this->input->post('phone')),
-            'email' => trim($this->input->post('email')),
+            'staff_name' => $staff_name,
+            'phone' => $phone,
+            'email' => $email,
+            'st_status' => 1,
         ];
 
         $this->crudModel->addData('staff', $add);
@@ -649,13 +669,49 @@ class Admin extends CI_Controller
 
     public function updateStaff()
     {
+        // RBAC: Only Leader can update staff
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
+        }
+        $role = strtolower(trim((string)$role));
+        if ($role !== 'leader') {
+            show_error('Access Denied - Only Leader can update staff', 403, 'Forbidden');
+        }
+
         $id_staff = $this->input->post('id_staff');
+        $staff_name = trim($this->input->post('staff_name'));
+        $phone = trim($this->input->post('phone'));
+        $email = trim($this->input->post('email'));
+        $st_status = trim($this->input->post('st_status', 1));
+
+        // Validate phone
+        if (!preg_match('/^0\d{9}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
+            redirect(site_url('admin/staff/'.$id_staff.'/update'));
+            return;
+        }
+
+        // Validate email
+        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
+            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
+            redirect(site_url('admin/staff/'.$id_staff.'/update'));
+            return;
+        }
+
+        // Check phone uniqueness (exclude current staff)
+        $exists = $this->db->where('phone', $phone)->where('id_staff !=', $id_staff)->get('staff')->row();
+        if ($exists) {
+            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại cho nhân viên khác');
+            redirect(site_url('admin/staff/'.$id_staff.'/update'));
+            return;
+        }
 
         $update = [
-            'staff_name' => trim($this->input->post('staff_name')),
-            'staff_name' => trim($this->input->post('staff_name')),
-            'phone' => trim($this->input->post('phone')),
-            'email' => trim($this->input->post('email')),
+            'staff_name' => $staff_name,
+            'phone' => $phone,
+            'email' => $email,
+            'st_status' => $st_status,
         ];
 
         $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
@@ -665,6 +721,16 @@ class Admin extends CI_Controller
 
     public function deleteStaff()
     {
+        // RBAC: Only Leader can delete staff
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
+        }
+        $role = strtolower(trim((string)$role));
+        if ($role !== 'leader') {
+            show_error('Access Denied - Only Leader can delete staff', 403, 'Forbidden');
+        }
+
         $id_staff = $this->uri->segment(3);
 
         $this->crudModel->deleteData('staff', 'id_staff', $id_staff);

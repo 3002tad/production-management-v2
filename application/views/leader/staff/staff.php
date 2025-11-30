@@ -22,11 +22,7 @@
                 <h6 class="mb-0"><?= lang('label_data_staff'); ?></h6>
             </div>
             <div class="col-4 text-end">
-                <?php if (!isset($is_read_only) || !$is_read_only): ?>
-                    <a href="<?= site_url('admin/staff/addstaff'); ?>" class="btn bg-gradient-dark mb-0"><?= lang('btn_add_staff'); ?></a>
-                <?php else: ?>
-                    <span class="badge bg-warning text-dark">View Only</span>
-                <?php endif; ?>
+                <a href="<?= site_url('leader/staff/addstaff'); ?>" class="btn bg-gradient-dark mb-0"><?= lang('btn_add_staff'); ?></a>
             </div>
         </div>
     </div>
@@ -44,9 +40,7 @@
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_phone'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_email'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_status'); ?></th>
-                        <?php if (!isset($is_read_only) || !$is_read_only): ?>
-                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_action'); ?></th>
-                        <?php endif; ?>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_action'); ?></th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
@@ -82,16 +76,17 @@
                         ?>
                         <span class="text-sm font-weight-bold"><?= $status_text; ?></span>
                         </td>
-                        <?php if (!isset($is_read_only) || !$is_read_only): ?>
-                            <td class="pl-4">
-                                <a href="<?= site_url('admin/staff/'.$value->id_staff.'/update'); ?>" rel="tooltip" title="<?= lang('tooltip_edit'); ?>" class="btn btn-info btn-link btn-sm">
-                                    <i class="material-icons">edit</i>
-                                </a>
-                                <a href="<?= site_url('admin/deleteStaff/'.$value->id_staff); ?>" rel="tooltip" title="<?= lang('tooltip_remove'); ?>" class="btn btn-danger btn-link btn-sm">
-                                    <i class="material-icons">close</i>
-                                </a>
-                            </td>
-                        <?php endif; ?>
+                        <td class="pl-4">
+                            <a href="<?= site_url('leader/staff/'.$value->id_staff.'/update'); ?>" rel="tooltip" title="<?= lang('tooltip_edit'); ?>" class="btn btn-info btn-link btn-sm">
+                                <i class="material-icons">edit</i>
+                            </a>
+                            <a href="<?= site_url('leader/toggleStaffStatus/'.$value->id_staff); ?>" rel="tooltip" title="Thay đổi trạng thái" class="btn btn-warning btn-link btn-sm">
+                                <i class="material-icons">power_settings_new</i>
+                            </a>
+                            <a href="<?= site_url('leader/staff/'.$value->id_staff.'/delete'); ?>" rel="tooltip" title="<?= lang('tooltip_remove'); ?>" class="btn btn-danger btn-link btn-sm">
+                                <i class="material-icons">close</i>
+                            </a>
+                        </td>
                         </tr>
                         <?php endforeach; endif; ?>
 

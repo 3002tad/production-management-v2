@@ -82,6 +82,16 @@
           </a>
         </li>
 
+        <!-- Quản lý Nhân viên (View Only) -->
+        <li class="nav-item navbar-expand-xs">
+          <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
+            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="material-icons opacity-10">manage_accounts</i>
+            </div>
+            <span class="nav-link-text ms-1">Nhân viên</span>
+          </a>
+        </li>
+
         <!-- Kế hoạch sản xuất (View Only) -->
         <li class="navbar-vertical">
           <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
@@ -113,6 +123,14 @@
               <i class="material-icons opacity-10">receipt</i>
             </div>
             <span class="nav-link-text ms-1">Báo cáo tổng hợp</span>
+          </a>
+        </li>
+        <li class="nav-item navbar-expand-xs">
+          <a class="nav-link text-white<?= ($navlink === 'incident') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_qlns/uc15_bcsc'); ?>">
+            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+              <i class="material-icons opacity-10">report_problem</i>
+            </div>
+            <span class="nav-link-text ms-1">Sự cố</span>
           </a>
         </li>
 

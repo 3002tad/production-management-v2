@@ -124,6 +124,9 @@
                     <a class="nav-link <?= ($navlink == 'report') ? 'active' : '' ?>" href="<?= base_url('warehouse/report') ?>">
                         <i class="fas fa-chart-bar"></i> Báo cáo tồn kho
                     </a>
+                    <a class="nav-link <?= ($navlink == 'incident') ? 'active' : '' ?>" href="<?= site_url('uc15_qlns/uc15_bcsc'); ?>">
+                        <i class="fas fa-exclamation-triangle"></i> Sự cố
+                    </a>
                     <hr style="border-color: rgba(255,255,255,0.2)">
                     <a class="nav-link" href="<?= base_url('login/logout') ?>">
                         <i class="fas fa-sign-out-alt"></i> Đăng xuất

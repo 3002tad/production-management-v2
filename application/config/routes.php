@@ -56,7 +56,33 @@ $route['translate_uri_dashes'] = false;
 
 $route['search'] = 'petugas/cari_member';
 
+// UC3_QLNS Routes (Staff Management)
+$route['UC3_QLNS/Staffs'] = 'UC3_QLNS/Staffs/index';
+$route['UC3_QLNS/Staffs/create'] = 'UC3_QLNS/Staffs/create';
+$route['UC3_QLNS/Staffs/edit/(:num)'] = 'UC3_QLNS/Staffs/edit/$1';
+$route['UC3_QLNS/Staffs/deactivate/(:num)'] = 'UC3_QLNS/Staffs/deactivate/$1';
+
 // QC Module Routes
 $route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail
 $route['qc/sessions'] = 'qc/session_list';         // List all sessions
 $route['qc/reports'] = 'qc/reports';               // QC Reports
+
+// Incident Reports Routes (UC15 - BCSC)
+$route['uc15_qlns/uc15_bcsc'] = 'UC15_BCSC/UC15_BCSC/index';
+$route['uc15_qlns/uc15_bcsc/add'] = 'UC15_BCSC/UC15_BCSC/add';
+$route['uc15_qlns/uc15_bcsc/store'] = 'UC15_BCSC/UC15_BCSC/store';
+$route['uc15_qlns/uc15_bcsc/edit/(:num)'] = 'UC15_BCSC/UC15_BCSC/edit/$1';
+$route['uc15_qlns/uc15_bcsc/update/(:num)'] = 'UC15_BCSC/UC15_BCSC/update/$1';
+$route['uc15_qlns/uc15_bcsc/update_status/(:num)'] = 'UC15_BCSC/UC15_BCSC/update_status/$1';
+$route['uc15_qlns/uc15_bcsc/detail/(:num)'] = 'UC15_BCSC/UC15_BCSC/detail/$1';
+$route['uc15_qlns/uc15_bcsc/delete/(:num)'] = 'UC15_BCSC/UC15_BCSC/delete/$1';
+
+// Old routes (keep for backward compatibility)
+$route['uc15_bcsc/uc15_bcsc'] = 'UC15_BCSC/UC15_BCSC/index';
+$route['uc15_bcsc/uc15_bcsc/add'] = 'UC15_BCSC/UC15_BCSC/add';
+$route['uc15_bcsc/uc15_bcsc/store'] = 'UC15_BCSC/UC15_BCSC/store';
+$route['uc15_bcsc/uc15_bcsc/edit/(:num)'] = 'UC15_BCSC/UC15_BCSC/edit/$1';
+$route['uc15_bcsc/uc15_bcsc/update/(:num)'] = 'UC15_BCSC/UC15_BCSC/update/$1';
+$route['uc15_bcsc/uc15_bcsc/update_status/(:num)'] = 'UC15_BCSC/UC15_BCSC/update_status/$1';
+$route['uc15_bcsc/uc15_bcsc/detail/(:num)'] = 'UC15_BCSC/UC15_BCSC/detail/$1';
+$route['uc15_bcsc/uc15_bcsc/delete/(:num)'] = 'UC15_BCSC/UC15_BCSC/delete/$1';
