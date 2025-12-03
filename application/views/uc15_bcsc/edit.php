@@ -27,7 +27,8 @@
             </div>
 
             <div class="card-body px-0 pb-2">
-                <form action="<?= site_url('uc15_bcsc/uc15_bcsc/update/' . $incident->id); ?>" method="post" enctype="multipart/form-data" class="px-4 py-3">
+                <?php $controller_segment = $this->uri->segment(2) ?: 'uc15_bcsc'; ?>
+                <form action="<?= site_url('uc15_bcsc/' . $controller_segment . '/update/' . $incident->id); ?>" method="post" enctype="multipart/form-data" class="px-4 py-3">
                     <!-- Dây chuyền & Máy -->
                     <div class="row">
                         <div class="col-md-6">
@@ -122,7 +123,7 @@
                     <div class="row mt-4">
                         <div class="col-12">
                             <div class="d-flex gap-2">
-                                <a href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>" class="btn btn-secondary">
+                                <a href="<?= site_url('uc15_bcsc/' . $controller_segment); ?>" class="btn btn-secondary">
                                     <i class="material-icons text-sm me-2">arrow_back</i>Quay lại
                                 </a>
                                 <button type="submit" class="btn btn-warning">

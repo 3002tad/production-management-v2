@@ -146,11 +146,9 @@ class Login extends CI_Controller
                 }
                 exit();
             case 'technical_staff':
-                if (file_exists(APPPATH . 'controllers/Technical.php')) {
-                    redirect('technical/');
-                } else {
-                    redirect('leader/');
-                }
+            case 'technical':
+                // Technical staff redirected to incident report system
+                redirect('uc15_bcsc/technical');
                 exit();
             case 'worker':
                 // Redirect worker to incident report page (UC15_BCSC)

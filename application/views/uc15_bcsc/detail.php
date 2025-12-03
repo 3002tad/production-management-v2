@@ -119,7 +119,7 @@
                 </div>
 
                 <!-- Cập nhật trạng thái cho technical staff -->
-                <?php if ($can_update_status): ?>
+                <?php if ($can_update_status && !(isset($user_role) && in_array($user_role, ['technical', 'technical_staff']))): ?>
                     <div class="card border-1 my-4">
                         <div class="card-header bg-light">
                             <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-0">

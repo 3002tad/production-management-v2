@@ -31,6 +31,23 @@ class Leader extends CI_Controller
             log_message('error', 'Leader access denied for user ' . $this->session->userdata('username') . ' with role=' . $role);
             show_error('Access Denied - Insufficient Permissions. Your role: ' . var_export($role, true), 403, 'Forbidden');
         }
+
+        // Store role in property for later use
+        $this->user_role = $role;
+    }
+
+    /**
+     * Check if user can manage staff (add/edit/delete)
+     * Only Leader, Admin, BOD can manage staff
+     * Technical staff can only view dashboard/incident reports
+     */
+    private function check_staff_permission()
+    {
+        $staff_management_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin'];
+
+        if (!in_array($this->user_role, $staff_management_roles, true)) {
+            show_error('Access Denied - Quản lý nhân sự chỉ cho phép Leader, Admin, BOD. Role của bạn: ' . $this->user_role, 403, 'Forbidden');
+        }
     }
 
     public function index()
@@ -561,6 +578,9 @@ class Leader extends CI_Controller
     
     public function staff()
     {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
         if ($this->uri->segment(3) === 'addstaff') {
 
             $data = [
@@ -653,6 +673,9 @@ class Leader extends CI_Controller
 
     public function addStaff()
     {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
         $staff_code = trim($this->input->post('id_staff_custom'));
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
@@ -705,6 +728,9 @@ class Leader extends CI_Controller
 
     public function updateStaff()
     {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
         $id_staff = $this->input->post('id_staff');
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
@@ -748,6 +774,9 @@ class Leader extends CI_Controller
 
     public function deleteStaff()
     {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
         $id_staff = $this->uri->segment(3);
 
         $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
@@ -759,6 +788,9 @@ class Leader extends CI_Controller
 
     public function toggleStaffStatus()
     {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
         // Chuyển trạng thái tuần tự: 1 -> 2 -> 3 -> 1
         $id_staff = $this->uri->segment(3);
 
