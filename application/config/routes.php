@@ -86,3 +86,18 @@ $route['uc15_bcsc/uc15_bcsc/update/(:num)'] = 'UC15_BCSC/UC15_BCSC/update/$1';
 $route['uc15_bcsc/uc15_bcsc/update_status/(:num)'] = 'UC15_BCSC/UC15_BCSC/update_status/$1';
 $route['uc15_bcsc/uc15_bcsc/detail/(:num)'] = 'UC15_BCSC/UC15_BCSC/detail/$1';
 $route['uc15_bcsc/uc15_bcsc/delete/(:num)'] = 'UC15_BCSC/UC15_BCSC/delete/$1';
+
+// UC16 - Ghi nhận & Điều phối (Leader only assignment)
+$route['uc16_gn_dp'] = 'UC16_GN_DP/UC16_GN_DP/index';
+$route['uc16_gn_dp/view/(:num)'] = 'UC16_GN_DP/UC16_GN_DP/view/$1';
+$route['uc16_gn_dp/submit_report'] = 'UC16_GN_DP/UC16_GN_DP/submit_report';
+$route['uc16_gn_dp/confirm_dispatch'] = 'UC16_GN_DP/UC16_GN_DP/confirm_dispatch';
+$route['uc16_gn_dp/assign_action'] = 'UC16_GN_DP/UC16_GN_DP/assign_action';
+$route['uc16_gn_dp/mark_completed'] = 'UC16_GN_DP/UC16_GN_DP/mark_completed';
+$route['uc16_gn_dp/history/(:num)'] = 'UC16_GN_DP/UC16_GN_DP/history/$1';
+// UC17 - Xử lý sự cố bởi Technical (UC17_XLSC)
+$route['uc17_xlsc'] = 'UC17_XLSC/UC17_XLSC/index';
+$route['uc17_xlsc/view/(:num)'] = 'UC17_XLSC/UC17_XLSC/view/$1';
+$route['uc17_xlsc/submit_estimate'] = 'UC17_XLSC/UC17_XLSC/submit_estimate';
+$route['uc17_xlsc/update_progress'] = 'UC17_XLSC/UC17_XLSC/update_progress';
+$route['uc17_xlsc/mark_repair_done'] = 'UC17_XLSC/UC17_XLSC/mark_repair_done';

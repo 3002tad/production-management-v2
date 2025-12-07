@@ -164,7 +164,13 @@ class UC15_BCSC extends CI_Controller
         if (!$incident) {
             show_404();
         }
-
+        
+        // Load coordination / progress history if table exists
+        if ($this->db->table_exists('incident_coordination')) {
+            $coordination = $this->db->where('incident_id', $id)->order_by('created_at', 'ASC')->get('incident_coordination')->result();
+        } else {
+            $coordination = [];
+        }
         $data = [
             'incident' => $incident,
             'machines' => $this->db->get('machine')->result(),
@@ -293,9 +299,16 @@ class UC15_BCSC extends CI_Controller
         if (!$incident) {
             show_404();
         }
+        // Load coordination / progress history if table exists
+        if ($this->db->table_exists('incident_coordination')) {
+            $coordination = $this->db->where('incident_id', $id)->order_by('created_at', 'ASC')->get('incident_coordination')->result();
+        } else {
+            $coordination = [];
+        }
 
         $data = [
             'incident' => $incident,
+            'coordination' => $coordination,
             'user_role' => $this->user_role,
             'can_edit' => $this->check_permission('edit'),
             'can_delete' => $this->check_permission('delete'),

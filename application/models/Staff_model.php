@@ -119,7 +119,7 @@ class Staff_model extends CI_Model {
     {
         // Try to detect assignment tables: planning, plan_shift or similar
         // We'll check common tables used by this project.
-        $tables = ['planning', 'plan_shift', 'p_material', 'p_machine'];
+        $tables = ['planning1', 'plan_shift', 'p_material', 'p_machine'];
         foreach ($tables as $t) {
             if ($this->db->table_exists($t)) {
                 $cnt = $this->db->where('staff_id', $id)->where('status <>', 'completed')->count_all_results($t);

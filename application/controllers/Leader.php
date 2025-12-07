@@ -69,6 +69,11 @@ class Leader extends CI_Controller
             'navlink' => 'beranda',
         ];
 
+        // Fetch new incidents (status = 0) to show in dashboard notification
+        $new_incidents = $this->db->where('status', 0)->order_by('created_at', 'DESC')->get('incident_reports')->result();
+        $data['new_incidents'] = $new_incidents;
+        $data['new_incident_count'] = count($new_incidents);
+
         $this->load->view('leader/vbackend', $data);
     }
 
@@ -472,8 +477,13 @@ class Leader extends CI_Controller
                 'navlink' => 'sorting',
             ];
 
-            $this->load->view('leader/vbackend', $data);
 
+    // Get new incidents (for notification box)
+    $new_incidents = $this->db->where('status', 0)->order_by('created_at', 'DESC')->get('incident_reports')->result();
+    $data['new_incidents'] = $new_incidents;
+    $data['new_incident_count'] = count($new_incidents);
+
+    $this->load->view('leader/vbackend', $data);
         } else {
 
             $id = $this->uri->segment(3);

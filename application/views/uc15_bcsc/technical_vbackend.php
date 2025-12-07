@@ -49,6 +49,23 @@
                       </a>
                     </li>
 
+                    <!-- Quick: New Incident (leader only) -->
+                    <?php if (isset($user_role) && in_array($user_role, ['leader', 'line_manager', 'leader_staff'], true)): ?>
+                      <li class="nav-item mt-2">
+                        <a class="nav-link text-white d-flex align-items-center justify-content-between" href="<?= site_url('uc16_gn_dp?filter=new'); ?>">
+                          <div class="d-flex align-items-center">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                              <i class="material-icons opacity-10">add_alert</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Sự cố mới</span>
+                          </div>
+                          <?php if (isset($new_incident_count) && $new_incident_count > 0): ?>
+                            <span class="badge bg-danger ms-2" style="font-size:12px;"><?= $new_incident_count; ?></span>
+                          <?php endif; ?>
+                        </a>
+                      </li>
+                    <?php endif; ?>
+
                     <!-- Section: Reports -->
                     <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">

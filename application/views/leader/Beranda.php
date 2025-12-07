@@ -153,5 +153,74 @@
                 </div>
             </div>
         </div>
+
+        <!-- NEW INCIDENT NOTIFICATION BOX -->
+        <div class="row mt-4">
+            <div class="col-lg-12 col-md-12">
+                <div class="card">
+                    <div class="card-header card-header-danger pb-0">
+                        <h4 class="card-title">Sự Cố Mới
+                            <?php if (isset($new_incident_count) && $new_incident_count > 0): ?>
+                                <span class="badge badge-danger" style="background-color: #f4623a; color: white; font-size: 14px; padding: 5px 10px; border-radius: 20px;">
+                                    <?= $new_incident_count; ?>
+                                </span>
+                            <?php endif; ?>
+                        </h4>
+                        <p class="card-category">Danh sách sự cố chưa được xử lý</p>
+                    </div>
+                    <div class="card-body table-responsive pt-0">
+                        <?php if (!empty($new_incidents)): ?>
+                            <table class="table table-hover">
+                                <thead class="text-danger">
+                                    <th>ID</th>
+                                    <th>Máy</th>
+                                    <th>Loại Sự Cố</th>
+                                    <th>Mức Độ</th>
+                                    <th>Mô Tả</th>
+                                    <th>Hành Động</th>
+                                </thead>
+                                <tbody>
+                                <?php $i = 1; foreach ($new_incidents as $incident): ?>
+                                    <tr>
+                                        <td class="pl-4"><?= $i++; ?></td>
+                                        <td class="pl-4"><?= $incident->id_machine; ?></td>
+                                        <td class="pl-4">
+                                            <?php
+                                                $categories = [
+                                                    'equipment' => 'Thiết Bị',
+                                                    'quality' => 'Chất Lượng',
+                                                    'safety' => 'An Toàn',
+                                                    'other' => 'Khác'
+                                                ];
+                                                echo $categories[$incident->category] ?? $incident->category;
+                                            ?>
+                                        </td>
+                                        <td class="pl-4">
+                                            <span class="badge badge-<?= ($incident->severity_level == 4) ? 'danger' : (($incident->severity_level == 3) ? 'warning' : 'info'); ?>">
+                                                Mức <?= $incident->severity_level; ?>
+                                            </span>
+                                        </td>
+                                        <td class="pl-4">
+                                            <?= substr($incident->incident_description, 0, 50); ?>...
+                                        </td>
+                                        <td class="pl-4">
+                                            <a href="<?= site_url('uc16_gn_dp/view/' . $incident->id) . '#assign'; ?>" class="btn btn-sm btn-info">Chi tiết / Điều phối</a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        <?php else: ?>
+                            <div class="alert alert-success alert-with-icon" data-notify="container">
+                                <span data-notify="icon" class="nc-icon nc-check-2"></span>
+                                <span data-notify="message">
+                                    <b>Tuyệt vời!</b> Hiện tại không có sự cố nào cần xử lý.
+                                </span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

@@ -73,7 +73,69 @@
                     </div>
                 </div>
 
-                <!-- Ảnh/Video -->
+                    <!-- Tiến độ xử lý (Progress history) -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Tiến Độ Xử Lý</h6>
+                        </div>
+                        <div class="card-body">
+                            <?php if (!empty($coordination)): ?>
+                                <?php foreach ($coordination as $c): ?>
+                                    <div class="mb-3 border p-3" style="background-color:#f8f9fa;border-radius:4px;">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong><?= htmlspecialchars($c->action_type); ?></strong>
+                                                <div class="text-muted small"><?= date('d/m/Y H:i', strtotime($c->created_at)); ?></div>
+                                            </div>
+                                            <div>
+                                                <span class="badge bg-<?= (in_array($c->status, ['in_progress','submitted','repair_done_by_technical'])) ? 'warning' : 'secondary'; ?>"><?= htmlspecialchars($c->status ?? ''); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <?php if (!empty($c->shift_info)): ?><strong>Thời gian/Info:</strong> <?= nl2br(htmlspecialchars($c->shift_info)); ?><br><?php endif; ?>
+                                            <?php if (!empty($c->notes)): ?><strong>Ghi chú:</strong> <?= nl2br(htmlspecialchars($c->notes)); ?><?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="alert alert-info">Chưa có tiến độ xử lý nào.</div>
+                            <?php endif; ?>
+
+                            <?php if (isset($user_role) && in_array($user_role, ['technical','technical_staff'])): ?>
+                                <hr>
+                                <h6 class="mb-3">Cập Nhật Tiến Độ (Dành cho Technical)</h6>
+                                <form method="post" action="<?= site_url('uc17_xlsc/update_progress'); ?>" class="row g-2 align-items-end">
+                                    <input type="hidden" name="incident_id" value="<?= $incident->id; ?>">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Tiến độ (%)</label>
+                                        <input type="number" name="percent" min="0" max="100" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <label class="form-label">Ghi chú</label>
+                                        <input type="text" name="notes" class="form-control">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-warning w-100">Cập Nhật</button>
+                                    </div>
+                                </form>
+
+                                <hr>
+                                <form method="post" action="<?= site_url('uc17_xlsc/mark_repair_done'); ?>">
+                                    <input type="hidden" name="incident_id" value="<?= $incident->id; ?>">
+                                    <div class="row">
+                                        <div class="col-md-10">
+                                            <input type="text" name="notes" class="form-control" placeholder="Ghi chú hoàn tất (tùy chọn)">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button class="btn btn-success w-100">Hoàn Tất (Kỹ thuật)</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Ảnh/Video -->
                 <?php if (!empty($incident->media_path) && file_exists($incident->media_path)): ?>
                     <div class="card bg-light mb-4">
                         <div class="card-body">

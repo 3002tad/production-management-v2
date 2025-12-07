@@ -76,9 +76,15 @@ class Technical extends CI_Controller
             show_error('Access Denied - Insufficient Permissions', 403, 'Forbidden');
         }
 
+        // Count new incidents (status = 0) for leader badge
+        $new_incidents = $this->db->where('status', 0)->order_by('created_at', 'DESC')->get('incident_reports')->result();
+        $new_incident_count = (int) count($new_incidents);
+
         $data = [
             'incidents' => $this->bcscModel->get_all(),
             'user_role' => $this->user_role,
+            'new_incident_count' => $new_incident_count,
+            'new_incidents' => $new_incidents,
             'content' => 'uc15_bcsc/technical_beranda',
             'navlink' => 'beranda',
         ];
@@ -100,11 +106,15 @@ class Technical extends CI_Controller
             show_404();
         }
 
+        $new_incident_count = (int) $this->db->where('status', 0)->count_all_results('incident_reports');
+
         $data = [
             'incident' => $incident,
             'machines' => $this->db->get('machine')->result(),
             'staff' => $this->db->get('staff')->result(),
             'plan_shifts' => $this->db->get('plan_shift')->result(),
+            'user_role' => $this->user_role,
+            'new_incident_count' => $new_incident_count,
             'content' => 'uc15_bcsc/edit',
             'navlink' => 'beranda',
         ];
@@ -243,9 +253,20 @@ class Technical extends CI_Controller
             show_404();
         }
 
+        $new_incident_count = (int) $this->db->where('status', 0)->count_all_results('incident_reports');
+
+        // Load coordination / progress history for this incident (if table exists)
+        if ($this->db->table_exists('incident_coordination')) {
+            $coordination = $this->db->where('incident_id', $id)->order_by('created_at', 'ASC')->get('incident_coordination')->result();
+        } else {
+            $coordination = [];
+        }
+
         $data = [
             'incident' => $incident,
+            'coordination' => $coordination,
             'user_role' => $this->user_role,
+            'new_incident_count' => $new_incident_count,
             'can_edit' => $this->check_permission('edit'),
             'can_delete' => false, // Technical cannot delete
             'can_update_status' => $this->check_permission('update_status'),

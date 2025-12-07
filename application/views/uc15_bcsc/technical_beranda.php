@@ -99,6 +99,11 @@
                         <a href="<?= site_url('uc15_bcsc/technical/detail/' . $incident->id); ?>" class="btn btn-sm btn-primary mb-0">
                           <i class="fas fa-eye"></i> Chi tiết
                         </a>
+                        <?php if (isset($user_role) && in_array($user_role, ['leader', 'line_manager', 'leader_staff'])): ?>
+                          <a href="<?= site_url('uc16_gn_dp/view/' . $incident->id); ?>" class="btn btn-sm btn-warning mb-0">
+                            <i class="fas fa-bullhorn"></i> Thông báo sự cố
+                          </a>
+                        <?php endif; ?>
                       </td>
                     </tr>
                   <?php endforeach; ?>
@@ -117,6 +122,54 @@
     </div>
   </div>
 </div>
+
+  <!-- NEW INCIDENT NOTIFICATION BOX (for Technical view) -->
+  <div class="row mt-4">
+    <div class="col-lg-12 col-md-12">
+      <div class="card">
+        <div class="card-header card-header-danger pb-0">
+          <h6 class="card-title">Sự Cố Mới
+            <?php if (isset($new_incident_count) && $new_incident_count > 0): ?>
+              <span class="badge badge-danger" style="background-color: #f4623a; color: white; font-size: 14px; padding: 5px 10px; border-radius: 20px;">
+                <?= $new_incident_count; ?>
+              </span>
+            <?php endif; ?>
+          </h6>
+          <p class="card-category">Danh sách sự cố chưa được xử lý</p>
+        </div>
+        <div class="card-body table-responsive pt-0">
+          <?php if (!empty($new_incidents)): ?>
+            <table class="table table-hover">
+              <thead class="text-danger">
+                <th>ID</th>
+                <th>Máy</th>
+                <th>Loại Sự Cố</th>
+                <th>Mức Độ</th>
+                <th>Mô Tả</th>
+                <th>Hành Động</th>
+              </thead>
+              <tbody>
+                <?php $i = 1; foreach ($new_incidents as $incident): ?>
+                  <tr>
+                    <td class="pl-4"><?= $i++; ?></td>
+                    <td class="pl-4"><?= $incident->id_machine; ?></td>
+                    <td class="pl-4"><?php $map = ['equipment'=>'Thiết bị','quality'=>'Chất lượng','safety'=>'An toàn','other'=>'Khác']; echo $map[$incident->category] ?? $incident->category; ?></td>
+                    <td class="pl-4"><span class="badge badge-<?= ($incident->severity_level == 4) ? 'danger' : (($incident->severity_level == 3) ? 'warning' : 'info'); ?>">Mức <?= $incident->severity_level; ?></span></td>
+                    <td class="pl-4"><?= htmlentities(substr($incident->incident_description,0,60)); ?>...</td>
+                    <td class="pl-4">
+                      <a href="<?= site_url('uc16_gn_dp/view/' . $incident->id); ?>" class="btn btn-sm btn-warning">Báo Cáo</a>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          <?php else: ?>
+            <div class="alert alert-success">Hiện tại không có sự cố nào cần báo cáo.</div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
   $(document).ready(function() {
