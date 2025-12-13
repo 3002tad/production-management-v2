@@ -37,6 +37,33 @@
                             <input type="hidden" name="id_staff" value="<?= $detail['id_staff']; ?>">
                             <input type="text" name="staff_name" value="<?= $detail['staff_name']; ?>" class="form-control">                  
                         </div>
+
+                        <span>Bộ phận:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="department" class="form-control">
+                                <option value="">Chọn bộ phận</option>
+                                <option value="Sản Xuất" <?= ($detail['department'] == 'Sản Xuất') ? 'selected' : ''; ?>>Sản Xuất</option>
+                                <option value="IT" <?= ($detail['department'] == 'IT') ? 'selected' : ''; ?>>IT</option>
+                                <option value="Kho" <?= ($detail['department'] == 'Kho') ? 'selected' : ''; ?>>Kho</option>
+                                <option value="QC" <?= ($detail['department'] == 'QC') ? 'selected' : ''; ?>>QC</option>
+                                <option value="Kỹ Thuật" <?= ($detail['department'] == 'Kỹ Thuật') ? 'selected' : ''; ?>>Kỹ Thuật</option>
+                                <option value="Ban Giám Đốc" <?= ($detail['department'] == 'Ban Giám Đốc') ? 'selected' : ''; ?>>Ban Giám Đốc</option>
+                            </select>
+                        </div>
+
+                        <span>Chức vụ:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="position" class="form-control">
+                                <option value="">Chọn chức vụ</option>
+                                <option value="Giám Đốc" <?= ($detail['position'] == 'Giám Đốc') ? 'selected' : ''; ?>>Giám Đốc</option>
+                                <option value="Trưởng Phòng" <?= ($detail['position'] == 'Trưởng Phòng') ? 'selected' : ''; ?>>Trưởng Phòng</option>
+                                <option value="Trưởng Dây Chuyền" <?= ($detail['position'] == 'Trưởng Dây Chuyền') ? 'selected' : ''; ?>>Trưởng Dây Chuyền</option>
+                                <option value="Nhân Viên Kho" <?= ($detail['position'] == 'Nhân Viên Kho') ? 'selected' : ''; ?>>Nhân Viên Kho</option>
+                            </select>
+                        </div>
+
                         <div class="row d-flex">
                             <div class="col-4">
                                 <span><?= lang('label_phone_number'); ?></span></br>

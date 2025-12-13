@@ -69,6 +69,51 @@
                             </div>
                         </div>
 
+                        <span>Bộ phận:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="department" class="form-control">
+                                <option value="">Chọn bộ phận</option>
+                                <option value="Sản Xuất">Sản Xuất</option>
+                                <option value="IT">IT</option>
+                                <option value="Kho">Kho</option>
+                                <option value="QC">QC</option>
+                                <option value="Kỹ Thuật">Kỹ Thuật</option>
+                                <option value="Ban Giám Đốc">Ban Giám Đốc</option>
+                            </select>
+                        </div>
+
+                        <span>Chức vụ:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="position" class="form-control">
+                                <option value="">Chọn chức vụ</option>
+                                <option value="Giám Đốc">Giám Đốc</option>
+                                <option value="Trưởng Phòng">Trưởng Phòng</option>
+                                <option value="Trưởng Dây Chuyền">Trưởng Dây Chuyền</option>
+                                <option value="Nhân Viên Kho">Nhân Viên Kho</option>
+                                <option value="Công Nhân">Công Nhân</option>
+                                <option value="Kỹ Thuật Viên">Kỹ Thuật Viên</option>
+
+                            </select>
+                        </div>
+
+                        <span>Trạng thái:</span></br>
+                        <div class="mb-4">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="st_status" id="status_san_sang" value="1" checked>
+                                <label class="form-check-label" for="status_san_sang">
+                                    Sẵn sàng
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="st_status" id="status_da_xep_lich" value="2">
+                                <label class="form-check-label" for="status_da_xep_lich">
+                                    Đã xếp lịch
+                                </label>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
                 <div class="col-4">

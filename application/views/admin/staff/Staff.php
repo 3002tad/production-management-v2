@@ -33,6 +33,55 @@
 </div>
 <div class="container py-4 pl-5 pr-5">
     <div class="row">
+        <div class="col-12 mb-4">
+            <!-- Filters -->
+            <div class="card">
+                <div class="card-body">
+                    <form class="row" method="GET" action="<?= site_url('admin/staff'); ?>">
+                        <div class="col-md-4">
+                            <label class="form-label">Bộ phận:</label>
+                            <select name="department" class="form-control">
+                                <option value="">Chọn bộ phận</option>
+                                <option value="Sản Xuất" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Sản Xuất') ? 'selected' : ''; ?>>Sản Xuất</option>
+                                <option value="IT" <?php echo (isset($_GET['department']) && $_GET['department'] == 'IT') ? 'selected' : ''; ?>>IT</option>
+                                <option value="Kho" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kho') ? 'selected' : ''; ?>>Kho</option>
+                                <option value="QC" <?php echo (isset($_GET['department']) && $_GET['department'] == 'QC') ? 'selected' : ''; ?>>QC</option>
+                                <option value="Kỹ Thuật" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kỹ Thuật') ? 'selected' : ''; ?>>Kỹ Thuật</option>
+                                <option value="Ban Giám Đốc" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Ban Giám Đốc') ? 'selected' : ''; ?>>Ban Giám Đốc</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Chức vụ:</label>
+                            <select name="position" class="form-control">
+                                <option value="">Chọn chức vụ</option>
+                                <option value="Giám Đốc" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Giám Đốc') ? 'selected' : ''; ?>>Giám Đốc</option>
+                                <option value="Trưởng Phòng" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Trưởng Phòng') ? 'selected' : ''; ?>>Trưởng Phòng</option>
+                                <option value="Trưởng Dây Chuyền" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Trưởng Dây Chuyền') ? 'selected' : ''; ?>>Trưởng Dây Chuyền</option>
+                                <option value="Nhân Viên Kho" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Nhân Viên Kho') ? 'selected' : ''; ?>>Nhân Viên Kho</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status:</label>
+                            <select name="status" class="form-control">
+                                <option value="">Tất cả</option>
+                                <option value="1" <?php echo (isset($_GET['status']) && $_GET['status'] == '1') ? 'selected' : ''; ?>>Active</option>
+                                <option value="2" <?php echo (isset($_GET['status']) && $_GET['status'] == '2') ? 'selected' : ''; ?>>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <label class="form-label">Tìm theo mã NV:</label>
+                            <input type="text" name="search_code" class="form-control" placeholder="Nhập mã nhân viên" value="<?php echo isset($_GET['search_code']) ? $_GET['search_code'] : ''; ?>">
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button type="submit" class="btn btn-primary">Lọc</button>
+                            <a href="<?= site_url('admin/staff'); ?>" class="btn btn-secondary">Xóa lọc</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
         <div class="card">
         <div class="card-body pt-4 p-3">
             <div class="table-responsive p-0">
@@ -41,6 +90,8 @@
                         <tr>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_no'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_staff_name'); ?></th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Bộ phận</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Chức vụ</th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_phone'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_email'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_status'); ?></th>
@@ -61,6 +112,24 @@
                         </td>
                         <td class="pl-4">
                             <span class="text-sm font-weight-bold"><?= $value->staff_name; ?></span>
+                        </td>
+                        <td class="pl-4">
+                            <span class="text-sm font-weight-bold">
+                                <?php
+                                // Get role display name from role_id
+                                $role_name = '';
+                                if (!empty($value->department)) {
+                                    $role = $this->db->select('role_display_name')->where('role_id', $value->department)->get('roles')->row();
+                                    if ($role) {
+                                        $role_name = $role->role_display_name;
+                                    }
+                                }
+                                echo $role_name;
+                                ?>
+                            </span>
+                        </td>
+                        <td class="pl-4">
+                            <span class="text-sm font-weight-bold"><?= $value->position; ?></span>
                         </td>
                         <td class="pl-4">
                             <span class="text-sm font-weight-bold"><?= $value->phone; ?></span>

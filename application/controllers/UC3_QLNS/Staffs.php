@@ -6,7 +6,7 @@ class Staffs extends CI_Controller {
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('Staff_model');
+        $this->load->model('StaffManagementModel', 'staffModel');
         $this->load->library('session');
         $this->load->helper(array('form','url'));
         
@@ -15,7 +15,7 @@ class Staffs extends CI_Controller {
             redirect('login/');
         }
         
-        // RBAC: Check if user is leader
+        // RBAC: Check if user is leader or admin
         $role = $this->session->userdata('role');
         if (empty($role)) {
             $role = $this->session->userdata('role_name');
@@ -27,7 +27,7 @@ class Staffs extends CI_Controller {
         
         if (!in_array($role, $allowed_roles, true)) {
             log_message('error', 'UC3_QLNS access denied for user ' . $this->session->userdata('username') . ' with role=' . $role);
-            show_error('Chỉ trưởng dây chuyền được phép quản lý nhân sự. Your role: ' . var_export($role, true), 403, 'Forbidden');
+            show_error('Chỉ trưởng dây chuyền hoặc admin được phép quản lý nhân sự. Your role: ' . var_export($role, true), 403, 'Forbidden');
         }
     }
 
@@ -46,20 +46,25 @@ class Staffs extends CI_Controller {
 
     public function index()
     {
-        // list staffs, allow filtering by code or skill
-        $code = $this->input->get('code');
-        $skill = $this->input->get('skill');
+        // Get filters từ GET params
+        $filters = [
+            'department' => $this->input->get('department'),
+            'position'   => $this->input->get('position'),
+            'status'     => $this->input->get('status'),
+            'search'     => $this->input->get('search')
+        ];
 
-        $results = $this->Staff_model->search($code, $skill);
+        $data = [
+            'staff'       => $this->staffModel->getAllStaff($filters),
+            'departments' => $this->staffModel->getDepartments(),
+            'positions'   => $this->staffModel->getPositions(),
+            'statistics'  => $this->staffModel->getStatistics(),
+            'readonly'    => $this->_is_read_only(),
+            'content'     => 'uc3_qlns/list',
+            'navlink'     => 'staff'
+        ];
 
-        if (($this->input->get('code') || $this->input->get('skill')) && empty($results)) {
-            $data['error'] = 'Mã nhân sự hoặc kỹ năng không tồn tại.';
-            $data['show_retry'] = true;
-        }
-
-        $data['staffs'] = $results;
-        $data['readonly'] = $this->_is_read_only();
-        $this->load->view('uc3_qlns/list', $data);
+        $this->load->view('leader/VBackend', $data);
     }
 
     public function create()
@@ -73,18 +78,42 @@ class Staffs extends CI_Controller {
             $payload = $this->input->post();
 
             // basic validation
-            if (empty($payload['code']) || empty($payload['name'])) {
-                $data['error'] = 'Vui lòng điền đầy đủ mã và tên nhân sự.';
-                $this->load->view('uc3_qlns/form', $data);
+            if (empty($payload['staff_name'])) {
+                $data['error'] = 'Vui lòng điền tên nhân sự.';
+                $data['departments'] = $this->staffModel->getDepartments();
+                $data['positions'] = $this->staffModel->getPositions();
+                $data['content'] = 'uc3_qlns/form';
+                $this->load->view('leader/VBackend', $data);
                 return;
             }
 
-            // check duplicate code
-            if ($this->Staff_model->exists_code($payload['code'])) {
-                $data['error'] = 'Mã nhân sự đã tồn tại.';
-                $data['duplicate_code'] = true;
+            // email is required and must be unique
+            if (empty($payload['email'])) {
+                $data['error'] = 'Email là bắt buộc.';
                 $data['old'] = $payload;
-                $this->load->view('uc3_qlns/form', $data);
+                $data['departments'] = $this->staffModel->getDepartments();
+                $data['positions'] = $this->staffModel->getPositions();
+                $data['content'] = 'uc3_qlns/form';
+                $this->load->view('leader/VBackend', $data);
+                return;
+            }
+            if (!filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
+                $data['error'] = 'Email không hợp lệ.';
+                $data['old'] = $payload;
+                $data['departments'] = $this->staffModel->getDepartments();
+                $data['positions'] = $this->staffModel->getPositions();
+                $data['content'] = 'uc3_qlns/form';
+                $this->load->view('leader/VBackend', $data);
+                return;
+            }
+            if ($this->staffModel->exists_email($payload['email'])) {
+                $data['error'] = 'Email đã có trong hệ thống.';
+                $data['duplicate_email'] = true;
+                $data['old'] = $payload;
+                $data['departments'] = $this->staffModel->getDepartments();
+                $data['positions'] = $this->staffModel->getPositions();
+                $data['content'] = 'uc3_qlns/form';
+                $this->load->view('leader/VBackend', $data);
                 return;
             }
 
@@ -92,34 +121,49 @@ class Staffs extends CI_Controller {
             if (empty($payload['phone'])) {
                 $data['error'] = 'Số điện thoại là bắt buộc.';
                 $data['old'] = $payload;
-                $this->load->view('uc3_qlns/form', $data);
+                $data['departments'] = $this->staffModel->getDepartments();
+                $data['positions'] = $this->staffModel->getPositions();
+                $data['content'] = 'uc3_qlns/form';
+                $this->load->view('leader/VBackend', $data);
                 return;
             }
             if (!preg_match('/^0[0-9]{9}$/', $payload['phone'])) {
                 $data['error'] = 'Số điện thoại không hợp lệ: phải bắt đầu bằng 0 và đúng 10 chữ số (chỉ gồm số).';
                 $data['old'] = $payload;
-                $this->load->view('uc3_qlns/form', $data);
-                return;
-            }
-            // duplicate check
-            if ($this->Staff_model->exists_phone($payload['phone'])) {
-                $data['error'] = 'Số điện thoại đã có trong hệ thống.';
-                $data['duplicate_phone'] = true;
-                $data['old'] = $payload;
-                $this->load->view('uc3_qlns/form', $data);
+                $data['departments'] = $this->staffModel->getDepartments();
+                $data['positions'] = $this->staffModel->getPositions();
+                $data['content'] = 'uc3_qlns/form';
+                $this->load->view('leader/VBackend', $data);
                 return;
             }
 
-            $ok = $this->Staff_model->create($payload);
-            if ($ok) {
+            $data = [
+                'staff_name' => trim($payload['staff_name']),
+                'email'      => trim($payload['email']),
+                'phone'      => trim($payload['phone']),
+                'department' => $payload['department'] ?: 'Chưa Phân Loại',
+                'position'   => $payload['position'] ?: 'Chưa Phân Loại',
+                'staff_group' => $payload['staff_group'] ?: 'worker',
+                'st_status'  => (int)($payload['st_status'] ?: 1)
+            ];
+
+            $result = $this->staffModel->createStaff($data, $this->session->userdata('user_id'));
+
+            if ($result['success']) {
+                $this->session->set_flashdata('success', $result['message']);
                 redirect('UC3_QLNS/Staffs');
+            } else {
+                $this->session->set_flashdata('error', $result['message']);
+                redirect('UC3_QLNS/Staffs/create');
             }
-            $data['error'] = 'Lỗi hệ thống khi tạo nhân sự.';
-            $this->load->view('uc3_qlns/form', $data);
-            return;
         }
 
-        $this->load->view('uc3_qlns/form');
+        $data = [
+            'departments' => $this->staffModel->getDepartments(),
+            'positions'   => $this->staffModel->getPositions(),
+            'content'     => 'uc3_qlns/form'
+        ];
+        $this->load->view('leader/VBackend', $data);
     }
 
     public function edit($id = null)
@@ -129,7 +173,7 @@ class Staffs extends CI_Controller {
             return;
         }
 
-        $staff = $this->Staff_model->get($id);
+        $staff = $this->staffModel->getStaffById($id);
         if (!$staff) {
             show_error('Nhân sự không tồn tại.', 404);
             return;
@@ -138,57 +182,60 @@ class Staffs extends CI_Controller {
         if ($this->input->method() === 'post') {
             $payload = $this->input->post();
 
-            // logic checks: if updating code to existing code (other than self)
-            if (!empty($payload['code']) && $payload['code'] !== $staff->code && $this->Staff_model->exists_code($payload['code'])) {
-                $data['error'] = 'Mã nhân sự bị trùng.';
-                $data['show_retry'] = true;
-                $data['staff'] = $staff;
-                $this->load->view('uc3_qlns/form', $data);
-                return;
-            }
-
-            // validate phone on update: must start with 0 and be exactly 10 digits
-            if (!empty($payload['phone'])) {
-                if (!preg_match('/^0[0-9]{9}$/', $payload['phone'])) {
-                    $data['error'] = 'Số điện thoại không hợp lệ: phải bắt đầu bằng 0 và đúng 10 chữ số (chỉ gồm số).';
+            // validate email on update: must be valid and unique excluding current
+            if (!empty($payload['email'])) {
+                if (!filter_var($payload['email'], FILTER_VALIDATE_EMAIL)) {
+                    $data['error'] = 'Email không hợp lệ.';
                     $data['old'] = $payload;
                     $data['staff'] = $staff;
-                    $this->load->view('uc3_qlns/form', $data);
+                    $data['departments'] = $this->staffModel->getDepartments();
+                    $data['positions'] = $this->staffModel->getPositions();
+                    $data['content'] = 'uc3_qlns/form';
+                    $this->load->view('leader/VBackend', $data);
                     return;
                 }
                 // check duplicate excluding current staff id
-                if ($this->Staff_model->exists_phone($payload['phone'], $id)) {
-                    $data['error'] = 'Số điện thoại bị trùng trong hệ thống.';
-                    $data['duplicate_phone'] = true;
+                if ($this->staffModel->exists_email($payload['email'], $id)) {
+                    $data['error'] = 'Email bị trùng trong hệ thống.';
+                    $data['duplicate_email'] = true;
                     $data['old'] = $payload;
                     $data['staff'] = $staff;
-                    $this->load->view('uc3_qlns/form', $data);
+                    $data['departments'] = $this->staffModel->getDepartments();
+                    $data['positions'] = $this->staffModel->getPositions();
+                    $data['content'] = 'uc3_qlns/form';
+                    $this->load->view('leader/VBackend', $data);
                     return;
                 }
             }
 
-            // check skill exists (optional) — allow new skills? requirement: check and error if skill not in system
-            if (!empty($payload['skill']) && ! $this->Staff_model->skill_exists($payload['skill'])) {
-                $data['error'] = 'Kỹ năng chưa có trong hệ thống.';
-                $data['show_retry'] = true;
-                $data['staff'] = $staff;
-                $this->load->view('uc3_qlns/form', $data);
-                return;
-            }
+            $data = [
+                'staff_name' => trim($payload['staff_name']),
+                'email'      => trim($payload['email']),
+                'phone'      => trim($payload['phone']),
+                'department' => $payload['department'] ?: 'Chưa Phân Loại',
+                'position'   => $payload['position'] ?: 'Chưa Phân Loại',
+                'staff_group' => $payload['staff_group'] ?: 'worker',
+                'st_status'  => (int)($payload['st_status'] ?: 1)
+            ];
 
-            $ok = $this->Staff_model->update($id, $payload);
-            if ($ok) {
+            $result = $this->staffModel->updateStaff($id, $data, $this->session->userdata('user_id'));
+
+            if ($result['success']) {
+                $this->session->set_flashdata('success', $result['message']);
                 redirect('UC3_QLNS/Staffs');
+            } else {
+                $this->session->set_flashdata('error', $result['message']);
+                redirect('UC3_QLNS/Staffs/edit/' . $id);
             }
-
-            $data['error'] = 'Lỗi khi cập nhật.';
-            $data['staff'] = $staff;
-            $this->load->view('uc3_qlns/form', $data);
-            return;
         }
 
-        $data['staff'] = $staff;
-        $this->load->view('uc3_qlns/form', $data);
+        $data = [
+            'staff'       => $staff,
+            'departments' => $this->staffModel->getDepartments(),
+            'positions'   => $this->staffModel->getPositions(),
+            'content'     => 'uc3_qlns/form'
+        ];
+        $this->load->view('leader/VBackend', $data);
     }
 
     public function deactivate($id = null)
@@ -198,23 +245,26 @@ class Staffs extends CI_Controller {
             return;
         }
 
-        $staff = $this->Staff_model->get($id);
+        $staff = $this->staffModel->getStaffById($id);
         if (!$staff) {
             show_error('Nhân sự không tồn tại.', 404);
             return;
         }
 
-        // check assignments
-        $has_assign = $this->Staff_model->has_active_assignments($id);
-        if (!$has_assign) {
-            // No assignments: ask user whether to deactivate or leave active and allow new assignment
-            $data['staff'] = $staff;
-            $this->load->view('uc3_qlns/deactivate_confirm', $data);
-            return;
+        // Check if staff has user account
+        if ($this->staffModel->hasUserAccount($id)) {
+            $this->session->set_flashdata('error', 'Không thể xóa nhân viên đã có tài khoản user.');
+            redirect('UC3_QLNS/Staffs');
         }
 
-        // There are assignments: do not deactivate automatically
-        $this->session->set_flashdata('error', 'Nhân sự còn phân công, không thể ngừng hoạt động.');
+        $result = $this->staffModel->deleteStaff($id, $this->session->userdata('user_id'));
+
+        if ($result['success']) {
+            $this->session->set_flashdata('success', $result['message']);
+        } else {
+            $this->session->set_flashdata('error', $result['message']);
+        }
+
         redirect('UC3_QLNS/Staffs');
     }
 

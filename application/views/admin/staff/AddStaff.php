@@ -36,6 +36,33 @@
                             <label class="form-label"></label>
                             <input type="text" name="staff_name" value="" class="form-control">                  
                         </div>
+
+                        <span>Bộ phận:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="department" class="form-control">
+                                <option value="">Chọn bộ phận</option>
+                                <option value="Sản Xuất">Sản Xuất</option>
+                                <option value="IT">IT</option>
+                                <option value="Kho">Kho</option>
+                                <option value="QC">QC</option>
+                                <option value="Kỹ Thuật">Kỹ Thuật</option>
+                                <option value="Ban Giám Đốc">Ban Giám Đốc</option>
+                            </select>
+                        </div>
+
+                        <span>Chức vụ:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="position" class="form-control">
+                                <option value="">Chọn chức vụ</option>
+                                <option value="Giám Đốc">Giám Đốc</option>
+                                <option value="Trưởng Phòng">Trưởng Phòng</option>
+                                <option value="Trưởng Dây Chuyền">Trưởng Dây Chuyền</option>
+                                <option value="Nhân Viên Kho">Nhân Viên Kho</option>
+                            </select>
+                        </div>
+
                         <div class="row d-flex">
                             <div class="col-6">
                                 <span><?= lang('table_status'); ?></span></br>

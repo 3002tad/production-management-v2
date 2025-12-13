@@ -17,12 +17,11 @@
 <div class="container-fluid py-4 pt-0">
     <div class="card-header p-0 w-75 position-fixed mt-n4 mx-2 z-index-2">
         <div class="shadow-dark border-radius-lg d-flex px-5 pt-4 pb-3">
-            <div class="col-8 d-flex align-items-center"> 
-            <i class="material-icons pr-3">task</i>
+            <div class="col-8 d-flex align-items-center">
                 <h6 class="mb-0"><?= lang('label_data_staff'); ?></h6>
             </div>
             <div class="col-4 text-end">
-                <a href="<?= site_url('leader/staff/addstaff'); ?>" class="btn bg-gradient-dark mb-0"><?= lang('btn_add_staff'); ?></a>
+                <a href="<?= site_url('leader/staff/addstaff'); ?>" class="btn btn-primary mb-0"><?= lang('btn_add_staff'); ?></a>
             </div>
         </div>
     </div>
@@ -31,12 +30,86 @@
     <div class="row">
         <div class="card">
         <div class="card-body pt-4 p-3">
-            <div class="mb-3 d-flex justify-content-between">
-                <form class="d-flex" method="post" action="<?= site_url('leader/staff'); ?>">
-                    <input type="text" name="search_code" class="form-control form-control-sm mr-2" placeholder="Tìm theo mã NV">
-                    <input type="text" name="search_skill" class="form-control form-control-sm mr-2" placeholder="Tìm theo kỹ năng">
-                    <button class="btn btn-sm btn-primary" type="submit">Tìm</button>
-                    <a href="<?= site_url('leader/staff'); ?>" class="btn btn-sm btn-secondary ml-2">Hủy</a>
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-6">
+                    <div class="small-box border">
+                        <div class="inner text-center">
+                            <h3><?php echo isset($statistics['total']) ? $statistics['total'] : 0; ?></h3>
+                            <p class="mb-0">Tổng nhân viên</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box border">
+                        <div class="inner text-center">
+                            <h3><?php echo isset($statistics['active']) ? $statistics['active'] : 0; ?></h3>
+                            <p class="mb-0">Active</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box border">
+                        <div class="inner text-center">
+                            <h3><?php echo isset($statistics['with_user']) ? $statistics['with_user'] : 0; ?></h3>
+                            <p class="mb-0">Có user</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box border">
+                        <div class="inner text-center">
+                            <h3><?php echo isset($statistics['without_user']) ? $statistics['without_user'] : 0; ?></h3>
+                            <p class="mb-0">Chưa</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="mb-3">
+                <form class="row" method="GET" action="<?= site_url('leader/staff'); ?>">
+                    <div class="col-md-4">
+                        <label class="form-label">Bộ phận:</label>
+                        <select name="department" class="form-control">
+                            <option value="">Chọn bộ phận</option>
+                            <option value="Sản Xuất" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Sản Xuất') ? 'selected' : ''; ?>>Sản Xuất</option>
+                            <option value="IT" <?php echo (isset($_GET['department']) && $_GET['department'] == 'IT') ? 'selected' : ''; ?>>IT</option>
+                            <option value="Kho" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kho') ? 'selected' : ''; ?>>Kho</option>
+                            <option value="QC" <?php echo (isset($_GET['department']) && $_GET['department'] == 'QC') ? 'selected' : ''; ?>>QC</option>
+                            <option value="Kỹ Thuật" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kỹ Thuật') ? 'selected' : ''; ?>>Kỹ Thuật</option>
+                            <option value="Ban Giám Đốc" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Ban Giám Đốc') ? 'selected' : ''; ?>>Ban Giám Đốc</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Chức vụ:</label>
+                        <select name="position" class="form-control">
+                            <option value="">Chọn chức vụ</option>
+                            <option value="Giám Đốc" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Giám Đốc') ? 'selected' : ''; ?>>Giám Đốc</option>
+                            <option value="Trưởng Phòng" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Trưởng Phòng') ? 'selected' : ''; ?>>Trưởng Phòng</option>
+                            <option value="Trưởng Dây Chuyền" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Trưởng Dây Chuyền') ? 'selected' : ''; ?>>Trưởng Dây Chuyền</option>
+                            <option value="Nhân Viên Kho" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Nhân Viên Kho') ? 'selected' : ''; ?>>Nhân Viên Kho</option>
+                            <option value="Công Nhân" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Công Nhân') ? 'selected' : ''; ?>>Công Nhân</option>
+                            <option value="Kỹ Thuật Viên" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Kỹ Thuật Viên') ? 'selected' : ''; ?>>Kỹ Thuật Viên</option>
+
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Status:</label>
+                        <select name="status" class="form-control">
+                            <option value="">Tất cả</option>
+                            <option value="1" <?php echo (isset($_GET['status']) && $_GET['status'] == '1') ? 'selected' : ''; ?>>Active</option>
+                            <option value="2" <?php echo (isset($_GET['status']) && $_GET['status'] == '2') ? 'selected' : ''; ?>>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <label class="form-label">Tìm theo mã NV:</label>
+                        <input type="text" name="search_code" class="form-control" placeholder="Nhập mã nhân viên" value="<?php echo isset($_GET['search_code']) ? $_GET['search_code'] : ''; ?>">
+                    </div>
+                    <div class="col-12 mt-2">
+                        <button class="btn btn-sm btn-primary" type="submit">Lọc</button>
+                        <a href="<?= site_url('leader/staff'); ?>" class="btn btn-sm btn-secondary ml-2">Reset</a>
+                    </div>
                 </form>
             </div>
 
@@ -55,34 +128,30 @@
                 <table id="table-data" class="table align-items-center justify-content-center mb-0">
                     <thead>
                         <tr>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_no'); ?></th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_staff_name'); ?></th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_phone'); ?></th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_email'); ?></th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_status'); ?></th>
-                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_action'); ?></th>
+                        <th class="text-center">STT</th>
+                        <th>Tên nhân viên</th>
+                        <th>Số điện thoại</th>
+                        <th>Email</th>
+                        <th>Trạng thái</th>
+                        <th class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
                     <?php if (!empty($staff)) : $i = 1; foreach ($staff as $value) : ?>
                         <tr>
+                        <td class="text-center">
+                            <?= $i++; ?>
+                        </td>
                         <td>
-                        <div class="d-flex pl-3">
-                            <div class="my-auto">
-                                <h6 class="mb-0 text-sm"><?= $i++; ?></h6>
-                            </div>
-                        </div>
+                            <?= $value->staff_name; ?>
                         </td>
-                        <td class="pl-4">
-                            <span class="text-sm font-weight-bold"><?= $value->staff_name; ?></span>
+                        <td>
+                            <?= $value->phone; ?>
                         </td>
-                        <td class="pl-4">
-                            <span class="text-sm font-weight-bold"><?= $value->phone; ?></span>
+                        <td>
+                            <?= $value->email; ?>
                         </td>
-                        <td class="pl-4">
-                            <span class="text-sm font-weight-bold"><?= $value->email; ?></span>
-                        </td>
-                        <td class="pl-4">
+                        <td>
                         <?php
                             if ($value->st_status == 1) {
                                 $status_text = 'Sẵn sàng';
@@ -94,16 +163,16 @@
                                 $status_text = 'Không rõ';
                             }
                         ?>
-                        <span class="text-sm font-weight-bold"><?= $status_text; ?></span>
+                        <?= $status_text; ?>
                         </td>
-                        <td class="pl-4">
-                            <a href="<?= site_url('leader/staff/'.$value->id_staff.'/update'); ?>" rel="tooltip" title="<?= lang('tooltip_edit'); ?>" class="btn btn-info btn-link btn-sm">
+                        <td class="text-center">
+                            <a href="<?= site_url('leader/staff/'.$value->id_staff.'/update'); ?>" class="btn btn-sm btn-warning">
                                 <i class="material-icons">edit</i>
                             </a>
-                            <a href="<?= site_url('leader/toggleStaffStatus/'.$value->id_staff); ?>" rel="tooltip" title="Thay đổi trạng thái" class="btn btn-warning btn-link btn-sm">
+                            <a href="<?= site_url('leader/toggleStaffStatus/'.$value->id_staff); ?>" class="btn btn-sm btn-info">
                                 <i class="material-icons">power_settings_new</i>
                             </a>
-                            <a href="<?= site_url('leader/staff/'.$value->id_staff.'/delete'); ?>" rel="tooltip" title="<?= lang('tooltip_remove'); ?>" class="btn btn-danger btn-link btn-sm">
+                            <a href="<?= site_url('leader/staff/'.$value->id_staff.'/delete'); ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc muốn xóa nhân viên này?')">
                                 <i class="material-icons">close</i>
                             </a>
                         </td>

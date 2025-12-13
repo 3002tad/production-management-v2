@@ -56,11 +56,14 @@ $route['translate_uri_dashes'] = false;
 
 $route['search'] = 'petugas/cari_member';
 
-// UC3_QLNS Routes (Staff Management)
-$route['UC3_QLNS/Staffs'] = 'UC3_QLNS/Staffs/index';
-$route['UC3_QLNS/Staffs/create'] = 'UC3_QLNS/Staffs/create';
-$route['UC3_QLNS/Staffs/edit/(:num)'] = 'UC3_QLNS/Staffs/edit/$1';
-$route['UC3_QLNS/Staffs/deactivate/(:num)'] = 'UC3_QLNS/Staffs/deactivate/$1';
+// User Management Routes (UC6 Integration)
+$route['admin/user'] = 'admin/UserController';
+$route['admin/user/add'] = 'admin/UserController/add';
+$route['admin/user/create'] = 'admin/UserController/create';
+$route['admin/user/edit/(:num)'] = 'admin/UserController/edit/$1';
+$route['admin/user/update/(:num)'] = 'admin/UserController/update/$1';
+$route['admin/user/delete/(:num)'] = 'admin/UserController/delete/$1';
+$route['admin/user/toggle_status/(:num)'] = 'admin/UserController/toggle_status/$1';
 
 // QC Module Routes
 $route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail

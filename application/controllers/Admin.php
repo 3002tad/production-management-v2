@@ -581,8 +581,17 @@ class Admin extends CI_Controller
             if (!$is_leader) {
                 show_error('Access Denied - Only Leader can add staff', 403, 'Forbidden');
             }
+
+            // Get roles for department dropdown
+            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
+
+            // Get users for position dropdown (using full_name)
+            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+
             $data = [
                 'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                'roles' => $roles,
+                'users' => $users,
                 'content' => 'admin/staff/addstaff',
                 'navlink' => 'staff',
                 ];
@@ -593,22 +602,55 @@ class Admin extends CI_Controller
             }
             $id = $this->uri->segment(3);
             $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
+
+            // Get roles for department dropdown
+            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
+
+            // Get users for position dropdown (using full_name)
+            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+
             $data = [
                 'detail' => [
                     'id_staff' => $tampil->id_staff,
                     'staff_name' => $tampil->staff_name,
                     'phone' => $tampil->phone,
                     'email' => $tampil->email,
+                    'department' => $tampil->department,
+                    'position' => $tampil->position,
                     'st_status' => $tampil->st_status,
                 ],
+                'roles' => $roles,
+                'users' => $users,
                 'content' => 'admin/staff/updatestaff',
                 'navlink' => 'staff',
                 'is_read_only' => !$is_leader,
                 ];
 
         } else {
+            // Support filters: department, position, status, search_code
+            $department = $this->input->get('department');
+            $position = $this->input->get('position');
+            $status = $this->input->get('status');
+            $search_code = $this->input->get('search_code');
+
+            $this->db->from('staff');
+            if ($department) {
+                $this->db->where('department', $department);
+            }
+            if ($position) {
+                $this->db->where('position', $position);
+            }
+            if ($status !== null && $status !== '') {
+                $this->db->where('st_status', $status);
+            }
+            if ($search_code) {
+                $this->db->where('id_staff', $search_code);
+            }
+
+            $results = $this->db->get()->result();
+
             $data = [
-                'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                'staff' => $results,
                 'content' => 'admin/staff/staff',
                 'navlink' => 'staff',
                 'is_read_only' => !$is_leader,
@@ -632,6 +674,8 @@ class Admin extends CI_Controller
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
         $email = trim($this->input->post('email'));
+        $department = trim($this->input->post('department'));
+        $position = trim($this->input->post('position'));
 
         // Validate phone format
         if (!preg_match('/^0\d{9}$/', $phone)) {
@@ -660,6 +704,8 @@ class Admin extends CI_Controller
             'staff_name' => $staff_name,
             'phone' => $phone,
             'email' => $email,
+            'department' => $department,
+            'position' => $position,
             'st_status' => 1,
         ];
 
@@ -684,6 +730,8 @@ class Admin extends CI_Controller
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
         $email = trim($this->input->post('email'));
+        $department = trim($this->input->post('department'));
+        $position = trim($this->input->post('position'));
         $st_status = trim($this->input->post('st_status', 1));
 
         // Validate phone
@@ -712,6 +760,8 @@ class Admin extends CI_Controller
             'staff_name' => $staff_name,
             'phone' => $phone,
             'email' => $email,
+            'department' => $department,
+            'position' => $position,
             'st_status' => $st_status,
         ];
 

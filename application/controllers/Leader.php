@@ -593,8 +593,16 @@ class Leader extends CI_Controller
 
         if ($this->uri->segment(3) === 'addstaff') {
 
+            // Get roles for department dropdown
+            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
+
+            // Get users for position dropdown (using full_name)
+            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+
             $data = [
                 'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                'roles' => $roles,
+                'users' => $users,
                 'content' => 'leader/staff/addstaff',
                 'navlink' => 'staff',
                 ];
@@ -605,15 +613,24 @@ class Leader extends CI_Controller
             
             $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
 
+            // Get roles for department dropdown
+            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
+
+            // Get users for position dropdown (using full_name)
+            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+
             $data = [
                 'detail' => [
                     'id_staff' => $tampil->id_staff,
                     'staff_name' => $tampil->staff_name,
                     'phone' => $tampil->phone,
                     'email' => $tampil->email,
+                    'department' => $tampil->department,
+                    'position' => $tampil->position,
                     'st_status' => $tampil->st_status,
                 ],
-
+                'roles' => $roles,
+                'users' => $users,
                 'content' => 'leader/staff/updatestaff',
                 'navlink' => 'staff',
                 ];
@@ -638,44 +655,57 @@ class Leader extends CI_Controller
                 ];
 
         } else {
-            // Support search by staff code or skill
-            $search_code = $this->input->post('search_code');
-            $search_skill = $this->input->post('search_skill');
+            // Support filters: department, position, status, search_code
+            $department = $this->input->get('department');
+            $position = $this->input->get('position');
+            $status = $this->input->get('status');
+            $search_code = $this->input->get('search_code');
 
-            if ($search_code || $search_skill) {
-                $this->db->from('staff');
-                if ($search_code) {
-                    $this->db->where('id_staff', $search_code);
-                }
-                if ($search_skill) {
-                    // some projects store skill column; use LIKE for partial match
-                    $this->db->like('skill', $search_skill);
-                }
-                $results = $this->db->get()->result();
-
-                    if (empty($results)) {
-                        // No results - show error and options to retry or cancel
-                        $this->session->set_flashdata('error', 'Không tìm thấy nhân viên với tiêu chí tìm kiếm. Vui lòng nhập lại hoặc hủy.');
-                        $this->session->set_flashdata('search_not_found', true);
-                        $data = [
-                            'staff' => [],
-                            'content' => 'leader/staff/staff',
-                            'navlink' => 'staff',
-                        ];
-                } else {
-                    $data = [
-                        'staff' => $results,
-                        'content' => 'leader/staff/staff',
-                        'navlink' => 'staff',
-                    ];
-                }
-            } else {
-                $data = [
-                    'staff' => $this->db->query('SELECT * FROM staff')->result(),
-                    'content' => 'leader/staff/staff',
-                    'navlink' => 'staff',
-                ];
+            $this->db->from('staff');
+            if ($department) {
+                $this->db->where('department', $department);
             }
+            if ($position) {
+                $this->db->where('position', $position);
+            }
+            if ($status !== null && $status !== '') {
+                $this->db->where('st_status', $status);
+            }
+            if ($search_code) {
+                $this->db->where('id_staff', $search_code);
+            }
+
+            $results = $this->db->get()->result();
+
+            // Get statistics
+            $stats = [];
+            $stats['total'] = $this->db->count_all('staff');
+            $stats['active'] = $this->db->where('st_status', 1)->count_all_results('staff');
+
+            // Count staff with user accounts using JOIN
+            $this->db->select('COUNT(DISTINCT staff.id_staff) as count');
+            $this->db->from('staff');
+            $this->db->join('user', 'staff.id_staff = user.staff_id', 'left');
+            $this->db->where('user.staff_id IS NOT NULL');
+            $with_user_result = $this->db->get()->row();
+            $stats['with_user'] = $with_user_result ? $with_user_result->count : 0;
+            $stats['without_user'] = $stats['total'] - $stats['with_user'];
+
+            // Get departments and positions for filters
+            $departments_query = $this->db->query('SELECT DISTINCT department FROM staff WHERE department IS NOT NULL AND department != "" ORDER BY department');
+            $departments = array_column($departments_query->result_array(), 'department');
+
+            $positions_query = $this->db->query('SELECT DISTINCT position FROM staff WHERE position IS NOT NULL AND position != "" ORDER BY position');
+            $positions = array_column($positions_query->result_array(), 'position');
+
+            $data = [
+                'staff' => $results,
+                'statistics' => $stats,
+                'departments' => $departments,
+                'positions' => $positions,
+                'content' => 'leader/staff/staff',
+                'navlink' => 'staff',
+            ];
         }
 
         $this->load->view('leader/vbackend', $data);
@@ -690,6 +720,8 @@ class Leader extends CI_Controller
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
         $email = trim($this->input->post('email'));
+        $department = trim($this->input->post('department'));
+        $position = trim($this->input->post('position'));
         $st_status = trim($this->input->post('st_status', 1));
 
         // Validate phone: allow + and digits, length 7-15
@@ -726,6 +758,8 @@ class Leader extends CI_Controller
             'staff_name' => $staff_name,
             'phone' => $phone,
             'email' => $email,
+            'department' => $department,
+            'position' => $position,
             'st_status' => $st_status,
         ];
 
@@ -745,6 +779,8 @@ class Leader extends CI_Controller
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
         $email = trim($this->input->post('email'));
+        $department = trim($this->input->post('department'));
+        $position = trim($this->input->post('position'));
         $st_status = trim($this->input->post('st_status', 1));
         // Validate phone: allow + and digits, length 7-15
         if (!preg_match('/^\+?\d{7,15}$/', $phone)) {
@@ -772,6 +808,8 @@ class Leader extends CI_Controller
             'staff_name' => $staff_name,
             'phone' => $phone,
             'email' => $email,
+            'department' => $department,
+            'position' => $position,
             'st_status' => $st_status,
         ];
 
