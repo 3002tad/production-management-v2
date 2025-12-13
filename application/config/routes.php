@@ -60,3 +60,12 @@ $route['search'] = 'petugas/cari_member';
 $route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail
 $route['qc/sessions'] = 'qc/session_list';         // List all sessions
 $route['qc/reports'] = 'qc/reports';               // QC Reports
+
+// Leader Module Routes - All controllers in leader/ subfolder
+// Leader dashboard and functions
+$route['leader'] = 'leader/leader/index';
+$route['leader/(:any)'] = 'leader/leader/$1';
+
+// Machine Management Routes
+$route['machine'] = 'leader/machine/index';
+$route['machine/(:any)'] = 'leader/machine/$1';

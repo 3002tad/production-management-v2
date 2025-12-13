@@ -226,7 +226,9 @@ class Leader extends CI_Controller
         $this->load->view('leader/vbackend', $data);
     }
 
-    public function machine()
+    // OLD machine function - renamed to avoid conflict with new Machine module
+    // TODO: Migrate to new Machine module or remove if deprecated
+    public function machine_old()
     {
         if ($this->uri->segment(3) === 'addmachine') {
         
