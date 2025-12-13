@@ -70,7 +70,6 @@ $route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail
 $route['qc/sessions'] = 'qc/session_list';         // List all sessions
 $route['qc/reports'] = 'qc/reports';               // QC Reports
 
-<<<<<<< HEAD
 // Leader Module Routes - All controllers in leader/ subfolder
 // Leader dashboard and functions
 $route['leader'] = 'leader/leader/index';
@@ -79,7 +78,7 @@ $route['leader/(:any)'] = 'leader/leader/$1';
 // Machine Management Routes
 $route['machine'] = 'leader/machine/index';
 $route['machine/(:any)'] = 'leader/machine/$1';
-=======
+
 // Incident Reports Routes (UC15 - BCSC)
 $route['uc15_qlns/uc15_bcsc'] = 'UC15_BCSC/UC15_BCSC/index';
 $route['uc15_qlns/uc15_bcsc/add'] = 'UC15_BCSC/UC15_BCSC/add';
@@ -114,4 +113,3 @@ $route['uc17_xlsc/view/(:num)'] = 'UC17_XLSC/UC17_XLSC/view/$1';
 $route['uc17_xlsc/submit_estimate'] = 'UC17_XLSC/UC17_XLSC/submit_estimate';
 $route['uc17_xlsc/update_progress'] = 'UC17_XLSC/UC17_XLSC/update_progress';
 $route['uc17_xlsc/mark_repair_done'] = 'UC17_XLSC/UC17_XLSC/mark_repair_done';
->>>>>>> 3dde460afe2e7a5513401214bd8cb3cafbaecf2d
