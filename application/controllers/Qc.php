@@ -26,54 +26,15 @@ class Qc extends CI_Controller
             exit();
         }
         
-        // Check QC role permission
-        // Allowed: qc_staff (role_id=5, level=60) OR higher level roles (BOD, System Admin)
-        $role_name = $this->session->userdata('role_name');
-        $role_id = $this->session->userdata('role_id');
-        $level = $this->session->userdata('level');
-        $old_role = $this->session->userdata('role'); // Backward compatibility
+        // Check QC role permission - backward compatible
+        $role = strtolower(trim((string)$this->session->userdata('role')));
         
-        // DEBUG: Hiển thị session data nếu thiếu thông tin RBAC
-        if (!$role_name && !$old_role) {
-            echo '<pre style="background: #f00; color: #fff; padding: 10px;">';
-            echo "=== DEBUG: QC Module - Session Data ===\n";
-            print_r($this->session->userdata());
-            echo "\n=== Hướng dẫn ===\n";
-            echo "1. Chạy migration RBAC: db/migrations/001_create_rbac_core_tables.sql\n";
-            echo "2. Chạy seed roles: db/migrations/002_seed_roles_data.sql\n";
-            echo "3. Logout và login lại để load role mới\n";
-            echo "\n=== Hoặc tạo user QC thủ công ===\n";
-            echo "INSERT INTO user (username, password, role_id, full_name, email, is_active)\n";
-            echo "VALUES ('qc', 'qc123', 5, 'Nhân viên QC', 'qc@company.com', 1);\n";
-            echo '</pre>';
-            die('Module QC yêu cầu hệ thống RBAC. Vui lòng chạy migrations.');
-        }
+        // Allowed roles for QC module
+        $allowed_roles = ['qc_staff', 'admin', 'bod'];
         
-        $has_access = false;
-        
-        // Kiểm tra phân quyền theo RBAC mới
-        if ($role_name) {
-            // QC Staff (role_id=5) hoặc các role có level >= 60
-            if ($role_id == 5 || $role_name === 'qc_staff' || $level >= 60) {
-                $has_access = true;
-            }
-        }
-        // Fallback: Hỗ trợ hệ thống cũ (admin có full quyền)
-        elseif ($old_role === 'admin') {
-            $has_access = true;
-        }
-        
-        if (!$has_access) {
-            $this->session->set_flashdata('error', 'Bạn không có quyền truy cập module QC. Chỉ nhân viên QC hoặc quản trị viên mới được phép.');
-            
-            // Redirect về trang phù hợp
-            if ($old_role === 'admin') {
-                redirect('admin/');
-            } elseif ($old_role === 'leader') {
-                redirect('leader/');
-            } else {
-                redirect('login/');
-            }
+        if (!in_array($role, $allowed_roles, true)) {
+            $this->session->set_flashdata('error', 'Bạn không có quyền truy cập module QC.');
+            redirect('login/');
             exit();
         }
         

@@ -27,6 +27,9 @@
             <div class="d-flex pt-4" method="post">
                 <div class="col-8">
                     <div class="card border-0 d-flex p-4 pt-0 mb-2 bg-gray-100">
+                    <?php if ($this->session->flashdata('error')): ?>
+                        <div class="alert alert-danger" role="alert"><?= $this->session->flashdata('error'); ?></div>
+                    <?php endif; ?>
                     <form class="pt-4" action="<?= site_url('admin/updatestaff'); ?>" method="post">
                         <span><?= lang('table_staff_name'); ?></span></br>
                         <div class="input-group input-group-dynamic mb-4">
@@ -34,13 +37,39 @@
                             <input type="hidden" name="id_staff" value="<?= $detail['id_staff']; ?>">
                             <input type="text" name="staff_name" value="<?= $detail['staff_name']; ?>" class="form-control">                  
                         </div>
+
+                        <span>Bộ phận:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="department" class="form-control">
+                                <option value="">Chọn bộ phận</option>
+                                <option value="Sản Xuất" <?= ($detail['department'] == 'Sản Xuất') ? 'selected' : ''; ?>>Sản Xuất</option>
+                                <option value="IT" <?= ($detail['department'] == 'IT') ? 'selected' : ''; ?>>IT</option>
+                                <option value="Kho" <?= ($detail['department'] == 'Kho') ? 'selected' : ''; ?>>Kho</option>
+                                <option value="QC" <?= ($detail['department'] == 'QC') ? 'selected' : ''; ?>>QC</option>
+                                <option value="Kỹ Thuật" <?= ($detail['department'] == 'Kỹ Thuật') ? 'selected' : ''; ?>>Kỹ Thuật</option>
+                                <option value="Ban Giám Đốc" <?= ($detail['department'] == 'Ban Giám Đốc') ? 'selected' : ''; ?>>Ban Giám Đốc</option>
+                            </select>
+                        </div>
+
+                        <span>Chức vụ:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="position" class="form-control">
+                                <option value="">Chọn chức vụ</option>
+                                <option value="Giám Đốc" <?= ($detail['position'] == 'Giám Đốc') ? 'selected' : ''; ?>>Giám Đốc</option>
+                                <option value="Trưởng Phòng" <?= ($detail['position'] == 'Trưởng Phòng') ? 'selected' : ''; ?>>Trưởng Phòng</option>
+                                <option value="Trưởng Dây Chuyền" <?= ($detail['position'] == 'Trưởng Dây Chuyền') ? 'selected' : ''; ?>>Trưởng Dây Chuyền</option>
+                                <option value="Nhân Viên Kho" <?= ($detail['position'] == 'Nhân Viên Kho') ? 'selected' : ''; ?>>Nhân Viên Kho</option>
+                            </select>
+                        </div>
+
                         <div class="row d-flex">
                             <div class="col-4">
                                 <span><?= lang('label_phone_number'); ?></span></br>
                                 <div class="input-group input-group-dynamic mb-4">
                                     <label class="form-label"></label>
-                                    <input type="hidden" name="pr_status" value="1">
-                                    <input type="number" name="phone" value="<?= $detail['phone']; ?>" class="form-control">
+                                    <input type="tel" name="phone" value="<?= $detail['phone']; ?>" class="form-control" required pattern="^0\d{9}$" minlength="10" maxlength="10" title="Số điện thoại gồm 10 chữ số và bắt đầu bằng 0">
                                 </div>
                             </div>
                             <div class="col-1">
@@ -49,10 +78,25 @@
                             <span><?= lang('table_email'); ?></span></br>
                             <div class="input-group input-group-dynamic mb-4">
                                 <label class="form-label"></label>
-                                <input type="email" name="email" value="<?= $detail['email']; ?>" class="form-control">
+                                <input type="email" name="email" value="<?= $detail['email']; ?>" class="form-control" required pattern="^[^@\s]+@mail\.com$" title="Email phải kết thúc bằng @mail.com">
                             </div>
                             </div>
                         </div>
+                        <?php if (!isset($is_read_only) || !$is_read_only): ?>
+                            <div class="row d-flex">
+                                <div class="col-6">
+                                    <span><?= lang('table_status'); ?></span></br>
+                                    <div class="input-group input-group-dynamic mb-4">
+                                        <label class="form-label"></label>
+                                        <select name="st_status" class="form-control" required>
+                                            <option value="1" <?= ($detail['st_status'] == 1) ? 'selected' : ''; ?>>Sẵn sàng</option>
+                                            <option value="2" <?= ($detail['st_status'] == 2) ? 'selected' : ''; ?>>Đã xếp lịch</option>
+                                            <option value="3" <?= ($detail['st_status'] == 3) ? 'selected' : ''; ?>>Ngừng hoạt động</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                     </div>
                 </div>

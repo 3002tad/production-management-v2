@@ -48,20 +48,36 @@
                         </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'customer') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/customer'); ?>">
-                            <div class="text-white text me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">people</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_customer'); ?></span>
-                        </a>
+                      <a class="nav-link text-white<?= ($navlink === 'customer') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/customer'); ?>">
+                        <div class="text-white text me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">people</i>
+                        </div>
+                        <span class="nav-link-text ms-1"><?= lang('menu_customer'); ?></span>
+                      </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'project') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/project'); ?>">
-                            <div class="text-white me-2 d-flex align-items justify-content">
-                            <i class="material-icons opacity-10">task</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_project'); ?></span>
-                        </a>
+                      <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
+                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">manage_accounts</i>
+                        </div>
+                        <span class="nav-link-text ms-1">Nhân viên</span>
+                      </a>
+                    </li>
+                    <li class="nav-item navbar-expand-xs">
+                      <a class="nav-link text-white<?= ($navlink === 'user') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/user'); ?>">
+                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">person</i>
+                        </div>
+                        <span class="nav-link-text ms-1">Quản lý User</span>
+                      </a>
+                    </li>
+                    <li class="nav-item navbar-expand-xs">
+                      <a class="nav-link text-white<?= ($navlink === 'project') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/project'); ?>">
+                        <div class="text-white me-2 d-flex align-items justify-content">
+                        <i class="material-icons opacity-10">task</i>
+                        </div>
+                        <span class="nav-link-text ms-1"><?= lang('menu_project'); ?></span>
+                      </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
                         <a class="nav-link text-white<?= ($navlink === 'product') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/product'); ?>">
@@ -94,14 +110,7 @@
                             <span class="nav-link-text ms-1"><?= lang('menu_shiftment'); ?></span>
                         </a>
                     </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'staff') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">manage_accounts</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_staff'); ?></span>
-                        </a>
-                    </li>
+                    <!-- staff moved above between customer and project -->
 
                     <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
@@ -155,6 +164,14 @@
                             </div>
                             <span class="nav-link-text ms-1"><?= lang('menu_warehousing'); ?></span>
                         </a>
+                    </li>
+                    <li class="nav-item navbar-expand-xs">
+                      <a class="nav-link text-white<?= ($navlink === 'incident') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
+                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">report_problem</i>
+                        </div>
+                        <span class="nav-link-text ms-1">Sự cố</span>
+                      </a>
                     </li>
                 </ul>
             </div>

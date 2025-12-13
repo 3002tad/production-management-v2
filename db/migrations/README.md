@@ -1,10 +1,28 @@
-# 📁 Database Migrations - RBAC System
+# 📁 Database Migrations
 
 ## 🎯 Tổng quan
 
-Thư mục này chứa các file SQL migration để triển khai hệ thống **RBAC (Role-Based Access Control)** cho Production Management System.
+Thư mục này chứa tất cả các SQL migrations cho Production Management System, được tổ chức thành:
+- **CAP1 (Core):** Migrations 001-006 - RBAC system
+- **CAP2:** Migrations cho Phase 2 features, organized by module
 
-## 📋 Danh sách Migrations
+## 📋 Cấu trúc Thư mục
+
+```
+db/migrations/
+├── README.md (this file)
+├── 001-006_*.sql              ← CAP1: RBAC Core System
+├── 008_fix_worker_role_*.sql  ← Legacy (see Cap2/UC15_BCSC)
+├── Cap2/                       ← Phase 2 Modules
+│   ├── README.md
+│   ├── UC15_BCSC/             ← Worker Incident Management
+│   │   ├── README.md
+│   │   └── 001_fix_worker_role_and_seed_incidents.sql
+│   └── (future modules)
+└── (other legacy files)
+```
+
+## 📋 Danh sách Migrations - CAP1 (RBAC System)
 
 | # | File | Mô tả | Status |
 |---|------|-------|--------|
@@ -15,15 +33,28 @@ Thư mục này chứa các file SQL migration để triển khai hệ thống *
 | 005 | `005_map_role_permissions.sql` | Map permissions cho 7 roles theo nghiệp vụ | ⭐ Core |
 | 006 | `006_migrate_to_full_rbac.sql` | **XÓA cột `role` cũ** - Migrate HOÀN TOÀN sang RBAC | 🔥 Breaking Change |
 
+---
+
+## 📋 Danh sách Migrations - CAP2 (Phase 2 Modules)
+
+**See individual module READMEs for details:**
+- **UC15_BCSC:** `Cap2/UC15_BCSC/README.md`
+
+| Module | Migrations | Status | Location |
+|--------|-----------|--------|----------|
+| UC15_BCSC | 2 (fix_worker_role, create_incident_table) | ✅ Ready | `Cap2/UC15_BCSC/` |
+
+---
+
 ## 🚀 Hướng dẫn Chạy Migrations
 
-### **Option 1: Chạy từng file (Khuyến nghị cho Development)**
+### **Option 0: Chạy CAP1 CORE (MUST RUN FIRST)**
 
 ```bash
 # Bước 1: Kết nối MySQL
 mysql -u root -p
 
-# Bước 2: Chạy từng migration theo thứ tự
+# Bước 2: Chạy CAP1 migrations 001-006 (theo thứ tự)
 source d:/Code/PTUD/production-management-v2/db/migrations/001_create_rbac_core_tables.sql
 source d:/Code/PTUD/production-management-v2/db/migrations/002_seed_roles_data.sql
 source d:/Code/PTUD/production-management-v2/db/migrations/003_seed_modules_data.sql
@@ -32,7 +63,12 @@ source d:/Code/PTUD/production-management-v2/db/migrations/005_map_role_permissi
 
 # Bước 3: 🔥 MIGRATE HOÀN TOÀN SANG RBAC (Xóa cột role cũ)
 source d:/Code/PTUD/production-management-v2/db/migrations/006_migrate_to_full_rbac.sql
+
+# Bước 4: 📝 CAP2 UC15_BCSC - Worker Incident Management
+source d:/Code/PTUD/production-management-v2/db/migrations/Cap2/UC15_BCSC/001_fix_worker_role_and_seed_incidents.sql
 ```
+
+**Note:** CAP1 migrations must be run before CAP2. CAP1 sets up the RBAC foundation that CAP2 modules depend on.
 
 ### **Option 2: Chạy qua phpMyAdmin**
 

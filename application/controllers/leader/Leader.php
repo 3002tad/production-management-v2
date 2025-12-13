@@ -16,25 +16,37 @@ class Leader extends CI_Controller
         }
         
         // RBAC: Check if user has leader/line manager access
-        // Allow: BOD, System Admin, Line Manager, and temporarily other roles
-        $role_name = $this->session->userdata('role_name');
-        $level = $this->session->userdata('level');
-        $old_role = $this->session->userdata('role'); // Backward compatibility
-        
-        $has_access = false;
-        
-        // New RBAC system
-        if ($role_name) {
-            $allowed_roles = ['bod', 'system_admin', 'line_manager', 'warehouse_staff', 'qc_staff', 'technical_staff'];
-            $has_access = in_array($role_name, $allowed_roles) || ($level >= 50);
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
         }
-        // Old system fallback
-        elseif ($old_role === 'leader' || $old_role === 'admin') {
-            $has_access = true;
-        }
+        $role = strtolower(trim((string)$role));
         
-        if (!$has_access) {
-            show_error('Access Denied - Insufficient Permissions', 403, 'Forbidden');
+        // Allowed roles for Leader page
+        // NOTE: adding 'technical' / 'technical_staff' allows technical users to access leader pages.
+        // If you want to keep leader pages strictly for leadership, remove these.
+        $allowed_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin', 'technical', 'technical_staff'];
+        
+        if (!in_array($role, $allowed_roles, true)) {
+            log_message('error', 'Leader access denied for user ' . $this->session->userdata('username') . ' with role=' . $role);
+            show_error('Access Denied - Insufficient Permissions. Your role: ' . var_export($role, true), 403, 'Forbidden');
+        }
+
+        // Store role in property for later use
+        $this->user_role = $role;
+    }
+
+    /**
+     * Check if user can manage staff (add/edit/delete)
+     * Only Leader, Admin, BOD can manage staff
+     * Technical staff can only view dashboard/incident reports
+     */
+    private function check_staff_permission()
+    {
+        $staff_management_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin'];
+
+        if (!in_array($this->user_role, $staff_management_roles, true)) {
+            show_error('Access Denied - Quản lý nhân sự chỉ cho phép Leader, Admin, BOD. Role của bạn: ' . $this->user_role, 403, 'Forbidden');
         }
     }
 
@@ -56,6 +68,11 @@ class Leader extends CI_Controller
             'content' => 'leader/beranda',
             'navlink' => 'beranda',
         ];
+
+        // Fetch new incidents (status = 0) to show in dashboard notification
+        $new_incidents = $this->db->where('status', 0)->order_by('created_at', 'DESC')->get('incident_reports')->result();
+        $data['new_incidents'] = $new_incidents;
+        $data['new_incident_count'] = count($new_incidents);
 
         $this->load->view('leader/vbackend', $data);
     }
@@ -462,8 +479,13 @@ class Leader extends CI_Controller
                 'navlink' => 'sorting',
             ];
 
-            $this->load->view('leader/vbackend', $data);
 
+    // Get new incidents (for notification box)
+    $new_incidents = $this->db->where('status', 0)->order_by('created_at', 'DESC')->get('incident_reports')->result();
+    $data['new_incidents'] = $new_incidents;
+    $data['new_incident_count'] = count($new_incidents);
+
+    $this->load->view('leader/vbackend', $data);
         } else {
 
             $id = $this->uri->segment(3);
@@ -559,6 +581,295 @@ class Leader extends CI_Controller
         ];
 
         $this->load->view('leader/vbackend', $data);
+    }
+
+    // =====================================================
+    // STAFF MANAGEMENT (Quản lý Nhân sự)
+    // Only Leader has full CRUD access
+    // =====================================================
+    
+    public function staff()
+    {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
+        if ($this->uri->segment(3) === 'addstaff') {
+
+            // Get roles for department dropdown
+            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
+
+            // Get users for position dropdown (using full_name)
+            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+
+            $data = [
+                'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                'roles' => $roles,
+                'users' => $users,
+                'content' => 'leader/staff/addstaff',
+                'navlink' => 'staff',
+                ];
+
+        } elseif ($this->uri->segment(4) === 'update') {
+
+            $id = $this->uri->segment(3);
+            
+            $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
+
+            // Get roles for department dropdown
+            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
+
+            // Get users for position dropdown (using full_name)
+            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+
+            $data = [
+                'detail' => [
+                    'id_staff' => $tampil->id_staff,
+                    'staff_name' => $tampil->staff_name,
+                    'phone' => $tampil->phone,
+                    'email' => $tampil->email,
+                    'department' => $tampil->department,
+                    'position' => $tampil->position,
+                    'st_status' => $tampil->st_status,
+                ],
+                'roles' => $roles,
+                'users' => $users,
+                'content' => 'leader/staff/updatestaff',
+                'navlink' => 'staff',
+                ];
+
+        } elseif ($this->uri->segment(4) === 'delete') {
+
+            $id = $this->uri->segment(3);
+            
+            $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
+
+            $data = [
+                'detail' => [
+                    'id_staff' => $tampil->id_staff,
+                    'staff_name' => $tampil->staff_name,
+                    'phone' => $tampil->phone,
+                    'email' => $tampil->email,
+                    'st_status' => $tampil->st_status,
+                ],
+
+                'content' => 'leader/staff/deletestaff',
+                'navlink' => 'staff',
+                ];
+
+        } else {
+            // Support filters: department, position, status, search_code
+            $department = $this->input->get('department');
+            $position = $this->input->get('position');
+            $status = $this->input->get('status');
+            $search_code = $this->input->get('search_code');
+
+            $this->db->from('staff');
+            if ($department) {
+                $this->db->where('department', $department);
+            }
+            if ($position) {
+                $this->db->where('position', $position);
+            }
+            if ($status !== null && $status !== '') {
+                $this->db->where('st_status', $status);
+            }
+            if ($search_code) {
+                $this->db->where('id_staff', $search_code);
+            }
+
+            $results = $this->db->get()->result();
+
+            // Get statistics
+            $stats = [];
+            $stats['total'] = $this->db->count_all('staff');
+            $stats['active'] = $this->db->where('st_status', 1)->count_all_results('staff');
+
+            // Count staff with user accounts using JOIN
+            $this->db->select('COUNT(DISTINCT staff.id_staff) as count');
+            $this->db->from('staff');
+            $this->db->join('user', 'staff.id_staff = user.staff_id', 'left');
+            $this->db->where('user.staff_id IS NOT NULL');
+            $with_user_result = $this->db->get()->row();
+            $stats['with_user'] = $with_user_result ? $with_user_result->count : 0;
+            $stats['without_user'] = $stats['total'] - $stats['with_user'];
+
+            // Get departments and positions for filters
+            $departments_query = $this->db->query('SELECT DISTINCT department FROM staff WHERE department IS NOT NULL AND department != "" ORDER BY department');
+            $departments = array_column($departments_query->result_array(), 'department');
+
+            $positions_query = $this->db->query('SELECT DISTINCT position FROM staff WHERE position IS NOT NULL AND position != "" ORDER BY position');
+            $positions = array_column($positions_query->result_array(), 'position');
+
+            $data = [
+                'staff' => $results,
+                'statistics' => $stats,
+                'departments' => $departments,
+                'positions' => $positions,
+                'content' => 'leader/staff/staff',
+                'navlink' => 'staff',
+            ];
+        }
+
+        $this->load->view('leader/vbackend', $data);
+    }
+
+    public function addStaff()
+    {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
+        $staff_code = trim($this->input->post('id_staff_custom'));
+        $staff_name = trim($this->input->post('staff_name'));
+        $phone = trim($this->input->post('phone'));
+        $email = trim($this->input->post('email'));
+        $department = trim($this->input->post('department'));
+        $position = trim($this->input->post('position'));
+        $st_status = trim($this->input->post('st_status', 1));
+
+        // Validate phone: allow + and digits, length 7-15
+        if (!preg_match('/^\+?\d{7,15}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại không hợp lệ (7-15 chữ số, có thể có +)');
+            redirect(site_url('leader/staff/addstaff'));
+            return;
+        }
+
+        // Validate email using filter_var
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->session->set_flashdata('error', 'Email không hợp lệ');
+            redirect(site_url('leader/staff/addstaff'));
+            return;
+        }
+
+        // Check staff code uniqueness if provided
+        if (!empty($staff_code)) {
+            $exists = $this->db->where('id_staff', $staff_code)->get('staff')->row();
+            if ($exists) {
+                // Provide retry/cancel options via flash message and redirect back
+                $this->session->set_flashdata('error', 'Mã nhân viên đã tồn tại. Vui lòng chọn "Nhập lại" hoặc "Hủy".');
+                $this->session->set_flashdata('code_exists', true);
+                redirect(site_url('leader/staff/addstaff'));
+                return;
+            }
+        } else {
+            // Generate code if not provided
+            $staff_code = $this->crudModel->generateCode(1, 'id_staff', 'staff');
+        }
+
+        $add = [
+            'id_staff' => $staff_code,
+            'staff_name' => $staff_name,
+            'phone' => $phone,
+            'email' => $email,
+            'department' => $department,
+            'position' => $position,
+            'st_status' => $st_status,
+        ];
+
+        $this->crudModel->addData('staff', $add);
+
+        $this->session->set_flashdata('flash', 'ditambah');
+
+        redirect(site_url('leader/staff'));
+    }
+
+    public function updateStaff()
+    {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
+        $id_staff = $this->input->post('id_staff');
+        $staff_name = trim($this->input->post('staff_name'));
+        $phone = trim($this->input->post('phone'));
+        $email = trim($this->input->post('email'));
+        $department = trim($this->input->post('department'));
+        $position = trim($this->input->post('position'));
+        $st_status = trim($this->input->post('st_status', 1));
+        // Validate phone: allow + and digits, length 7-15
+        if (!preg_match('/^\+?\d{7,15}$/', $phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại không hợp lệ (7-15 chữ số, có thể có +)');
+            redirect(site_url('leader/staff/'.$id_staff.'/update'));
+            return;
+        }
+
+        // Validate email using filter_var
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $this->session->set_flashdata('error', 'Email không hợp lệ');
+            redirect(site_url('leader/staff/'.$id_staff.'/update'));
+            return;
+        }
+
+            // Check phone uniqueness (exclude current staff)
+            $exists = $this->db->where('phone', $phone)->where('id_staff !=', $id_staff)->get('staff')->row();
+            if ($exists) {
+                $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại cho nhân viên khác');
+                redirect(site_url('leader/staff/'.$id_staff.'/update'));
+                return;
+            }
+
+            $update = [
+            'staff_name' => $staff_name,
+            'phone' => $phone,
+            'email' => $email,
+            'department' => $department,
+            'position' => $position,
+            'st_status' => $st_status,
+        ];
+
+        $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
+
+        $this->session->set_flashdata('flash', 'diubah');
+
+        redirect(site_url('leader/staff'));
+    }
+
+    public function deleteStaff()
+    {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
+        $id_staff = $this->uri->segment(3);
+
+        $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
+
+        $this->session->set_flashdata('flash', 'dihapus');
+
+        redirect(site_url('leader/staff'));
+    }
+
+    public function toggleStaffStatus()
+    {
+        // Check staff management permission (Technical NOT allowed)
+        $this->check_staff_permission();
+
+        // Chuyển trạng thái tuần tự: 1 -> 2 -> 3 -> 1
+        $id_staff = $this->uri->segment(3);
+
+        $staff = $this->crudModel->getDataWhere('staff', 'id_staff', $id_staff)->row();
+        if (empty($staff)) {
+            $this->session->set_flashdata('error', 'Nhân sự không tồn tại');
+            redirect(site_url('leader/staff'));
+            return;
+        }
+
+        // Cycle through three statuses
+        if ($staff->st_status == 1) {
+            $new_status = 2; // Đã xếp lịch
+        } elseif ($staff->st_status == 2) {
+            $new_status = 3; // Ngừng hoạt động
+        } else {
+            $new_status = 1; // Sẵn sàng
+        }
+
+        $update = [
+            'st_status' => $new_status,
+        ];
+
+        $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
+
+        $status_text = ($new_status == 1) ? 'Sẵn sàng' : (($new_status == 2) ? 'Đã xếp lịch' : 'Ngừng hoạt động');
+        $this->session->set_flashdata('flash', 'Trạng thái nhân sự đã thay đổi thành ' . $status_text);
+
+        redirect(site_url('leader/staff'));
     }
 
     public function logout()

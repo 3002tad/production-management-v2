@@ -1,0 +1,137 @@
+<nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" navbar-scroll="true">
+        <div class="container-fluid py-1 px-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('breadcrumb_staff'); ?></li>
+                </ol>
+                <h6 class="font-weight-bolder mb-0"><?= lang('btn_add_staff'); ?></h6>
+            </nav>
+        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+            <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+            <h6 class="text-sm font-weight-bolder mb-0"><?= lang('title_production_system'); ?></h6>
+            </div>
+        </div>
+    </nav>
+</br>
+<div class="d-flex justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <div class="card">
+        <div class="card-header card-header-primary">
+            <div class="row">
+                <div class="col-7 align-items-center pl-4">
+                    <h4 class="mb-0"><?= lang('title_create_staff_data'); ?></h4>
+                    <span class="text-sm mb-0 text-end"><?= lang('subtitle_create_data'); ?></span>
+                </div>
+            </div>
+            <div class="d-flex pt-4" method="post">
+                <div class="col-8">
+                    <div class="card border-0 d-flex p-4 pt-0 mb-2 bg-gray-100">
+                        <?php if ($this->session->flashdata('error')): ?>
+                            <div class="alert alert-danger" role="alert"><?= $this->session->flashdata('error'); ?></div>
+                        <?php endif; ?>
+
+                        <?php if ($this->session->flashdata('code_exists')): ?>
+                            <div class="mb-3">
+                                <a href="<?= site_url('leader/staff/addstaff'); ?>" class="btn btn-sm btn-primary mr-2">Nhập lại</a>
+                                <a href="<?= site_url('leader/staff'); ?>" class="btn btn-sm btn-secondary">Hủy</a>
+                            </div>
+                        <?php endif; ?>
+                        <form class="pt-4" action="<?= site_url('leader/addstaff'); ?>" method="post">
+                        <span><?= lang('label_staff_code'); ?> (Mã nhân viên)</span></br>
+                        <div class="input-group input-group-dynamic mb-2">
+                            <label class="form-label"></label>
+                            <input type="text" name="id_staff_custom" value="" class="form-control" required placeholder="Nhập mã nhân viên, ví dụ: NV001">
+                        </div>
+
+                        <span><?= lang('table_staff_name'); ?></span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <input type="hidden" name="st_status" value="1">
+                            <input type="text" name="staff_name" value="" class="form-control" required>                  
+                        </div>
+                        <div class="row d-flex">
+                            <div class="col-4">
+                                <span><?= lang('label_phone_number'); ?></span></br>
+                                <div class="input-group input-group-dynamic mb-4">
+                                    <label class="form-label"></label>
+                                        <input type="tel" name="phone" value="" class="form-control" required pattern="^0\d{9}$" minlength="10" maxlength="10" title="Số điện thoại gồm 10 chữ số và bắt đầu bằng 0">
+                                </div>
+                            </div>
+                            <div class="col-1">
+                            </div>
+                            <div class="col-7">
+                            <span><?= lang('table_email'); ?></span></br>
+                            <div class="input-group input-group-dynamic mb-4">
+                                <label class="form-label"></label>
+                                <input type="email" name="email" class="form-control" required pattern="^[^@\s]+@mail\.com$" title="Email phải kết thúc bằng @mail.com">
+                            </div>
+                            </div>
+                        </div>
+
+                        <span>Bộ phận:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="department" class="form-control">
+                                <option value="">Chọn bộ phận</option>
+                                <option value="Sản Xuất">Sản Xuất</option>
+                                <option value="IT">IT</option>
+                                <option value="Kho">Kho</option>
+                                <option value="QC">QC</option>
+                                <option value="Kỹ Thuật">Kỹ Thuật</option>
+                                <option value="Ban Giám Đốc">Ban Giám Đốc</option>
+                            </select>
+                        </div>
+
+                        <span>Chức vụ:</span></br>
+                        <div class="input-group input-group-dynamic mb-4">
+                            <label class="form-label"></label>
+                            <select name="position" class="form-control">
+                                <option value="">Chọn chức vụ</option>
+                                <option value="Giám Đốc">Giám Đốc</option>
+                                <option value="Trưởng Phòng">Trưởng Phòng</option>
+                                <option value="Trưởng Dây Chuyền">Trưởng Dây Chuyền</option>
+                                <option value="Nhân Viên Kho">Nhân Viên Kho</option>
+                                <option value="Công Nhân">Công Nhân</option>
+                                <option value="Kỹ Thuật Viên">Kỹ Thuật Viên</option>
+
+                            </select>
+                        </div>
+
+                        <span>Trạng thái:</span></br>
+                        <div class="mb-4">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="st_status" id="status_san_sang" value="1" checked>
+                                <label class="form-check-label" for="status_san_sang">
+                                    Sẵn sàng
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="st_status" id="status_da_xep_lich" value="2">
+                                <label class="form-check-label" for="status_da_xep_lich">
+                                    Đã xếp lịch
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="pr-2">
+                        <span><?= lang('msg_confirm_save_data'); ?></span></br>
+                    </div>
+                    <div class="d-flex">
+                        <div class="pt-2 pl-2">
+                            <a class="btn btn-outline-dark btn-sm mb-0" href="<?= site_url('leader/staff'); ?>"><?= lang('btn_back'); ?></a>
+                        </div>
+                        <div class="pt-2 pl-2">
+                            <button class="btn btn-dark btn-sm mb-0" type="submit"><?= lang('btn_save'); ?></button>
+                        </div>
+                    </div>
+                </div>
+                </form>
+            </div>
+        </div>
+        </div>
+    </div>
+<div>

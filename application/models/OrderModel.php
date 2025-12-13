@@ -455,7 +455,7 @@ class OrderModel extends CI_Model
 
         try {
             // Kiểm tra xem đơn hàng có Planning hay không
-            $planning_check = $this->db->get_where('planning', [
+            $planning_check = $this->db->get_where('planning1', [
                 'id_project' => $id_project
             ]);
 

@@ -106,21 +106,20 @@
                                             <?php endif; ?>
                                         </td>
 
-                                        <!-- Thao tác -->
-                                        <td class="align-middle">
-                                            <a href="<?= site_url('BOD/project/updateproject/' . $order->id_project); ?>" 
-                                               class="text-secondary font-weight-bold text-xs" 
-                                               data-toggle="tooltip" 
-                                               data-original-title="Sửa đơn hàng">
-                                                <i class="material-icons opacity-10">edit</i>
-                                            </a>
-                                            <a href="<?= site_url('BOD/project/deleteproject/' . $order->id_project); ?>" 
-                                               class="text-secondary font-weight-bold text-xs ms-2" 
-                                               data-toggle="tooltip" 
-                                               data-original-title="Xóa đơn hàng">
-                                                <i class="material-icons opacity-10">delete</i>
-                                            </a>
-                                        </td>
+                                                     <!-- Thao tác -->
+                                                     <td class="align-middle">
+                                                          <a href="<?= site_url('BOD/project/updateproject/' . $order->id_project); ?>" 
+                                                              class="text-primary font-weight-bold text-xs" 
+                                                              title="Sửa đơn hàng">Sửa</a>
+                                                          &nbsp;|&nbsp;
+                                                          <a href="<?= site_url('BOD/project/deactivate/' . $order->id_project); ?>" 
+                                                              class="text-warning font-weight-bold text-xs" 
+                                                              title="Ngừng hoạt động">Ngừng hoạt động</a>
+                                                          &nbsp;|&nbsp;
+                                                          <a href="<?= site_url('BOD/project/deleteproject/' . $order->id_project); ?>" 
+                                                              class="text-danger font-weight-bold text-xs" 
+                                                              title="Xóa đơn hàng" onclick="return confirm('Bạn có chắc muốn xóa đơn hàng này?');">Xóa</a>
+                                                     </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
