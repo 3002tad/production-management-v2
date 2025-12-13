@@ -35,22 +35,29 @@ class Machine extends CI_Controller
 
         // Lấy thông tin RBAC từ session
         $role_name = $this->session->userdata('role_name');
+        $role = $this->session->userdata('role'); // Backward compatibility
         $level = $this->session->userdata('level');
         
+        // Normalize role
+        if (empty($role_name) && !empty($role)) {
+            $role_name = $role;
+        }
+        $role_name = strtolower(trim((string)$role_name));
+        
         // Kiểm tra quyền truy cập theo RBAC
-        // Cho phép: BOD (level 100), System Admin (level 80), Line Manager (level 50+)
-        $allowed_roles = ['bod', 'system_admin', 'line_manager'];
+        // Cho phép: BOD, Admin, Leader, Line Manager
+        $allowed_roles = ['bod', 'system_admin', 'line_manager', 'leader', 'admin'];
         $has_access = in_array($role_name, $allowed_roles) || ($level >= 50);
         
         if (!$has_access) {
-            $this->session->set_flashdata('error', 'Không có quyền truy cập module quản lý máy. Yêu cầu level 50 trở lên.');
+            $this->session->set_flashdata('error', 'Không có quyền truy cập module quản lý máy. Role: ' . $role_name);
             redirect('leader/');
             exit();
         }
 
-        // Xác định quyền chỉnh sửa (level >= 50 có full quyền CRUD)
-        $this->can_edit = ($level >= 50);
-        $this->can_manage_maintenance = ($level >= 50);
+        // Xác định quyền chỉnh sửa
+        $this->can_edit = true;
+        $this->can_manage_maintenance = true;
     }
 
     /**

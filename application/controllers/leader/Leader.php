@@ -694,11 +694,21 @@ class Leader extends CI_Controller
             $stats['without_user'] = $stats['total'] - $stats['with_user'];
 
             // Get departments and positions for filters
-            $departments_query = $this->db->query('SELECT DISTINCT department FROM staff WHERE department IS NOT NULL AND department != "" ORDER BY department');
-            $departments = array_column($departments_query->result_array(), 'department');
-
-            $positions_query = $this->db->query('SELECT DISTINCT position FROM staff WHERE position IS NOT NULL AND position != "" ORDER BY position');
-            $positions = array_column($positions_query->result_array(), 'position');
+            $departments = [];
+            $positions = [];
+            
+            // Check if columns exist before querying
+            $columns = $this->db->list_fields('staff');
+            
+            if (in_array('department', $columns)) {
+                $departments_query = $this->db->query('SELECT DISTINCT department FROM staff WHERE department IS NOT NULL AND department != "" ORDER BY department');
+                $departments = array_column($departments_query->result_array(), 'department');
+            }
+            
+            if (in_array('position', $columns)) {
+                $positions_query = $this->db->query('SELECT DISTINCT position FROM staff WHERE position IS NOT NULL AND position != "" ORDER BY position');
+                $positions = array_column($positions_query->result_array(), 'position');
+            }
 
             $data = [
                 'staff' => $results,
