@@ -1021,6 +1021,54 @@ class Warehouse extends CI_Controller
     }
 
     /**
+     * Get shifts by date (for filtering shifts based on selected date)
+     */
+    public function get_shifts_by_date()
+    {
+        $date = $this->input->get('date');
+        if (!$date) {
+            return $this->output->set_status_header(400)->set_output(json_encode(['error' => 'Date is required']));
+        }
+
+        // Validate date format (YYYY-MM-DD)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return $this->output->set_status_header(400)->set_output(json_encode(['error' => 'Invalid date format']));
+        }
+
+        // Query shifts that match the selected date
+        // Try with shift table first, fallback without if table doesn't exist
+        $shifts = [];
+        $shift_table_exists = $this->db->table_exists('shift');
+        
+        if ($shift_table_exists) {
+            $shifts = $this->db->query('
+                SELECT ps.*, s.shift_name as ps_name 
+                FROM plan_shift ps 
+                LEFT JOIN shift s ON ps.id_shift = s.id_shift 
+                WHERE ps.start_date = ? AND ps.ps_status = 1 
+                ORDER BY ps.id_planshift DESC
+            ', [$date])->result();
+        } else {
+            // Fallback: without shift table
+            $shifts = $this->db->query('
+                SELECT ps.* 
+                FROM plan_shift ps 
+                WHERE ps.start_date = ? AND ps.ps_status = 1 
+                ORDER BY ps.id_planshift DESC
+            ', [$date])->result();
+            
+            // Add ps_name manually from id_shift if available
+            foreach ($shifts as $s) {
+                $s->ps_name = 'Shift ' . (int)$s->id_shift;
+            }
+        }
+
+        return $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['shifts' => $shifts]));
+    }
+
+    /**
      * Stock Report (Báo cáo tồn kho)
      */
     public function report()
@@ -1709,5 +1757,100 @@ class Warehouse extends CI_Controller
 
         $this->session->set_flashdata('success', 'Hủy phiếu thành công');
         redirect('warehouse/finished/receipt');
+    }
+
+    /**
+     * Get material info by ID (JSON)
+     * Returns: material details including qty_to_import
+     */
+    public function get_material_info()
+    {
+        $id_material = (int)($this->input->get('id_material') ?? 0);
+        
+        if ($id_material <= 0) {
+            return $this->output
+                ->set_status_header(400)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['error' => 'Invalid material ID']));
+        }
+
+        // Get material details
+        $material = $this->crudModel->getDataWhere('material', 'id_material', $id_material)->row();
+        
+        if (!$material) {
+            return $this->output
+                ->set_status_header(404)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['error' => 'Material not found']));
+        }
+
+        // Load materials with qty_to_import (same logic as index())
+        $materials = $this->crudModel->getData('material')->result();
+        
+        // Compute required imports per material from planning.materials
+        $plans = $this->db->query('SELECT materials FROM planning WHERE pl_status = 1')->result();
+        $need_by_name = [];
+        foreach ($plans as $pl) {
+            $arr = [];
+            if (!empty($pl->materials)) {
+                $decoded = json_decode($pl->materials, true);
+                if (is_array($decoded)) {
+                    $arr = $decoded;
+                }
+            }
+            foreach ($arr as $line) {
+                if (!is_string($line)) continue;
+                $parts = preg_split('/\s+—\s+/u', $line);
+                if (!$parts || count($parts) < 2) continue;
+                $name = trim($parts[0]);
+                $qty_str = trim($parts[1]);
+                $qty = (int)str_replace([',', '.'], '', $qty_str);
+                if (!isset($need_by_name[$name])) $need_by_name[$name] = 0;
+                $need_by_name[$name] += max(0, $qty);
+            }
+        }
+
+        // Calculate qty_to_import for this material
+        $name = isset($material->material_name) ? $material->material_name : (isset($material->name) ? $material->name : null);
+        $stock = isset($material->stock) ? (int)$material->stock : (isset($material->qty) ? (int)$material->qty : 0);
+        $min_stock = isset($material->min_stock) ? (int)$material->min_stock : 0;
+        $required = ($name && isset($need_by_name[$name])) ? (int)$need_by_name[$name] : 0;
+        $required_with_buffer = (int)ceil($required * 1.2);
+        $target_stock_level = max($required_with_buffer, $min_stock);
+        $qty_to_import = max(0, $target_stock_level - $stock);
+
+        $response = [
+            'id_material' => (int)$material->id_material,
+            'material_name' => $material->material_name ?? $material->name ?? '',
+            'current_stock' => $stock,
+            'min_stock' => $min_stock,
+            'qty_to_import' => $qty_to_import,
+            'uom' => $material->uom ?? 'g'
+        ];
+
+        return $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode($response));
+    }
+
+    /**
+     * Logout warehouse user
+     */
+    public function logout()
+    {
+        $this->load->model('LoginModel', 'login');
+        
+        // Log logout activity before destroying session
+        if ($this->session->userdata('user_id')) {
+            $this->login->log_activity(
+                $this->session->userdata('user_id'),
+                $this->session->userdata('username'),
+                'logout',
+                'auth'
+            );
+        }
+
+        $this->session->sess_destroy();
+        redirect('login/');
     }
 }

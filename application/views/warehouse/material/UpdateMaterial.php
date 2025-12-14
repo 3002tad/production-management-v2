@@ -38,7 +38,18 @@
                 </div>
                 <div class="form-group col-md-3">
                     <label>Đơn vị tính *</label>
-                    <input type="text" name="uom" class="form-control" value="<?= htmlspecialchars($d['uom'] ?? 'g') ?>" required />
+                    <select name="uom" class="form-control" required>
+                        <option value="">-- Chọn đơn vị --</option>
+                        <option value="g" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'g') ? 'selected' : '' ?>>Gram (g)</option>
+                        <option value="kg" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'kg') ? 'selected' : '' ?>>Kilogram (kg)</option>
+                        <option value="pcs" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'pcs') ? 'selected' : '' ?>>Pieces (pcs)</option>
+                        <option value="m" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'm') ? 'selected' : '' ?>>Meter (m)</option>
+                        <option value="cm" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'cm') ? 'selected' : '' ?>>Centimeter (cm)</option>
+                        <option value="mm" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'mm') ? 'selected' : '' ?>>Millimeter (mm)</option>
+                        <option value="ml" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'ml') ? 'selected' : '' ?>>Milliliter (ml)</option>
+                        <option value="l" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'l') ? 'selected' : '' ?>>Liter (l)</option>
+                        <option value="box" <?= (isset($d['uom']) && trim(strtolower($d['uom'])) === 'box') ? 'selected' : '' ?>>Box</option>
+                    </select>
                 </div>
             </div>
             <div class="mt-2">

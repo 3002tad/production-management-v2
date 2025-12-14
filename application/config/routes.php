@@ -82,6 +82,7 @@ $route['warehouse/save_stock_in'] = 'warehouse/save_stock_in';
 $route['warehouse/save_stock_out'] = 'warehouse/save_stock_out';
 $route['warehouse/material_entry_history/(:num)'] = 'warehouse/material_entry_history/$1';
 $route['warehouse/material_out_history/(:num)'] = 'warehouse/material_out_history/$1';
+$route['warehouse/get_material_info'] = 'warehouse/get_material_info';
 $route['warehouse/report'] = 'warehouse/report';
 $route['warehouse/export_dashboard'] = 'warehouse/export_dashboard';
 $route['warehouse/project'] = 'warehouse/project';

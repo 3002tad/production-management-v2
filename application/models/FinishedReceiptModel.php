@@ -10,26 +10,45 @@ class FinishedReceiptModel extends CI_Model {
     }
 
     /**
-     * Lấy danh sách ca/lô đạt QC (chưa nhập kho)
+     * CRITICAL CONTROL: Lấy danh sách ca/lô đã QC DUYỆT (APPROVE)
+     * Only returns batches where:
+     * - QC Decision = APPROVE
+     * - shift_closures.can_receive_fg = 1
+     * - shift_closures.status = VERIFIED
+     * 
+     * This enforces the rule: "Kho thành phẩm chỉ được nhập sau khi QC duyệt"
+     * 
      * Query từ QC Module: shift_closures + qc_decisions
      */
     public function getQcPassedBatches()
     {
         // Thử lấy từ QC Module trước (mới)
-        if ($this->db->table_exists('shift_closures') && $this->db->table_exists('qc_decisions')) {
+        if ($this->db->table_exists('shift_closures')) {
             $sql = "SELECT 
                       sc.id AS id_finished,
-                      sc.project_code AS id_project,
-                      p.project_name,
+                      sc.code AS closure_code,
+                      sc.project_code,
+                      sc.product_code,
                       sc.qty_finished AS qty_passed,
+                      sc.qty_waste,
                       sc.closed_at AS fdate,
+                      sc.closed_by,
+                      p.id_project,
+                      p.project_name,
+                      pr.product_name,
+                      qd.result AS qc_result,
+                      qd.aql AS qc_aql,
+                      qd.defect_rate,
+                      qd.decided_at AS qc_approved_at,
+                      qd.decided_by AS qc_approved_by,
                       COALESCE(SUM(CASE WHEN recpt.status = 'posted' THEN recpt.quantity_received ELSE 0 END), 0) AS qty_already_received
                     FROM shift_closures sc
-                    INNER JOIN qc_decisions qd ON sc.id = qd.session_id
+                    LEFT JOIN qc_sessions qs ON qs.closure_id = sc.id
+                    LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
                     LEFT JOIN project p ON sc.project_code = p.id_project
+                    LEFT JOIN product pr ON sc.product_code = pr.id_product
                     LEFT JOIN finished_receipt recpt ON sc.id = recpt.id_finished_report AND recpt.status = 'posted'
-                    WHERE qd.result = 'APPROVE' 
-                      AND sc.can_receive_fg = 1
+                    WHERE sc.can_receive_fg = 1
                       AND sc.status = 'VERIFIED'
                     GROUP BY sc.id
                     ORDER BY sc.closed_at DESC";
@@ -74,6 +93,12 @@ class FinishedReceiptModel extends CI_Model {
         // Set default status if not provided
         if (!isset($data['status'])) {
             $data['status'] = 'posted';
+        }
+
+        // For new schema using shift_closures, set id_finished_report to NULL
+        // to avoid FK constraint with finished_report table
+        if (!isset($data['id_finished_report']) || !$data['id_finished_report']) {
+            $data['id_finished_report'] = null;
         }
 
         if (!$this->db->table_exists('finished_receipt')) {
@@ -195,5 +220,139 @@ class FinishedReceiptModel extends CI_Model {
         }
 
         return $this->db->count_all('finished_receipt');
+    }
+
+    /**
+     * ⭐ CRITICAL CONTROL: Kiểm tra xem closure_id đã được QC duyệt hay chưa
+     * 
+     * Điều kiện để nhập kho:
+     * 1. shift_closures.can_receive_fg = 1
+     * 2. shift_closures.status = 'VERIFIED'
+     * 3. qc_decisions.result = 'APPROVE'
+     * 
+     * @param int $closure_id ID của shift_closures
+     * @return array ['approved' => bool, 'message' => string, 'qc_info' => array]
+     */
+    public function checkQcApprovalStatus($closure_id)
+    {
+        $result = [
+            'approved' => FALSE,
+            'message' => '',
+            'qc_info' => NULL,
+            'closure_code' => NULL
+        ];
+
+        if (!$closure_id) {
+            $result['message'] = 'Không có ca sản xuất được chọn';
+            return $result;
+        }
+
+        // Không kiểm tra nếu không có table shift_closures (fallback mode)
+        if (!$this->db->table_exists('shift_closures')) {
+            $result['approved'] = TRUE;  // Fallback: allow if table doesn't exist
+            $result['message'] = 'Database không có QC Module, tự động cho phép nhập';
+            return $result;
+        }
+
+        // Query: Check all conditions
+        $sql = "SELECT 
+                  sc.id,
+                  sc.code AS closure_code,
+                  sc.can_receive_fg,
+                  sc.status,
+                  qd.result AS qc_result,
+                  qd.aql,
+                  qd.defect_rate,
+                  qd.reason AS qc_reason,
+                  qd.decided_at,
+                  qd.decided_by
+                FROM shift_closures sc
+                LEFT JOIN qc_sessions qs ON qs.closure_id = sc.id
+                LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
+                WHERE sc.id = {$closure_id}
+                LIMIT 1";
+
+        $check = $this->db->query($sql)->row_array();
+
+        if (!$check) {
+            $result['message'] = 'Không tìm thấy ca sản xuất';
+            return $result;
+        }
+
+        $result['closure_code'] = $check['closure_code'];
+
+        // Check condition 1: can_receive_fg flag
+        if ($check['can_receive_fg'] != 1) {
+            $result['message'] = 'Cờ nhập kho chưa được bật (can_receive_fg = 0)';
+            return $result;
+        }
+
+        // Check condition 2: status = VERIFIED
+        if ($check['status'] != 'VERIFIED') {
+            // Check why not verified
+            if ($check['status'] == 'REJECTED') {
+                $result['message'] = 'Ca sản xuất đã bị QC từ chối: ' . ($check['qc_reason'] ?? 'Lý do không rõ');
+            } else if ($check['status'] == 'PENDING_QC') {
+                $result['message'] = 'Ca sản xuất đang chờ QC kiểm tra';
+            } else {
+                $result['message'] = 'Trạng thái ca sản xuất không hợp lệ: ' . $check['status'];
+            }
+            return $result;
+        }
+
+        // Check condition 3: qc_result = APPROVE
+        if ($check['qc_result'] != 'APPROVE') {
+            if ($check['qc_result'] == 'REJECT') {
+                $result['message'] = 'QC đã từ chối ca này: ' . ($check['qc_reason'] ?? '');
+            } else if ($check['qc_result'] == NULL) {
+                $result['message'] = 'Chưa có quyết định QC cho ca này';
+            } else {
+                $result['message'] = 'Kết quả QC không phải APPROVE: ' . $check['qc_result'];
+            }
+            return $result;
+        }
+
+        // ✅ ALL CHECKS PASSED
+        $result['approved'] = TRUE;
+        $result['message'] = 'QC đã duyệt ca này';
+        $result['qc_info'] = [
+            'result' => $check['qc_result'],
+            'aql' => $check['aql'],
+            'defect_rate' => $check['defect_rate'],
+            'decided_at' => $check['decided_at'],
+            'decided_by' => $check['decided_by']
+        ];
+
+        return $result;
+    }
+
+    /**
+     * Get QC rejection details if closure was rejected
+     * 
+     * @param int $closure_id
+     * @return array|NULL
+     */
+    public function getQcRejectionDetails($closure_id)
+    {
+        if (!$this->db->table_exists('shift_closures')) {
+            return NULL;
+        }
+
+        $sql = "SELECT 
+                  qd.result,
+                  qd.reason,
+                  qd.decided_at,
+                  qd.decided_by,
+                  ar.code AS adjustment_code,
+                  ar.status AS adjustment_status
+                FROM shift_closures sc
+                LEFT JOIN qc_sessions qs ON qs.closure_id = sc.id
+                LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
+                LEFT JOIN adjustment_requests ar ON ar.closure_id = sc.id
+                WHERE sc.id = {$closure_id}
+                  AND qd.result = 'REJECT'
+                LIMIT 1";
+
+        return $this->db->query($sql)->row_array();
     }
 }

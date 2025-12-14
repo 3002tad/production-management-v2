@@ -27,7 +27,17 @@
                 </div>
                 <div class="form-group col-md-3">
                     <label>Đơn vị tính *</label>
-                    <input type="text" name="uom" class="form-control" value="g" required />
+                    <select name="uom" class="form-control" required>
+                        <option value="g">Gram (g)</option>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="pcs">Pieces (pcs)</option>
+                        <option value="m">Meter (m)</option>
+                        <option value="cm">Centimeter (cm)</option>
+                        <option value="mm">Millimeter (mm)</option>
+                        <option value="ml">Milliliter (ml)</option>
+                        <option value="l">Liter (l)</option>
+                        <option value="box">Box</option>
+                    </select>
                 </div>
             </div>
             <div class="mt-2">

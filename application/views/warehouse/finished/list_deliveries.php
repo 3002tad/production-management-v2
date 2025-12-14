@@ -52,7 +52,7 @@
                         <?php if ($issue->status === 'full'): ?>
                           <span class="badge bg-success">Giao Đủ</span>
                         <?php elseif ($issue->status === 'partial'): ?>
-                          <span class="badge bg-warning text-dark">Giao Một Phần</span>
+                          <span class="badge bg-warning text-dark">Giao Thiếu</span>
                         <?php else: ?>
                           <span class="badge bg-danger">Hủy</span>
                         <?php endif; ?>

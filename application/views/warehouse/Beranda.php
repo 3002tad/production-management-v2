@@ -11,7 +11,7 @@
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
             <h6 class="text-sm font-weight-bolder mb-0"><?= lang('title_production_system'); ?></h6>
             <div class="col-6 d-flex text-end">
-                <a href="<?= site_url('admin/logout'); ?>" class="btn gradient-dark mb-0">|  <?= lang('btn_logout'); ?>
+                <a href="<?= site_url('warehouse/logout'); ?>" class="btn gradient-dark mb-0">|  <?= lang('btn_logout'); ?>
                 <i class="material-icons">arrow_forward</i>
                 </a>
             </div>     
@@ -198,7 +198,7 @@
                             <form method="post" action="<?= site_url('warehouse/save_stock_out'); ?>" enctype="multipart/form-data">
                                 <div class="modal-body">
                                     <div class="form-row g-3">
-                                        <div class="form-group col-md-5">
+                                        <div class="form-group col-md-4">
                                             <label class="form-label text-xs mb-1">Kế hoạch (tuỳ chọn)</label>
                                             <select name="id_plan" class="form-control">
                                                 <option value="">-- Chọn kế hoạch --</option>
@@ -207,18 +207,18 @@
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
-                                        <div class="form-group col-md-4">
-                                            <label class="form-label text-xs mb-1">Ca sản xuất (tuỳ chọn)</label>
-                                            <select name="id_planshift" class="form-control">
-                                                <option value="">-- Chọn ca --</option>
-                                                <?php foreach (($shifts ?? []) as $s): ?>
-                                                        <option value="<?= (int)$s->id_planshift ?>"><?= htmlspecialchars($s->id_planshift.' - '.($s->ps_name ?? '')) ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
                                         <div class="form-group col-md-3">
                                             <label class="form-label text-xs mb-1">Ngày xuất</label>
-                                            <input type="date" name="date_out" class="form-control" />
+                                            <input type="date" name="date_out" class="form-control" id="dateOutInput" />
+                                        </div>
+                                        <div class="form-group col-md-5">
+                                            <label class="form-label text-xs mb-1">Ca sản xuất (tuỳ chọn)</label>
+                                            <select name="id_planshift" class="form-control" id="shiftSelect">
+                                                <option value="">-- Chọn ca --</option>
+                                                <?php foreach (($shifts ?? []) as $s): ?>
+                                                        <option value="<?= (int)$s->id_planshift ?>" data-date="<?= $s->start_date ?? '' ?>"><?= htmlspecialchars($s->id_planshift.' - '.($s->ps_name ?? '')) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
                                         <div class="form-group col-md-8">
                                             <label class="form-label text-xs mb-1">Ghi chú</label>
@@ -344,35 +344,35 @@
         <div class="row mt-3">
             <div class="col-lg-6 col-md-12">
                 <div class="card">
-                    <div class="card-header card-header-primary pb-0 d-flex justify-content-between align-items-center">
+                    <div class="card-header card-header-primary pb-0 d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
                         <div>
-                            <h4 class="card-title mb-0">Lịch sử nhập kho</h4>
-                            <p class="card-category">Các phiếu nhập gần đây</p>
+                            <h4 class="card-title mb-0" style="margin-bottom: 0; font-size: 16px;">Lịch sử nhập kho</h4>
+                            <p class="card-category mb-0" style="font-size: 13px;">Các phiếu nhập gần đây</p>
                         </div>
                         <button id="btnToggleIn" class="btn btn-sm btn-success"><i class="material-icons">arrow_downward</i> Tạo phiếu nhập</button>
                     </div>
-                    <div class="card-body table-responsive pt-2">
-                        <table class="table table-hover table-sm">
+                    <div class="card-body table-responsive pt-2" style="padding: 10px;">
+                        <table class="table table-hover table-sm" style="margin-bottom: 0;">
                             <thead class="text-primary">
-                                <tr>
-                                    <th>Thời gian</th>
-                                    <th>NVL</th>
-                                    <th>SL</th>
-                                    <th>Nhà Cung Cấp</th>
-                                    <th>Tệp</th>
+                                <tr style="height: 28px;">
+                                    <th style="padding: 4px 8px;">Thời gian</th>
+                                    <th style="padding: 4px 8px;">NVL</th>
+                                    <th style="padding: 4px 8px;">SL</th>
+                                    <th style="padding: 4px 8px;">Nhà Cung Cấp</th>
+                                    <th style="padding: 4px 8px;">Tệp</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach (($recent_stock_in ?? []) as $r): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($r->created_at ?? '') ?></td>
-                                    <td><?= htmlspecialchars($r->material_name ?? ('#'.(int)($r->id_material ?? 0))) ?></td>
-                                    <td>+<?= (int)$r->quantity ?></td>
-                                    <td><?= htmlspecialchars($r->supplier ?? '') ?></td>
-                                    <td>
+                                <tr style="height: 24px;">
+                                    <td style="padding: 4px 8px; white-space: nowrap;"><?= substr(htmlspecialchars($r->created_at ?? ''), 0, 16) ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->material_name ?? '') ?>"><?= htmlspecialchars(substr($r->material_name ?? ('#'.(int)($r->id_material ?? 0)), 0, 20)) ?></td>
+                                    <td style="padding: 4px 8px;"><?= (int)$r->quantity ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->supplier ?? '') ?>"><?= htmlspecialchars(substr($r->supplier ?? '-', 0, 15)) ?></td>
+                                    <td style="padding: 4px 8px;">
                                         <?php if (!empty($r->attachment)): ?>
-                                            <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>">
-                                                <i class="material-icons" style="font-size:16px; vertical-align:middle;">attach_file</i> Xem
+                                            <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>" style="padding: 2px 6px; font-size: 12px;">
+                                                <i class="material-icons" style="font-size:14px; vertical-align:middle;">attach_file</i> Xem
                                             </a>
                                         <?php else: ?>
                                             <span class="text-muted">-</span>
@@ -387,35 +387,35 @@
             </div>
             <div class="col-lg-6 col-md-12">
                 <div class="card">
-                    <div class="card-header card-header-info pb-0 d-flex justify-content-between align-items-center">
+                    <div class="card-header card-header-info pb-0 d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
                         <div>
-                            <h4 class="card-title mb-0">Lịch sử xuất kho</h4>
-                            <p class="card-category">Các phiếu xuất gần đây</p>
+                            <h4 class="card-title mb-0" style="margin-bottom: 0; font-size: 16px;">Lịch sử xuất kho</h4>
+                            <p class="card-category mb-0" style="font-size: 13px;">Các phiếu xuất gần đây</p>
                         </div>
                         <button id="btnToggleOut" class="btn btn-sm btn-warning"><i class="material-icons">arrow_upward</i> Tạo phiếu xuất</button>
                     </div>
-                    <div class="card-body table-responsive pt-2">
-                        <table class="table table-hover table-sm">
+                    <div class="card-body table-responsive pt-2" style="padding: 10px;">
+                        <table class="table table-hover table-sm" style="margin-bottom: 0;">
                             <thead class="text-info">
-                                <tr>
-                                    <th>Thời gian</th>
-                                    <th>NVL</th>
-                                    <th>SL</th>
-                                    <th>Kế hoạch</th>
-                                    <th>Tệp</th>
+                                <tr style="height: 28px;">
+                                    <th style="padding: 4px 8px;">Thời gian</th>
+                                    <th style="padding: 4px 8px;">NVL</th>
+                                    <th style="padding: 4px 8px;">SL</th>
+                                    <th style="padding: 4px 8px;">Kế hoạch</th>
+                                    <th style="padding: 4px 8px;">Tệp</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach (($recent_stock_out ?? []) as $r): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($r->created_at ?? '') ?></td>
-                                    <td><?= htmlspecialchars($r->material_name ?? ('#'.(int)($r->id_material ?? 0))) ?></td>
-                                    <td>-<?= (int)$r->quantity ?></td>
-                                    <td><?= htmlspecialchars($r->plan_name ?? '') ?></td>
-                                    <td>
+                                <tr style="height: 24px;">
+                                    <td style="padding: 4px 8px; white-space: nowrap;"><?= substr(htmlspecialchars($r->created_at ?? ''), 0, 16) ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->material_name ?? '') ?>"><?= htmlspecialchars(substr($r->material_name ?? ('#'.(int)($r->id_material ?? 0)), 0, 20)) ?></td>
+                                    <td style="padding: 4px 8px;"><?= (int)$r->quantity ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->plan_name ?? '') ?>"><?= htmlspecialchars(substr($r->plan_name ?? '-', 0, 15)) ?></td>
+                                    <td style="padding: 4px 8px;">
                                         <?php if (!empty($r->attachment)): ?>
-                                            <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>">
-                                                <i class="material-icons" style="font-size:16px; vertical-align:middle;">attach_file</i> Xem
+                                            <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>" style="padding: 2px 6px; font-size: 12px;">
+                                                <i class="material-icons" style="font-size:14px; vertical-align:middle;">attach_file</i> Xem
                                             </a>
                                         <?php else: ?>
                                             <span class="text-muted">-</span>
@@ -454,6 +454,8 @@
 
                         // Plan -> auto populate remaining items
                         var planSelect = document.querySelector('#modalStockOut select[name="id_plan"]');
+                        var dateOutInput = document.getElementById('dateOutInput');
+                        var shiftSelect = document.getElementById('shiftSelect');
                         var tablePlan = document.getElementById('tablePlanItems');
                         var tbodyPlan = document.getElementById('tbodyPlanItems');
                         var tableAll = document.getElementById('tableAllMaterials');
@@ -471,6 +473,47 @@
                                 if(tableAll){ tableAll.classList.remove('d-none'); setDisabledInputs(tableAll, false); }
                             }
                         }
+                        
+                        // Load shifts filtered by selected date
+                        async function loadShiftsByDate(date){
+                            if(!date){
+                                // Reset shifts to all available
+                                if(shiftSelect){
+                                    shiftSelect.innerHTML = '<option value="">-- Chọn ca --</option>';
+                                }
+                                return;
+                            }
+                            try{
+                                const res = await fetch('<?= site_url('warehouse/get_shifts_by_date'); ?>?date=' + encodeURIComponent(date));
+                                const data = await res.json();
+                                if(!data || !Array.isArray(data.shifts)) throw new Error('Bad response');
+                                
+                                // Build shift options
+                                let html = '<option value="">-- Chọn ca --</option>';
+                                data.shifts.forEach(function(shift){
+                                    const shiftId = parseInt(shift.id_planshift||0);
+                                    const shiftName = shift.id_planshift + ' - ' + (shift.ps_name || '');
+                                    html += '<option value="' + shiftId + '">' + shiftName + '</option>';
+                                });
+                                
+                                if(shiftSelect){
+                                    shiftSelect.innerHTML = html;
+                                }
+                            }catch(e){
+                                console.error('Error loading shifts:', e);
+                                if(shiftSelect){
+                                    shiftSelect.innerHTML = '<option value="">-- Chọn ca --</option>';
+                                }
+                            }
+                        }
+                        
+                        // Listen for date change and load shifts
+                        if(dateOutInput){
+                            dateOutInput.addEventListener('change', function(){
+                                loadShiftsByDate(this.value);
+                            });
+                        }
+                        
                         async function loadPlanItems(planId){
                             if(!planId){
                                 // show all materials
@@ -518,6 +561,32 @@
                         }
                         // init mode: all materials enabled
                         setTableMode(false);
+
+                        // Auto-fill quantity when material is selected in stock-in modal
+                        var materialSelect = document.querySelector('#modalStockIn select[name="id_material"]');
+                        var quantityInput = document.querySelector('#modalStockIn input[name="quantity"]');
+                        
+                        if (materialSelect && quantityInput) {
+                            materialSelect.addEventListener('change', function() {
+                                var materialId = this.value;
+                                if (!materialId || materialId === '') {
+                                    quantityInput.value = '';
+                                    return;
+                                }
+
+                                // Fetch material info and auto-fill quantity
+                                fetch('<?= site_url('warehouse/get_material_info'); ?>?id_material=' + encodeURIComponent(materialId))
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data && data.qty_to_import !== undefined) {
+                                            quantityInput.value = data.qty_to_import;
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error fetching material info:', error);
+                                    });
+                            });
+                        }
                     })();
                 </script>
     </div>

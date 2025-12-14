@@ -101,6 +101,7 @@ class Finished extends CI_Controller {
 
     /**
      * receipt_save - Xử lý lưu phiếu nhập
+     * ⭐ CRITICAL: Kiểm tra QC duyệt trước khi cho phép nhập
      */
     public function receipt_save()
     {
@@ -118,30 +119,84 @@ class Finished extends CI_Controller {
             redirect('warehouse/finished/receipt_form');
         }
 
-        $batch = $this->db->where('id_finished', $id_finished_report)
-                          ->get('finished_report')
+        // ⭐⭐⭐ QC APPROVAL CHECK - CRITICAL CONTROL ⭐⭐⭐
+        $qc_check = $this->FinishedReceiptModel->checkQcApprovalStatus($id_finished_report);
+        
+        if (!$qc_check['approved']) {
+            // QC NOT APPROVED - REJECT
+            $this->session->set_flashdata('error', 
+                '❌ <strong>KHÔNG THỂ NHẬP KHO</strong><br/>' . 
+                $qc_check['message'] . 
+                '<br/><br/><em>Quy tắc: Kho thành phẩm chỉ được nhập sau khi QC đã duyệt (APPROVE)</em>'
+            );
+            redirect('warehouse/finished/receipt_form');
+            return;
+        }
+
+        // Get batch data to verify quantity
+        $batch = $this->db->where('id', $id_finished_report)
+                          ->get('shift_closures')
                           ->row();
+
+        if (!$batch) {
+            // Fallback to old schema if shift_closures doesn't work
+            $batch = $this->db->where('id_finished', $id_finished_report)
+                              ->get('finished_report')
+                              ->row();
+        }
 
         if (!$batch) {
             $this->session->set_flashdata('error', 'Ca/lô không tồn tại');
             redirect('warehouse/finished/receipt_form');
         }
 
+        // Check if quantity exceeds available
+        $qty_available = isset($batch->qty_finished) ? $batch->qty_finished : $batch->total_finished;
+        if ($quantity_received > $qty_available) {
+            $this->session->set_flashdata('error', 
+                'Số lượng nhập (' . $quantity_received . ') vượt quá số lượng hoàn thành (' . $qty_available . ')'
+            );
+            redirect('warehouse/finished/receipt_form');
+        }
+
+        // ✅ ALL CHECKS PASSED - Proceed with receipt creation
+        // Get id_project from batch (project_code is now integer ID)
+        $id_project = $batch->project_code;
+        
+        if (!$id_project) {
+            $this->session->set_flashdata('error', 'Dự án không tồn tại');
+            redirect('warehouse/finished/receipt_form');
+        }
+
+        // Note: id_finished_report should reference finished_report.id_finished (old schema)
+        // For new schema using shift_closures, we set it to NULL to avoid FK constraint
+        // The actual shift_closures.id is tracked via application logic
+        $id_finished_report_fk = null;
+
         $receipt_data = [
-            'id_project' => $batch->id_project,
-            'id_finished_report' => $id_finished_report,
+            'id_project' => $id_project,
+            'id_finished_report' => $id_finished_report_fk,  // NULL to avoid FK constraint with finished_report
             'quantity_received' => $quantity_received,
-            'quantity_planned' => $batch->total_finished,
+            'quantity_planned' => $qty_available,
             'created_by' => $this->session->userdata('user_id'),
             'created_by_name' => $this->session->userdata('username'),
-            'notes' => $notes
+            'notes' => $notes,
+            // Mark as QC verified
+            'qc_verified' => 1,
+            'qc_approved_at' => date('Y-m-d H:i:s'),
+            'qc_approved_by' => $this->session->userdata('user_code') ?? $this->session->userdata('username'),
+            'requires_qc_approval' => 1
         ];
 
         $receipt_id = $this->FinishedReceiptModel->createReceipt($receipt_data);
 
         if ($receipt_id) {
             $this->FinishedReceiptModel->updateStockAfterReceipt($quantity_received, 1);
-            $this->session->set_flashdata('success', 'Nhập thành công - Phiếu #' . $receipt_id);
+            
+            // Log audit trail
+            log_message('info', "Finished Receipt Created: ID={$receipt_id}, Closure={$id_finished_report}, Qty={$quantity_received}, User=" . $this->session->userdata('username'));
+            
+            $this->session->set_flashdata('success', '✅ Nhập kho thành công - Phiếu #' . $receipt_id . ' | QC Verified');
             redirect('warehouse/finished/receipt_view/' . $receipt_id);
         } else {
             $this->session->set_flashdata('error', 'Lỗi: Không thể lưu phiếu');

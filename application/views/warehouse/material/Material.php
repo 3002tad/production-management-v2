@@ -80,6 +80,9 @@
                                                 case 'pcs': $uh_label = lang('unit_pieces'); break;
                                                 case 'm': $uh_label = lang('unit_meter'); break;
                                                 case 'cm': $uh_label = lang('unit_centimeter'); break;
+                                                case 'mm': $uh_label = lang('unit_mm'); break;
+                                                case 'ml': $uh_label = lang('unit_milliliter'); break;
+                                                case 'l': $uh_label = lang('unit_liter'); break;
                                                 case 'box': $uh_label = lang('unit_box'); break;
                                                 default: $uh_label = $uh; break;
                                             }
@@ -140,6 +143,9 @@
                                                 case 'pcs': $u_label = lang('unit_pieces'); break;
                                                 case 'm': $u_label = lang('unit_meter'); break;
                                                 case 'cm': $u_label = lang('unit_centimeter'); break;
+                                                case 'mm': $u_label = lang('unit_mm'); break;
+                                                case 'ml': $u_label = lang('unit_milliliter'); break;
+                                                case 'l': $u_label = lang('unit_liter'); break;
                                                 case 'box': $u_label = lang('unit_box'); break;
                                                 default: $u_label = $u; break;
                                             }
@@ -155,6 +161,9 @@
                                                 case 'pcs': $u2_label = lang('unit_pieces'); break;
                                                 case 'm': $u2_label = lang('unit_meter'); break;
                                                 case 'cm': $u2_label = lang('unit_centimeter'); break;
+                                                case 'mm': $u2_label = lang('unit_mm'); break;
+                                                case 'ml': $u2_label = lang('unit_milliliter'); break;
+                                                case 'l': $u2_label = lang('unit_liter'); break;
                                                 case 'box': $u2_label = lang('unit_box'); break;
                                                 default: $u2_label = $u2; break;
                                             }
@@ -223,6 +232,9 @@
                                 <option value="pcs">Pieces (pcs)</option>
                                 <option value="m">Meter (m)</option>
                                 <option value="cm">Centimeter (cm)</option>
+                                <option value="mm">Millimeter (mm)</option>
+                                <option value="ml">Milliliter (ml)</option>
+                                <option value="l">Liter (l)</option>
                                 <option value="box">Box</option>
                             </select>
                         </div>
@@ -277,6 +289,9 @@
                                 <option value="pcs">Pieces (pcs)</option>
                                 <option value="m">Meter (m)</option>
                                 <option value="cm">Centimeter (cm)</option>
+                                <option value="mm">Millimeter (mm)</option>
+                                <option value="ml">Milliliter (ml)</option>
+                                <option value="l">Liter (l)</option>
                                 <option value="box">Box</option>
                             </select>
                         </div>
