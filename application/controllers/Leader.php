@@ -591,122 +591,36 @@ class Leader extends CI_Controller
         // Check staff management permission (Technical NOT allowed)
         $this->check_staff_permission();
 
-        if ($this->uri->segment(3) === 'addstaff') {
+        // Support filters: department, position, status, search_code
+        $department = $this->input->get('department');
+        $position = $this->input->get('position');
+        $status = $this->input->get('status');
+        $search_code = $this->input->get('search_code');
 
-            // Get roles for department dropdown
-            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
-
-            // Get users for position dropdown (using full_name)
-            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
-
-            $data = [
-                'staff' => $this->db->query('SELECT * FROM staff')->result(),
-                'roles' => $roles,
-                'users' => $users,
-                'content' => 'leader/staff/addstaff',
-                'navlink' => 'staff',
-                ];
-
-        } elseif ($this->uri->segment(4) === 'update') {
-
-            $id = $this->uri->segment(3);
-            
-            $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
-
-            // Get roles for department dropdown
-            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
-
-            // Get users for position dropdown (using full_name)
-            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
-
-            $data = [
-                'detail' => [
-                    'id_staff' => $tampil->id_staff,
-                    'staff_name' => $tampil->staff_name,
-                    'phone' => $tampil->phone,
-                    'email' => $tampil->email,
-                    'department' => $tampil->department,
-                    'position' => $tampil->position,
-                    'st_status' => $tampil->st_status,
-                ],
-                'roles' => $roles,
-                'users' => $users,
-                'content' => 'leader/staff/updatestaff',
-                'navlink' => 'staff',
-                ];
-
-        } elseif ($this->uri->segment(4) === 'delete') {
-
-            $id = $this->uri->segment(3);
-            
-            $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
-
-            $data = [
-                'detail' => [
-                    'id_staff' => $tampil->id_staff,
-                    'staff_name' => $tampil->staff_name,
-                    'phone' => $tampil->phone,
-                    'email' => $tampil->email,
-                    'st_status' => $tampil->st_status,
-                ],
-
-                'content' => 'leader/staff/deletestaff',
-                'navlink' => 'staff',
-                ];
-
-        } else {
-            // Support filters: department, position, status, search_code
-            $department = $this->input->get('department');
-            $position = $this->input->get('position');
-            $status = $this->input->get('status');
-            $search_code = $this->input->get('search_code');
-
-            $this->db->from('staff');
-            if ($department) {
-                $this->db->where('department', $department);
-            }
-            if ($position) {
-                $this->db->where('position', $position);
-            }
-            if ($status !== null && $status !== '') {
-                $this->db->where('st_status', $status);
-            }
-            if ($search_code) {
-                $this->db->where('id_staff', $search_code);
-            }
-
-            $results = $this->db->get()->result();
-
-            // Get statistics
-            $stats = [];
-            $stats['total'] = $this->db->count_all('staff');
-            $stats['active'] = $this->db->where('st_status', 1)->count_all_results('staff');
-
-            // Count staff with user accounts using JOIN
-            $this->db->select('COUNT(DISTINCT staff.id_staff) as count');
-            $this->db->from('staff');
-            $this->db->join('user', 'staff.id_staff = user.staff_id', 'left');
-            $this->db->where('user.staff_id IS NOT NULL');
-            $with_user_result = $this->db->get()->row();
-            $stats['with_user'] = $with_user_result ? $with_user_result->count : 0;
-            $stats['without_user'] = $stats['total'] - $stats['with_user'];
-
-            // Get departments and positions for filters
-            $departments_query = $this->db->query('SELECT DISTINCT department FROM staff WHERE department IS NOT NULL AND department != "" ORDER BY department');
-            $departments = array_column($departments_query->result_array(), 'department');
-
-            $positions_query = $this->db->query('SELECT DISTINCT position FROM staff WHERE position IS NOT NULL AND position != "" ORDER BY position');
-            $positions = array_column($positions_query->result_array(), 'position');
-
-            $data = [
-                'staff' => $results,
-                'statistics' => $stats,
-                'departments' => $departments,
-                'positions' => $positions,
-                'content' => 'leader/staff/staff',
-                'navlink' => 'staff',
-            ];
+        $this->db->select('staff.*, roles.role_display_name as department_name');
+        $this->db->from('staff');
+        $this->db->join('roles', 'staff.department = roles.role_id', 'left');
+        if ($department) {
+            $this->db->where('staff.department', $department);
         }
+        if ($position) {
+            $this->db->where('staff.position', $position);
+        }
+        if ($status !== null && $status !== '') {
+            $this->db->where('staff.st_status', $status);
+        }
+        if ($search_code) {
+            $this->db->where('staff.id_staff', $search_code);
+        }
+
+        $results = $this->db->get()->result();
+
+        $data = [
+            'staff' => $results,
+            'content' => 'leader/staff/staff',
+            'navlink' => 'staff',
+            'is_read_only' => true,
+            ];
 
         $this->load->view('leader/vbackend', $data);
     }

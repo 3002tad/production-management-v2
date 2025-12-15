@@ -578,9 +578,6 @@ class Admin extends CI_Controller
         $is_read_only = in_array($role, ['admin', 'bod']);
 
         if ($this->uri->segment(3) === 'addstaff') {
-            if (!$is_leader) {
-                show_error('Access Denied - Only Leader can add staff', 403, 'Forbidden');
-            }
 
             // Get roles for department dropdown
             $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
@@ -597,9 +594,6 @@ class Admin extends CI_Controller
                 ];
 
         } elseif ($this->uri->segment(4) === 'update') {
-            if (!$is_leader) {
-                show_error('Access Denied - Only Leader can update staff', 403, 'Forbidden');
-            }
             $id = $this->uri->segment(3);
             $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
 
@@ -623,7 +617,6 @@ class Admin extends CI_Controller
                 'users' => $users,
                 'content' => 'admin/staff/updatestaff',
                 'navlink' => 'staff',
-                'is_read_only' => !$is_leader,
                 ];
 
         } else {
@@ -633,27 +626,43 @@ class Admin extends CI_Controller
             $status = $this->input->get('status');
             $search_code = $this->input->get('search_code');
 
+            $this->db->select('staff.*, roles.role_display_name as department_name');
             $this->db->from('staff');
+            $this->db->join('roles', 'staff.department = roles.role_id', 'left');
             if ($department) {
-                $this->db->where('department', $department);
+                $this->db->where('staff.department', $department);
             }
             if ($position) {
-                $this->db->where('position', $position);
+                $this->db->where('staff.position', $position);
             }
             if ($status !== null && $status !== '') {
-                $this->db->where('st_status', $status);
+                $this->db->where('staff.st_status', $status);
             }
             if ($search_code) {
-                $this->db->where('id_staff', $search_code);
+                $this->db->where('staff.id_staff', $search_code);
             }
 
             $results = $this->db->get()->result();
 
+            // Get statistics
+            $stats = [];
+            $stats['total'] = $this->db->count_all('staff');
+            $stats['active'] = $this->db->where('st_status', 1)->count_all_results('staff');
+
+            // Count staff with user accounts using JOIN
+            $this->db->select('COUNT(DISTINCT staff.id_staff) as count');
+            $this->db->from('staff');
+            $this->db->join('user', 'staff.id_staff = user.staff_id', 'left');
+            $this->db->where('user.staff_id IS NOT NULL');
+            $with_user_result = $this->db->get()->row();
+            $stats['with_user'] = $with_user_result ? $with_user_result->count : 0;
+            $stats['without_user'] = $stats['total'] - $stats['with_user'];
+
             $data = [
                 'staff' => $results,
+                'statistics' => $stats,
                 'content' => 'admin/staff/staff',
                 'navlink' => 'staff',
-                'is_read_only' => !$is_leader,
                 ];
         }
 
@@ -662,15 +671,17 @@ class Admin extends CI_Controller
 
     public function addStaff()
     {
-        // RBAC: Only Leader can add staff
+        // RBAC: Only Admin can add staff
         $role = $this->session->userdata('role');
         if (empty($role)) {
             $role = $this->session->userdata('role_name');
         }
         $role = strtolower(trim((string)$role));
-        if ($role !== 'leader') {
-            show_error('Access Denied - Only Leader can add staff', 403, 'Forbidden');
+        $allowed_roles = ['admin', 'bod', 'system_admin'];
+        if (!in_array($role, $allowed_roles)) {
+            show_error('Access Denied - Only Admin can add staff', 403, 'Forbidden');
         }
+
         $staff_name = trim($this->input->post('staff_name'));
         $phone = trim($this->input->post('phone'));
         $email = trim($this->input->post('email'));
@@ -716,14 +727,15 @@ class Admin extends CI_Controller
 
     public function updateStaff()
     {
-        // RBAC: Only Leader can update staff
+        // RBAC: Only Admin can update staff
         $role = $this->session->userdata('role');
         if (empty($role)) {
             $role = $this->session->userdata('role_name');
         }
         $role = strtolower(trim((string)$role));
-        if ($role !== 'leader') {
-            show_error('Access Denied - Only Leader can update staff', 403, 'Forbidden');
+        $allowed_roles = ['admin', 'bod', 'system_admin'];
+        if (!in_array($role, $allowed_roles)) {
+            show_error('Access Denied - Only Admin can update staff', 403, 'Forbidden');
         }
 
         $id_staff = $this->input->post('id_staff');
@@ -772,21 +784,90 @@ class Admin extends CI_Controller
 
     public function deleteStaff()
     {
-        // RBAC: Only Leader can delete staff
+        // RBAC: Only Admin can delete staff
         $role = $this->session->userdata('role');
         if (empty($role)) {
             $role = $this->session->userdata('role_name');
         }
         $role = strtolower(trim((string)$role));
-        if ($role !== 'leader') {
-            show_error('Access Denied - Only Leader can delete staff', 403, 'Forbidden');
+        $allowed_roles = ['admin', 'bod', 'system_admin'];
+        if (!in_array($role, $allowed_roles)) {
+            show_error('Access Denied - Only Admin can delete staff', 403, 'Forbidden');
         }
 
         $id_staff = $this->uri->segment(3);
 
-        $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
+        log_message('debug', 'Attempting to delete staff id: ' . $id_staff);
+        $this->session->set_flashdata('debug', 'ID staff to delete: ' . $id_staff);
 
-        redirect(site_url('Admin/staff'));
+        try {
+            // Delete associated records
+            $this->db->where('staff_id', $id_staff);
+            $this->db->delete('user');
+            log_message('debug', 'Deleted user records for staff id: ' . $id_staff . ', affected: ' . $this->db->affected_rows());
+
+            $this->db->where('id_staff', $id_staff);
+            $this->db->delete('plan_shift');
+            log_message('debug', 'Deleted plan_shift records for staff id: ' . $id_staff . ', affected: ' . $this->db->affected_rows());
+
+            $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
+            log_message('debug', 'Deleted staff record for id: ' . $id_staff . ', affected: ' . $this->db->affected_rows());
+
+            if ($this->db->affected_rows() > 0) {
+                $this->session->set_flashdata('flash', 'Xóa nhân viên thành công');
+            } else {
+                $this->session->set_flashdata('error', 'Không thể xóa nhân viên');
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Exception deleting staff id ' . $id_staff . ': ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Lỗi khi xóa nhân viên: ' . $e->getMessage());
+        }
+
+        redirect(site_url('admin/staff'));
+    }
+
+    public function toggleStaffStatus()
+    {
+        // RBAC: Only Admin can toggle staff status
+        $role = $this->session->userdata('role');
+        if (empty($role)) {
+            $role = $this->session->userdata('role_name');
+        }
+        $role = strtolower(trim((string)$role));
+        $allowed_roles = ['admin', 'bod', 'system_admin'];
+        if (!in_array($role, $allowed_roles)) {
+            show_error('Access Denied - Only Admin can toggle staff status', 403, 'Forbidden');
+        }
+
+        // Chuyển trạng thái tuần tự: 1 -> 2 -> 3 -> 1
+        $id_staff = $this->uri->segment(3);
+
+        $staff = $this->crudModel->getDataWhere('staff', 'id_staff', $id_staff)->row();
+        if (empty($staff)) {
+            $this->session->set_flashdata('error', 'Nhân sự không tồn tại');
+            redirect(site_url('admin/staff'));
+            return;
+        }
+
+        // Cycle through three statuses
+        if ($staff->st_status == 1) {
+            $new_status = 2; // Đã xếp lịch
+        } elseif ($staff->st_status == 2) {
+            $new_status = 3; // Ngừng hoạt động
+        } else {
+            $new_status = 1; // Sẵn sàng
+        }
+
+        $update = [
+            'st_status' => $new_status,
+        ];
+
+        $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
+
+        $status_text = ($new_status == 1) ? 'Sẵn sàng' : (($new_status == 2) ? 'Đã xếp lịch' : 'Ngừng hoạt động');
+        $this->session->set_flashdata('flash', 'Trạng thái nhân sự đã thay đổi thành ' . $status_text);
+
+        redirect(site_url('admin/staff'));
     }
 
     public function Production()
