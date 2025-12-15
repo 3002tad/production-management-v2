@@ -57,6 +57,9 @@ build/
 *.sql.backup
 backup_*.sql
 
+# Local folders not to push
+khongpush/
+
 # PHPUnit
 phpunit.xml
 .phpunit.result.cache
