@@ -70,6 +70,15 @@ $route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail
 $route['qc/sessions'] = 'qc/session_list';         // List all sessions
 $route['qc/reports'] = 'qc/reports';               // QC Reports
 
+// Machine Management Routes (must be BEFORE leader catch-all)
+$route['machine'] = 'leader/machine/index';
+$route['machine/(:any)'] = 'leader/machine/$1';
+
+// Leader Module Routes - All controllers in leader/ subfolder
+// Leader dashboard and functions
+$route['leader'] = 'leader/leader/index';
+$route['leader/(:any)'] = 'leader/leader/$1';
+
 // Incident Reports Routes (UC15 - BCSC)
 $route['uc15_qlns/uc15_bcsc'] = 'UC15_BCSC/UC15_BCSC/index';
 $route['uc15_qlns/uc15_bcsc/add'] = 'UC15_BCSC/UC15_BCSC/add';

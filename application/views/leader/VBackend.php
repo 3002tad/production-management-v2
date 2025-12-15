@@ -40,20 +40,20 @@
             <div class="col-14">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                      <a class="nav-link text-white<?= ($navlink === 'beranda') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/index'); ?>">
-                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">dashboard</i>
-                        </div>
-                        <span class="nav-link-text ms-1"><?= lang('menu_dashboard'); ?></span>
-                      </a>
+                        <a class="nav-link text-white<?= ($navlink === 'beranda') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('leader'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">dashboard</i>
+                            </div>
+                            <span class="nav-link-text ms-1"><?= lang('menu_dashboard'); ?></span>
+                        </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/staff'); ?>">
-                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">manage_accounts</i>
-                        </div>
-                        <span class="nav-link-text ms-1">Nhân viên</span>
-                      </a>
+                        <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/staff'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">manage_accounts</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Nhân viên</span>
+                        </a>
                     </li>
                     <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
@@ -76,9 +76,9 @@
                         </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'machine') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/machine'); ?>">
+                        <a class="nav-link text-white<?= ($navlink === 'machine') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('machine'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">build</i>
+                            <i class="material-icons opacity-10">precision_manufacturing</i>
                             </div>
                             <span class="nav-link-text ms-1"><?= lang('menu_machine'); ?></span>
                         </a>
