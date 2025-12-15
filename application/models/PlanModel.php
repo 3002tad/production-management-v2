@@ -323,6 +323,105 @@ class PlanModel extends CI_Model
     }
 
     /**
+     * Lấy chi tiết kế hoạch theo id_plan
+     * Trả về object hoặc null. Decode các trường JSON (materials, lines) nếu có.
+     */
+    public function getPlanById($id_plan)
+    {
+        if (empty($id_plan)) return null;
+        $row = $this->db->get_where('planning', ['id_plan' => $id_plan])->row();
+        if (!$row) return null;
+
+        // Normalize fields: try to decode JSON fields when possible
+        if (isset($row->materials) && is_string($row->materials) && $row->materials !== '') {
+            $decoded = json_decode($row->materials, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $row->materials = $decoded;
+            }
+        }
+        if (isset($row->lines) && is_string($row->lines) && $row->lines !== '') {
+            $decoded = json_decode($row->lines, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $row->lines = $decoded;
+            }
+        }
+
+        // attach project/product info when available
+        if (!empty($row->id_project)) {
+            $proj = $this->db->get_where('project', ['id_project' => $row->id_project])->row();
+            if ($proj) {
+                $row->project = $proj;
+                $prod = $this->ProductModel->getProductById($proj->id_product ?? null);
+                if ($prod) $row->product = $prod;
+            }
+        }
+
+        return $row;
+    }
+
+    /**
+     * Cập nhật kế hoạch hiện có
+     * @param int $id_plan
+     * @param array $data
+     * @return array ['success'=>bool,'message'=>string]
+     */
+    public function updatePlan($id_plan, array $data)
+    {
+        if (empty($id_plan)) return ['success' => false, 'message' => 'Thiếu id_plan'];
+
+        $update = [];
+        if (isset($data['plan_name'])) $update['plan_name'] = $data['plan_name'];
+        if (isset($data['qty_target'])) $update['qty_target'] = intval($data['qty_target']);
+        if (isset($data['end_date'])) $update['end_date'] = $data['end_date'] ?: null;
+        if (isset($data['start_date']) && $this->db->field_exists('start_date', 'planning')) $update['start_date'] = $data['start_date'] ?: null;
+        if (isset($data['finish_date']) && $this->db->field_exists('finish_date', 'planning')) $update['finish_date'] = $data['finish_date'] ?: null;
+        if (isset($data['note']) && $this->db->field_exists('note', 'planning')) $update['note'] = $data['note'];
+        if (isset($data['suggested_shifts']) && $this->db->field_exists('suggested_shifts', 'planning')) $update['suggested_shifts'] = intval($data['suggested_shifts']);
+        if (isset($data['machine_id']) && $this->db->field_exists('machine_id', 'planning')) $update['machine_id'] = $data['machine_id'];
+
+        if (isset($data['materials']) && $this->db->field_exists('materials', 'planning')) {
+            $update['materials'] = json_encode($data['materials'], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (isset($data['lines']) && $this->db->field_exists('lines', 'planning')) {
+            if (is_string($data['lines'])) {
+                $update['lines'] = $data['lines'];
+            } else {
+                $update['lines'] = json_encode($data['lines'], JSON_UNESCAPED_UNICODE);
+            }
+        }
+
+        // Allow caller to explicitly set plan status (0 = draft/not approved, 1 = approved)
+        if (isset($data['pl_status'])) {
+            $update['pl_status'] = intval($data['pl_status']);
+        }
+
+        try {
+            $this->db->where('id_plan', $id_plan);
+            $this->db->update('planning', $update);
+
+            // optional: update audit_log
+            if ($this->db->table_exists('audit_log')) {
+                $this->db->insert('audit_log', [
+                    'user_id' => $this->session->userdata('user_id'),
+                    'username' => $this->session->userdata('username'),
+                    'action' => 'update_plan',
+                    'module' => 'planning',
+                    'record_id' => $id_plan,
+                    'old_value' => null,
+                    'new_value' => json_encode($update, JSON_UNESCAPED_UNICODE),
+                    'ip_address' => $this->input->ip_address(),
+                    'user_agent' => $this->input->user_agent()
+                ]);
+            }
+
+            return ['success' => true, 'message' => 'Cập nhật thành công'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Tạo 1 bản ghi plan_shift (CaSX) - hàm helper
      * @param int $id_plan
      * @param int|null $id_plan_line
@@ -400,6 +499,87 @@ class PlanModel extends CI_Model
             }
 
             return ['success' => true, 'message' => 'Kế hoạch đã được phê duyệt'];
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Xóa 1 kế hoạch và các bản ghi liên quan (plan_shift, plan_line, p_machine, p_material, sorting_report)
+     * - Cho phép xóa kể cả khi kế hoạch đã được phê duyệt (pl_status == 1)
+     * - Thực hiện trong transaction và ghi audit_log (nếu có)
+     * @param int $id_plan
+     * @return array ['success'=>bool,'message'=>string]
+     */
+    public function deletePlan($id_plan)
+    {
+        $this->db->trans_start();
+        try {
+            $plan = $this->db->get_where('planning', ['id_plan' => $id_plan])->row();
+            if (!$plan) {
+                throw new Exception('Kế hoạch không tồn tại');
+            }
+
+            // NOTE: Deleting is allowed regardless of pl_status (approved or not).
+
+            // Lấy danh sách plan_shift liên quan (nếu bảng tồn tại)
+            $planshift_ids = [];
+            if ($this->db->table_exists('plan_shift')) {
+                $ps = $this->db->select('id_planshift')->where('id_plan', $id_plan)->get('plan_shift')->result_array();
+                $planshift_ids = array_column($ps, 'id_planshift');
+            }
+
+            // Xóa các bản ghi phụ thuộc theo thứ tự: p_machine, p_material, sorting_report (nếu tồn tại)
+            if (!empty($planshift_ids)) {
+                if ($this->db->table_exists('p_machine')) {
+                    $this->db->where_in('id_planshift', $planshift_ids)->delete('p_machine');
+                }
+                if ($this->db->table_exists('p_material')) {
+                    $this->db->where_in('id_planshift', $planshift_ids)->delete('p_material');
+                }
+                if ($this->db->table_exists('sorting_report')) {
+                    $this->db->where_in('id_planshift', $planshift_ids)->delete('sorting_report');
+                }
+                if ($this->db->table_exists('sorting')) {
+                    $this->db->where_in('id_planshift', $planshift_ids)->delete('sorting');
+                }
+            }
+
+            // Xóa plan_shift
+            if ($this->db->table_exists('plan_shift')) {
+                $this->db->where('id_plan', $id_plan)->delete('plan_shift');
+            }
+
+            // Xóa plan_line nếu tồn tại
+            if ($this->db->table_exists('plan_line')) {
+                $this->db->where('id_plan', $id_plan)->delete('plan_line');
+            }
+
+            // Xóa bản ghi planning
+            $this->db->where('id_plan', $id_plan)->delete('planning');
+
+            // Ghi audit
+            if ($this->db->table_exists('audit_log')) {
+                $this->db->insert('audit_log', [
+                    'user_id' => $this->session->userdata('user_id'),
+                    'username' => $this->session->userdata('username'),
+                    'action' => 'delete_plan',
+                    'module' => 'planning',
+                    'record_id' => $id_plan,
+                    'old_value' => json_encode($plan, JSON_UNESCAPED_UNICODE),
+                    'new_value' => null,
+                    'ip_address' => $this->input->ip_address(),
+                    'user_agent' => $this->input->user_agent()
+                ]);
+            }
+
+            $this->db->trans_complete();
+            if ($this->db->trans_status() === false) {
+                throw new Exception('Lỗi khi xóa kế hoạch trong DB');
+            }
+
+            return ['success' => true, 'message' => 'Kế hoạch đã được xóa'];
         } catch (Exception $e) {
             $this->db->trans_rollback();
             return ['success' => false, 'message' => $e->getMessage()];

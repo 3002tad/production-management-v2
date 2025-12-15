@@ -64,112 +64,9 @@ class Leader extends CI_Controller
         $this->load->view('leader/vbackend', $data);
     }
 
-    public function planning()
-    {
-    
-        $data = [
-            'planning' => $this->db->query('SELECT * FROM planning JOIN project WHERE planning.id_project=project.id_project')->result(),
-            'project' => $this->db->query('SELECT * FROM project')->result(),
-            'content' => 'leader/planning/planning',
-            'navlink' => 'planning',
-            ];
 
-        $this->load->view('leader/vbackend', $data);
-    }
 
-    public function plan_shift()
-    {
-        if ($this->uri->segment(4) === 'view') {
-            $id = $this->uri->segment(3);
-
-            $tampil = $this->db->query('SELECT * FROM planning JOIN project JOIN customer JOIN product WHERE id_plan = ' . $id. ' AND planning.id_project = project.id_project
-            AND project.id_cust = customer.id_cust AND project.id_product = product.id_product')->row();
-
-            $data = [
-                'plan' => [
-                    'id_plan' => $tampil->id_plan,
-                    'plan_name' => $tampil->plan_name,
-                    'project_name' => $tampil->project_name,
-                    'qty_request' => $tampil->qty_request,
-                    'qty_target' => $tampil->qty_target,
-                    'end_date' => $tampil->end_date,
-                    'entry_date' => $tampil->entry_date,
-                    'cust_name' => $tampil->cust_name,
-                    'address' => $tampil->address,
-                    'telp' => $tampil->telp,
-                    'email' => $tampil->email,
-                    'product_name' => $tampil->product_name,
-                    'diameter' => $tampil->diameter,
-                ],
-
-                'planshift' => $this->db->query('SELECT * FROM plan_shift JOIN shiftment JOIN staff WHERE id_plan = ' . $id. ' AND plan_shift.id_shift = shiftment.id_shift
-                AND plan_shift.id_staff = staff.id_staff')->result(),
-
-                'content' => 'leader/planning/DetailPlanning',
-                'navlink' => 'planning',
-            ];
-
-        } else {
-
-            $table = 'plan_shift';
-
-            $onjoin = [
-                'planning' => $table.'.id_plan=planning.id_plan',
-                'shiftment' => $table.'.id_shift=shiftment.id_shift',
-                'staff' => $table.'.id_staff=staff.id_staff',
-            ];
-
-            $data = [
-                'plan_shift' => $this->crudModel->getDataJoin($table, $onjoin),
-                'planning' => $this->db->query('SELECT * FROM planning')->result(),
-                'shiftment' => $this->db->query('SELECT * FROM shiftment')->result(),
-                'staff' => $this->db->query('SELECT * FROM staff')->result(),
-                'content' => 'leader/shiftment/shiftment',
-                'navlink' => 'plan_shift',
-                ];
-        }
-
-        $this->load->view('leader/vbackend', $data);
-    }
-
-    public function Production()
-    {
-        if ($this->uri->segment(3) === 'addproduction') {
-
-            $data = [
-                'planshift' => $this->db->query('SELECT * FROM plan_shift JOIN staff WHERE plan_shift.id_staff=staff.id_staff AND staff.st_status=2')->result(),
-                'planning' => $this->db->query('SELECT * FROM planning WHERE pl_status = 1')->result(),
-                'shiftment' => $this->db->query('SELECT * FROM shiftment')->result(),
-                'staff' => $this->db->query('SELECT * FROM staff')->result(),
-
-                'content' => 'leader/production/addproduction',
-                'navlink' => 'production',
-            ];
-
-        } else {
-            $table = 'plan_shift';
-
-            $onjoin = [
-                'shiftment' => $table.'.id_shift=shiftment.id_shift',
-                'staff' => $table.'.id_staff=staff.id_staff',
-                'planning' => $table.'.id_plan=planning.id_plan',
-                'project' => 'planning.id_project=project.id_project',
-            ];
-
-            $data = [
-                'production' => $this->crudModel->getDataJoin($table, $onjoin),
-                'planning' => $this->db->query('SELECT * FROM planning')->result(),
-                'shiftment' => $this->db->query('SELECT * FROM shiftment')->result(),
-                'staff' => $this->db->query('SELECT * FROM staff')->result(),
-                'project' => $this->db->query('SELECT * FROM project')->result(),
-                'content' => 'leader/production/production',
-                'navlink' => 'production',
-                ];
-        }
-
-        $this->load->view('leader/vbackend', $data);
-    }
-
+   
     public function detail_production()
     {
         if ($this->uri->segment(4) === 'view') {
@@ -741,4 +638,5 @@ class Leader extends CI_Controller
 
         $this->load->view('leader/vbackend', $data);
     }
+    
 }

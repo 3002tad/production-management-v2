@@ -25,7 +25,10 @@
             </div>
 
             <div class="card-body px-4 pb-4">
-                <form method="post" action="<?= site_url('BOD/storePlan'); ?>">
+                <form method="post" action="<?= isset($plan) ? site_url('BOD/updatePlan') : site_url('BOD/storePlan'); ?>">
+                    <?php if (isset($plan) && !empty($plan->id_plan)): ?>
+                        <input type="hidden" name="id_plan" value="<?= htmlspecialchars($plan->id_plan, ENT_QUOTES); ?>" />
+                    <?php endif; ?>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="card shadow-sm mb-3">
@@ -49,7 +52,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body p-2">
                                         <label class="form-label">Tên kế hoạch (tuỳ chọn)</label>
-                                        <input type="text" name="plan_name" id="plan_name" class="form-control" maxlength="255" placeholder="Tên kế hoạch" />
+                                        <input type="text" name="plan_name" id="plan_name" class="form-control" maxlength="255" placeholder="Tên kế hoạch" value="<?= isset($plan) ? htmlspecialchars($plan->plan_name ?? '', ENT_QUOTES) : ''; ?>" />
                                     </div>
                                 </div>
                             </div>
@@ -58,7 +61,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body p-2">
                                         <label class="form-label">Số lượng mục tiêu</label>
-                                        <input type="number" step="1" name="qty_target" id="qty_target" class="form-control" required />
+                                        <input type="number" step="1" name="qty_target" id="qty_target" class="form-control" required value="<?= isset($plan) ? htmlspecialchars($plan->qty_target ?? '', ENT_QUOTES) : ''; ?>" />
                                     </div>
                                 </div>
                             </div>
@@ -76,7 +79,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body p-2">
                                         <label class="form-label">Hạn giao (tùy chọn)</label>
-                                        <input type="date" name="end_date" id="end_date" class="form-control" />
+                                        <input type="date" name="end_date" id="end_date" class="form-control" value="" />
                                     </div>
                                 </div>
                             </div>
@@ -86,7 +89,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body p-2">
                                         <label class="form-label">Ngày bắt đầu (tùy chọn)</label>
-                                        <input type="date" name="start_date" id="start_date" class="form-control" />
+                                        <input type="date" name="start_date" id="start_date" class="form-control" value="<?= isset($plan) && !empty($plan->start_date) ? htmlspecialchars(date('Y-m-d', strtotime($plan->start_date)), ENT_QUOTES) : ''; ?>" />
                                     </div>
                                 </div>
                             </div>
@@ -95,7 +98,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body p-2">
                                         <label class="form-label">Ngày kết thúc (tùy chọn)</label>
-                                        <input type="date" name="finish_date" id="finish_date" class="form-control" />
+                                        <input type="date" name="finish_date" id="finish_date" class="form-control" value="<?= isset($plan) && !empty($plan->finish_date) ? htmlspecialchars(date('Y-m-d', strtotime($plan->finish_date)), ENT_QUOTES) : (isset($plan) && !empty($plan->end_date) ? htmlspecialchars(date('Y-m-d', strtotime($plan->end_date)), ENT_QUOTES) : ''); ?>" />
                                     </div>
                                 </div>
                             </div>
@@ -125,7 +128,7 @@
                                     <div class="card-body p-2">
                                         <label class="form-label">Số ca đề xuất(8 giờ/ca)</label>
                                         <div class="input-group">
-                                            <input type="number" id="suggested_shifts" name="suggested_shifts" class="form-control" min="0" />
+                                            <input type="number" id="suggested_shifts" name="suggested_shifts" class="form-control" min="0" value="<?= isset($plan) ? htmlspecialchars($plan->suggested_shifts ?? '', ENT_QUOTES) : ''; ?>" />
                                             <button type="button" id="calc_shifts" class="btn btn-outline-secondary">Tính số ca</button>
                                         </div>
                                         <small class="text-muted"></small>
@@ -137,7 +140,7 @@
                                 <div class="card mb-2">
                                     <div class="card-body p-2">
                                         <label class="form-label">Ghi chú</label>
-                                        <textarea name="note" class="form-control" rows="3"></textarea>
+                                        <textarea name="note" class="form-control" rows="3"><?= isset($plan) ? htmlspecialchars($plan->note ?? '', ENT_QUOTES) : ''; ?></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -195,7 +198,7 @@
                             <div class="card border-secondary mb-3">
                                 <div class="card-body">
                                     <label class="form-label">Danh sách NVL — tuỳ chọn</label>
-                                    <textarea name="materials" id="materials" class="form-control" rows="4"></textarea>
+                                    <textarea name="materials" id="materials" class="form-control" rows="4"><?= isset($plan) ? (is_array($plan->materials) ? htmlspecialchars(json_encode($plan->materials, JSON_UNESCAPED_UNICODE), ENT_QUOTES) : htmlspecialchars($plan->materials ?? '', ENT_QUOTES)) : ''; ?></textarea>
                                 </div>
                             </div>
                         </div>
@@ -206,12 +209,11 @@
                                                     Lưu ý: backend có thể mong đợi một mảng JSON; JS hiện lưu 1 chuỗi JSON của label (xem script).
                                                 - `auto_approve`: flag (0/1) do 2 nút submit điều khiển
                                         -->
-                                        <input type="hidden" name="lines" id="lines" value='[]' />
-                                        <input type="hidden" name="auto_approve" id="auto_approve" value="0" />
+                                        <input type="hidden" name="lines" id="lines" value='<?= isset($plan) ? (is_string($plan->lines) ? htmlspecialchars($plan->lines, ENT_QUOTES) : htmlspecialchars(json_encode($plan->lines ?? [], JSON_UNESCAPED_UNICODE), ENT_QUOTES)) : '[]'; ?>' />
+                                        <input type="hidden" name="auto_approve" id="auto_approve" value="1" />
 
                     <div class="text-end">
                         <a href="<?= site_url('BOD/planning'); ?>" class="btn btn-secondary">Hủy</a>
-                        <button type="submit" id="btn_save" class="btn btn-primary">Lưu Kế hoạch</button>
                         <button type="submit" id="btn_save_approve" class="btn btn-success ms-2">Lưu và Duyệt</button>
                     </div>
                 </form>
@@ -521,8 +523,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Ngày bắt đầu không được trễ hơn hạn giao');
                     return false;
                 }
-                if (isAfter(finishVal, endVal)) {
-                    alert('Ngày kết thúc không được trễ hơn hạn giao');
+                // `finish_date` must be strictly before `end_date` (hạn giao)
+                if (finishVal && endVal && (new Date(finishVal) >= new Date(endVal))) {
+                    alert('Ngày kết thúc phải trước hạn giao');
                     return false;
                 }
             }
@@ -540,54 +543,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
 
-            // Kiểm tra xung đột dây chuyền với các kế hoạch khác (server-side check via AJAX)
-            // Gửi machine_id, start_date, finish_date, end_date lên endpoint `BOD/checkMachineConflict`.
-            // Endpoint mong đợi trả về JSON: {available: true} hoặc {available: false, message: '...'}
-            const machineId = machineSelect ? machineSelect.value : '';
-            if (machineId) {
-                const payload = {
-                    machine_id: machineId,
-                    start_date: startVal || '',
-                    finish_date: finishVal || '',
-                    end_date: endVal || ''
-                };
-
-                fetch('<?= site_url('BOD/checkMachineConflict'); ?>', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(payload)
-                }).then(function(r){
-                    return r.json();
-                }).then(function(resp){
-                    if (!resp) {
-                        alert('Không nhận được phản hồi kiểm tra xung đột dây chuyền. Vui lòng thử lại.');
-                        return false;
-                    }
-                    if (resp.available === false) {
-                        // Thông báo tiếng Việt: dây chuyền đã nằm trong kế hoạch khác (thời gian chồng chéo)
-                        const msg = resp.message || 'Dây chuyền đã nằm trong kế hoạch khác (thời gian chồng chéo). Vui lòng chọn dây chuyền khác hoặc điều chỉnh thời gian.';
-                        alert(msg);
-                        return false;
-                    }
-
-                    // Nếu qua hết kiểm tra, submit form thực sự
-                    form.submit();
-                }).catch(function(err){
-                    console && console.error && console.error('Lỗi khi gọi API kiểm tra dây chuyền', err);
-                    alert('Lỗi khi kiểm tra xung đột dây chuyền. Vui lòng thử lại hoặc liên hệ quản trị.');
-                    return false;
-                });
-            } else {
-                // Nếu không chọn dây chuyền thì chỉ submit khi các kiểm tra trên OK
-                form.submit();
-            }
-
+            // Nếu qua hết kiểm tra, submit form
+            form.submit();
             return false;
         });
     }
 });
 </script>
+<?php if (isset($plan)): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // set machine selection if available — try multiple possible property names
+        var mval = '';
+        try {
+            mval = '<?= htmlspecialchars($plan->machine_id ?? $plan->id_machine ?? $plan->machine ?? $plan->machineId ?? '', ENT_QUOTES); ?>';
+        } catch (e) { mval = '<?= htmlspecialchars($plan->machine_id ?? '', ENT_QUOTES); ?>'; }
+        if (mval) {
+            var ms = document.getElementById('machine_id');
+            if (ms) {
+                for (var i=0;i<ms.options.length;i++) {
+                    if (String(ms.options[i].value) == String(mval)) {
+                        ms.selectedIndex = i;
+                        // trigger change so existing handlers run
+                        ms.dispatchEvent(new Event('change'));
+                        // also trigger qty change and calc button in case listeners need it
+                        try {
+                            var qtyEl = document.getElementById('qty_target');
+                            if (qtyEl) qtyEl.dispatchEvent(new Event('input'));
+                            var calcBtn = document.getElementById('calc_shifts');
+                            if (calcBtn) calcBtn.click();
+                        } catch (e) { /* ignore */ }
+                        break;
+                    }
+                }
+            }
+        }
+        // ensure project is selected (controller also tries to mark it)
+        var pval = '<?= htmlspecialchars($plan->id_project ?? '', ENT_QUOTES); ?>';
+        if (pval) {
+            var ps = document.getElementById('id_project');
+            if (ps) {
+                for (var j=0;j<ps.options.length;j++) {
+                    if (ps.options[j].value == pval) {
+                        ps.selectedIndex = j;
+                        // dispatch change to trigger other handlers (like BOM fetch),
+                        // but restore only the plan's finish date into #finish_date so
+                        // the project's delivery (auto-filled into #end_date) remains.
+                        ps.dispatchEvent(new Event('change'));
+                        try {
+                            var planFinish = '<?= isset($plan->finish_date) && !empty($plan->finish_date) ? htmlspecialchars(date('Y-m-d', strtotime($plan->finish_date)), ENT_QUOTES) : (isset($plan->end_date) && !empty($plan->end_date) ? htmlspecialchars(date('Y-m-d', strtotime($plan->end_date)), ENT_QUOTES) : ''); ?>';
+                            if (planFinish) {
+                                var fd = document.getElementById('finish_date');
+                                if (fd) fd.value = planFinish;
+                            }
+                        } catch (e) { console && console.warn && console.warn('Restore plan finish date failed', e); }
+                        break;
+                    }
+                }
+            }
+        }
+    } catch (e) { console && console.warn && console.warn('Prefill script error', e); }
+});
+</script>
+<?php endif; ?>
