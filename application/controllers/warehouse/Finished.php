@@ -120,6 +120,10 @@ class Finished extends CI_Controller {
 
         // Try to fetch from QC Module (shift_closures) first
         $batch = null;
+        $quantity_planned = 0;
+        $id_project = null;
+        $data_source = null;
+        
         if ($this->db->table_exists('shift_closures')) {
             $batch = $this->db->where('id', $id_finished_report)
                               ->get('shift_closures')
@@ -129,6 +133,7 @@ class Finished extends CI_Controller {
                 // For shift_closures, use project_code as id_project
                 $quantity_planned = $batch->qty_finished;
                 $id_project = $batch->project_code;
+                $data_source = 'shift_closures';
             }
         }
 
@@ -141,11 +146,18 @@ class Finished extends CI_Controller {
             if ($batch) {
                 $quantity_planned = $batch->total_finished;
                 $id_project = $batch->id_project;
+                $data_source = 'finished_report';
             }
         }
 
         if (!$batch) {
-            $this->session->set_flashdata('error', 'Ca/lô không tồn tại');
+            $this->session->set_flashdata('error', 'Ca/lô không tồn tại trong shift_closures hoặc finished_report');
+            redirect('warehouse/finished/receipt_form');
+        }
+
+        // Validate id_project was retrieved successfully
+        if (!$id_project) {
+            $this->session->set_flashdata('error', 'Không tìm thấy dự án liên kết với ca/lô');
             redirect('warehouse/finished/receipt_form');
         }
 
@@ -164,7 +176,7 @@ class Finished extends CI_Controller {
 
         if ($receipt_id) {
             $this->FinishedReceiptModel->updateStockAfterReceipt($quantity_received, 1);
-            $this->session->set_flashdata('success', 'Nhập thành công - Phiếu #' . $receipt_id);
+            $this->session->set_flashdata('success', 'Nhập thành công - Phiếu #' . $receipt_id . ' (từ ' . $data_source . ')');
             redirect('warehouse/finished/receipt_view/' . $receipt_id);
         } else {
             $this->session->set_flashdata('error', 'Lỗi: Không thể lưu phiếu');

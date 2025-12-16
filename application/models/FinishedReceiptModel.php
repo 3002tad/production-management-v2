@@ -12,9 +12,12 @@ class FinishedReceiptModel extends CI_Model {
     /**
      * CRITICAL CONTROL: Lấy danh sách ca/lô đã QC DUYỆT (APPROVE)
      * Only returns batches where:
-     * - QC Decision = APPROVE
+     * - QC Decision = APPROVE (for shift_closures)
      * - shift_closures.can_receive_fg = 1
      * - shift_closures.status = VERIFIED
+     * 
+     * Fallback to finished_report ONLY if shift_closures table does not exist
+     * (not when it's empty - empty means no approved batches)
      * 
      * This enforces the rule: "Kho thành phẩm chỉ được nhập sau khi QC duyệt"
      * 
@@ -22,8 +25,11 @@ class FinishedReceiptModel extends CI_Model {
      */
     public function getQcPassedBatches()
     {
+        $result = [];
+        $shift_closures_exists = $this->db->table_exists('shift_closures');
+
         // Thử lấy từ QC Module trước (mới)
-        if ($this->db->table_exists('shift_closures')) {
+        if ($shift_closures_exists) {
             $sql = "SELECT 
                       sc.id AS id_finished,
                       sc.code AS closure_code,
@@ -54,19 +60,29 @@ class FinishedReceiptModel extends CI_Model {
                     ORDER BY sc.closed_at DESC";
             
             $result = $this->db->query($sql)->result();
-            if (!empty($result)) {
-                return $result;
-            }
+            // If shift_closures exists, always use it (even if empty) - don't fallback
+            return $result;
         }
 
-        // Fallback: Lấy từ finished_report (schema cũ)
-        if ($this->db->table_exists('finished_report')) {
+        // Fallback: Lấy từ finished_report (schema cũ) ONLY nếu shift_closures không tồn tại
+        if (!$shift_closures_exists && $this->db->table_exists('finished_report')) {
             $sql = "SELECT 
                       fr.id_finished,
-                      fr.id_project,
+                      fr.id_finished AS closure_code,
+                      fr.id_project AS project_code,
+                      p.id_project,
                       p.project_name,
+                      NULL AS product_code,
+                      NULL AS product_name,
                       fr.total_finished AS qty_passed,
+                      NULL AS qty_waste,
                       fr.fdate,
+                      NULL AS closed_by,
+                      NULL AS qc_result,
+                      NULL AS qc_aql,
+                      NULL AS defect_rate,
+                      NULL AS qc_approved_at,
+                      NULL AS qc_approved_by,
                       COALESCE(SUM(CASE WHEN recpt.status = 'posted' THEN recpt.quantity_received ELSE 0 END), 0) AS qty_already_received
                     FROM finished_report fr
                     LEFT JOIN project p ON fr.id_project = p.id_project
@@ -74,10 +90,10 @@ class FinishedReceiptModel extends CI_Model {
                     GROUP BY fr.id_finished
                     ORDER BY fr.fdate DESC";
 
-            return $this->db->query($sql)->result();
+            $result = $this->db->query($sql)->result();
         }
 
-        return [];
+        return $result;
     }
 
     /**

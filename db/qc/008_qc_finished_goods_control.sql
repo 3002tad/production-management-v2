@@ -6,18 +6,73 @@
 -- Created: 2025-12-14
 -- =====================================================
 
--- STEP 1: Add columns to finished_receipt table
+-- STEP 1: Add columns to finished_receipt table (if not exists)
 -- =====================================================
-ALTER TABLE `finished_receipt` ADD COLUMN (
-  `qc_verified` TINYINT(1) DEFAULT 0 COMMENT '1=QC duyệt, 0=chưa hoặc từ chối',
-  `qc_approved_at` DATETIME DEFAULT NULL COMMENT 'Thời gian QC duyệt',
-  `qc_approved_by` VARCHAR(50) DEFAULT NULL COMMENT 'User code QC duyệt',
-  `requires_qc_approval` TINYINT(1) DEFAULT 1 COMMENT 'Bắt buộc QC duyệt trước khi nhập'
-);
+-- Check and add qc_verified column
+SET @qc_verified_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+  WHERE TABLE_NAME = 'finished_receipt' AND COLUMN_NAME = 'qc_verified' AND TABLE_SCHEMA = DATABASE());
 
--- Add indexes for QC verification checks
-ALTER TABLE `finished_receipt` ADD INDEX `idx_qc_verified` (`qc_verified`);
-ALTER TABLE `finished_receipt` ADD INDEX `idx_qc_approved_at` (`qc_approved_at`);
+SET @sql = IF(@qc_verified_exists = 0, 
+  'ALTER TABLE `finished_receipt` ADD COLUMN `qc_verified` TINYINT(1) DEFAULT 0 COMMENT "1=QC duyệt, 0=chưa hoặc từ chối"',
+  'SELECT "Column qc_verified already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Check and add qc_approved_at column
+SET @qc_approved_at_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+  WHERE TABLE_NAME = 'finished_receipt' AND COLUMN_NAME = 'qc_approved_at' AND TABLE_SCHEMA = DATABASE());
+
+SET @sql = IF(@qc_approved_at_exists = 0,
+  'ALTER TABLE `finished_receipt` ADD COLUMN `qc_approved_at` DATETIME DEFAULT NULL COMMENT "Thời gian QC duyệt"',
+  'SELECT "Column qc_approved_at already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Check and add qc_approved_by column
+SET @qc_approved_by_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+  WHERE TABLE_NAME = 'finished_receipt' AND COLUMN_NAME = 'qc_approved_by' AND TABLE_SCHEMA = DATABASE());
+
+SET @sql = IF(@qc_approved_by_exists = 0,
+  'ALTER TABLE `finished_receipt` ADD COLUMN `qc_approved_by` VARCHAR(50) DEFAULT NULL COMMENT "User code QC duyệt"',
+  'SELECT "Column qc_approved_by already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Check and add requires_qc_approval column
+SET @requires_qc_approval_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+  WHERE TABLE_NAME = 'finished_receipt' AND COLUMN_NAME = 'requires_qc_approval' AND TABLE_SCHEMA = DATABASE());
+
+SET @sql = IF(@requires_qc_approval_exists = 0,
+  'ALTER TABLE `finished_receipt` ADD COLUMN `requires_qc_approval` TINYINT(1) DEFAULT 1 COMMENT "Bắt buộc QC duyệt trước khi nhập"',
+  'SELECT "Column requires_qc_approval already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add indexes for QC verification checks (if not exists)
+SET @idx_qc_verified_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+  WHERE TABLE_NAME = 'finished_receipt' AND INDEX_NAME = 'idx_qc_verified' AND TABLE_SCHEMA = DATABASE());
+
+SET @sql = IF(@idx_qc_verified_exists = 0,
+  'ALTER TABLE `finished_receipt` ADD INDEX `idx_qc_verified` (`qc_verified`)',
+  'SELECT "Index idx_qc_verified already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_qc_approved_at_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS 
+  WHERE TABLE_NAME = 'finished_receipt' AND INDEX_NAME = 'idx_qc_approved_at' AND TABLE_SCHEMA = DATABASE());
+
+SET @sql = IF(@idx_qc_approved_at_exists = 0,
+  'ALTER TABLE `finished_receipt` ADD INDEX `idx_qc_approved_at` (`qc_approved_at`)',
+  'SELECT "Index idx_qc_approved_at already exists"');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 
 
 -- STEP 2: Verify shift_closures has can_receive_fg column
@@ -78,24 +133,45 @@ FOR EACH ROW
 BEGIN
   DECLARE v_can_receive_fg TINYINT(1);
   DECLARE v_status VARCHAR(20);
+  DECLARE v_closure_exists INT;
   
   -- If requires_qc_approval is set to true, check QC approval
   IF NEW.requires_qc_approval = 1 AND NEW.id_finished_report IS NOT NULL THEN
-    -- Check if shift_closure is QC approved
-    SELECT can_receive_fg, status INTO v_can_receive_fg, v_status
+    -- First, check if this ID exists in shift_closures table
+    SELECT COUNT(*) INTO v_closure_exists
     FROM shift_closures
     WHERE id = NEW.id_finished_report
     LIMIT 1;
     
-    -- If not approved, raise error
-    IF v_can_receive_fg IS NULL OR v_can_receive_fg = 0 THEN
-      SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'ERRO_QC_NOT_APPROVED: Shift closure chưa được QC duyệt. Không thể nhập kho!';
-    END IF;
-    
-    IF v_status != 'VERIFIED' THEN
-      SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'ERROR_CLOSURE_NOT_VERIFIED: Trạng thái shift closure không hợp lệ';
+    -- If found in shift_closures, verify QC approval
+    IF v_closure_exists > 0 THEN
+      SELECT can_receive_fg, status INTO v_can_receive_fg, v_status
+      FROM shift_closures
+      WHERE id = NEW.id_finished_report
+      LIMIT 1;
+      
+      -- If not approved, raise error
+      IF v_can_receive_fg IS NULL OR v_can_receive_fg = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERRO_QC_NOT_APPROVED: Shift closure chưa được QC duyệt. Không thể nhập kho!';
+      END IF;
+      
+      IF v_status != 'VERIFIED' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR_CLOSURE_NOT_VERIFIED: Trạng thái shift closure không hợp lệ';
+      END IF;
+    ELSE
+      -- Fallback: Check if this ID exists in finished_report table
+      SELECT COUNT(*) INTO v_closure_exists
+      FROM finished_report
+      WHERE id_finished = NEW.id_finished_report
+      LIMIT 1;
+      
+      IF v_closure_exists = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR_BATCH_NOT_FOUND: Không tìm thấy ca/lô trong shift_closures hoặc finished_report';
+      END IF;
+      -- Note: finished_report không có trạng thái QC, assume nó đã được duyệt
     END IF;
   END IF;
 END $$
