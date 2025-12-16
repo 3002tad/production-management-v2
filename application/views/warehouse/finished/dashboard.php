@@ -16,6 +16,11 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
                 <h6 class="text-sm font-weight-bolder mb-0">Production System</h6>
+                <div class="col-6 d-flex text-end">
+                    <a href="<?= site_url('warehouse/logout'); ?>" class="btn gradient-dark mb-0">|  <?= lang('btn_logout'); ?>
+                    <i class="material-icons">arrow_forward</i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>

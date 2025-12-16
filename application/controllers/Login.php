@@ -40,7 +40,7 @@ class Login extends CI_Controller
                 $username = $this->input->post('username', true);
                 $password = $this->input->post('password', true);
 
-                $checking = $this->login->check_login('user', ['username' => $username], ['password' => $password]);
+                $checking = $this->login->check_login('user', ['username' => $username], $password);
 
                 if ($checking !== false) {
                     foreach ($checking as $data) {

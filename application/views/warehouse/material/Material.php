@@ -12,6 +12,11 @@
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
                 <h6 class="text-sm font-weight-bolder mb-0">Production System</h6>
+                <div class="col-6 d-flex text-end">
+                    <a href="<?= site_url('warehouse/logout'); ?>" class="btn gradient-dark mb-0">|  <?= lang('btn_logout'); ?>
+                    <i class="material-icons">arrow_forward</i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -39,27 +44,27 @@
 <!-- Hai card dưới -->
 <div class="container-fluid py-4 pt-2 px-4">
     <div class="row g-4 mx-1">
-        <!-- Lịch sử nguyên liệu (40%) -->
+        <!-- Cảnh báo Tồn kho thấp (40%) -->
         <div class="col-md-5">
             <div class="card h-100">
-                <div class="card-header card-header-rose py-3 px-4">
-                    <h6 class="mb-0"><?= lang('label_material_history'); ?></h6>
-                    <span class="text-sm mb-0"><?= lang('label_material_history_desc'); ?></span>
+                <div class="card-header card-header-danger py-3 px-4">
+                    <h6 class="mb-0">⚠️ Cảnh báo Tồn kho</h6>
+                    <span class="text-sm mb-0">Nguyên liệu dưới mức tối thiểu</span>
                 </div>
                 <div class="card-body pt-3 px-4 pb-3">
                     <div class="table-responsive p-0">
-                        <table id="table-data" class="table align-items-center justify-content-center mb-0 table-center">
+                        <table id="table-input" class="table align-items-center justify-content-center mb-0 table-center">
                             <thead>
                                 <tr>
                                     <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_no'); ?></th>
                                     <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_material'); ?></th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_out'); ?></th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_production'); ?></th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_date'); ?></th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Tồn hiện tại</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Tối thiểu</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Thiếu</th>
                                 </tr>
                             </thead>
                             <tbody class="pl-3">
-                                <?php if (!empty($material)) : $i = 1; foreach ($material as $value) : ?>
+                                <?php if (!empty($material_input)) : $i = 1; foreach ($material_input as $value) : ?>
                                 <tr>
                                     <td>
                                         <div class="d-flex pl-3">
@@ -87,16 +92,22 @@
                                                 default: $uh_label = $uh; break;
                                             }
                                         ?>
-                                        <span class="text-sm font-weight-bold"><?= $value->used_stock ?> <?= $uh_label; ?></span>
+                                        <span class="text-sm font-weight-bold text-danger"><?= $value->stock ?> <?= $uh_label; ?></span>
                                     </td>
                                     <td class="pl-4">
-                                        <span class="text-sm font-weight-bold"><?= $value->staff_name ?></span>
+                                        <span class="text-sm font-weight-bold"><?= $value->min_stock ?> <?= $uh_label; ?></span>
                                     </td>
                                     <td class="pl-4">
-                                        <span class="text-sm font-weight-bold"><?= $value->start_date ?></span>
+                                        <span class="text-sm font-weight-bold badge badge-danger"><?= $value->thiếu_bao_nhiêu ?> <?= $uh_label; ?></span>
                                     </td>
                                 </tr>
-                                <?php endforeach; endif; ?>
+                                <?php endforeach; else: ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <span class="text-sm text-success">✓ Tất cả nguyên liệu đều đủ tồn kho</span>
+                                    </td>
+                                </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>

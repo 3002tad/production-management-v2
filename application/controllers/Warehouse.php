@@ -306,8 +306,20 @@ class Warehouse extends CI_Controller
             ];
         } else {
             $data = [
-                'material' => $this->db->query('SELECT * FROM p_material JOIN plan_shift JOIN material JOIN staff WHERE p_material.id_material = material.id_material AND p_material.id_planshift = plan_shift.id_planshift AND plan_shift.id_staff = staff.id_staff')->result(),
-                'materials' => $this->db->query('SELECT * FROM material')->result(),
+                'material_input' => $this->db->query('
+                    SELECT 
+                        id_material,
+                        material_name,
+                        stock,
+                        min_stock,
+                        uom,
+                        (min_stock - stock) as thiếu_bao_nhiêu
+                    FROM material 
+                    WHERE stock < min_stock
+                    ORDER BY (min_stock - stock) DESC
+                    LIMIT 10
+                ')->result(),
+                'materials' => $this->db->query('SELECT * FROM material WHERE id_material IS NOT NULL')->result(),
                 'content' => 'warehouse/material/Material',
                 'navlink' => 'material',
             ];

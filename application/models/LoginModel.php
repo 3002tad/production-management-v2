@@ -20,7 +20,7 @@ class LoginModel extends CI_Model
      * Check login và JOIN với bảng roles để lấy role_name
      * Hỗ trợ RBAC mới (role_id FK) + backward compatible với role text cũ
      */
-    public function check_login($table, $field1, $field2)
+    public function check_login($table, $field1, $password_input)
     {
         // If roles table exists, use RBAC JOIN; otherwise fall back to legacy `role` column
         if ($this->db->table_exists('roles')) {
@@ -42,7 +42,6 @@ class LoginModel extends CI_Model
             $this->db->from($table . ' u');
             $this->db->join('roles r', 'r.role_id = u.role_id', 'left');
             $this->db->where($field1);
-            $this->db->where($field2);
             $this->db->where('u.is_active', 1); // Only active users
             $this->db->limit(1);
 
@@ -50,19 +49,21 @@ class LoginModel extends CI_Model
 
             if ($query->num_rows() == 0) {
                 return false;
-            } else {
-                $result = $query->result();
-
-                // Nếu có role_name từ JOIN, dùng nó (ưu tiên RBAC mới)
-                // Ngược lại dùng cột role text cũ (backward compatible)
-                foreach ($result as $row) {
-                    if (!empty($row->role_name)) {
-                        $row->role = $row->role_name; // Override role text bằng role_name từ FK
-                    }
-                }
-
-                return $result;
             }
+            
+            $result = $query->result();
+            
+            // Check password match
+            foreach ($result as $row) {
+                if ($row->password === $password_input) {
+                    if (!empty($row->role_name)) {
+                        $row->role = $row->role_name;
+                    }
+                    return array($row);
+                }
+            }
+            
+            return false;
         } else {
             // Legacy DB without roles table: select only existing columns from user
             $available = $this->db->list_fields('user');
@@ -120,7 +121,6 @@ class LoginModel extends CI_Model
             $this->db->select($selectStr);
             $this->db->from($table . ' u');
             $this->db->where($field1);
-            $this->db->where($field2);
 
             // only add is_active filter if column exists
             if (in_array('is_active', $available)) {
@@ -134,7 +134,15 @@ class LoginModel extends CI_Model
                 return false;
             }
 
-            return $query->result();
+            // Check password match
+            $result = $query->result();
+            foreach ($result as $row) {
+                if ($row->password === $password_input) {
+                    return $result;
+                }
+            }
+            
+            return false;
         }
     }
 

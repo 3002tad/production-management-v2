@@ -4,7 +4,7 @@
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Danh Sách Phiếu Xuất Giao Hàng Thành Phẩm</h5>
-          <a href="<?= site_url('warehouse/finished/delivery/form'); ?>" class="btn btn-sm btn-success">
+          <a href="<?= site_url('warehouse/finished/deliveries/new'); ?>" class="btn btn-sm btn-success">
             <i class="material-icons align-middle">add</i> Tạo Phiếu Mới
           </a>
         </div>
@@ -74,7 +74,7 @@
                 <?php else: ?>
                   <tr>
                     <td colspan="8" class="text-center text-muted py-4">
-                      Không có phiếu xuất nào. <a href="<?= site_url('warehouse/finished/delivery/form'); ?>">Tạo phiếu mới</a>
+                      Không có phiếu xuất nào. <a href="<?= site_url('warehouse/finished/deliveries/new'); ?>">Tạo phiếu mới</a>
                     </td>
                   </tr>
                 <?php endif; ?>
