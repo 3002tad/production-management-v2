@@ -242,17 +242,17 @@
                                                     </td>
                                                     <td>
                                                         <p class="text-xs text-secondary mb-0">
-                                                            <?= date('d/m/Y H:i', strtotime($machine->assigned_at)) ?>
+                                                            <?= date('d/m/Y H:i', strtotime($machine->start_at)) ?>
                                                         </p>
                                                     </td>
                                                     <td>
                                                         <?php
                                                         $machine_status_badge = 'bg-gradient-success';
                                                         $machine_status_text = 'Đang chạy';
-                                                        if ($machine->status == 2) {
-                                                            $machine_status_badge = 'bg-gradient-warning';
-                                                            $machine_status_text = 'Bảo trì';
-                                                        } elseif ($machine->status == 3) {
+                                                        if ($machine->assignment_status == 'completed') {
+                                                            $machine_status_badge = 'bg-gradient-secondary';
+                                                            $machine_status_text = 'Hoàn thành';
+                                                        } elseif ($machine->assignment_status == 'breakdown') {
                                                             $machine_status_badge = 'bg-gradient-danger';
                                                             $machine_status_text = 'Hỏng';
                                                         }
@@ -263,9 +263,9 @@
                                                         <p class="text-xs text-secondary mb-0"><?= $machine->notes ?? '-' ?></p>
                                                     </td>
                                                     <td class="align-middle">
-                                                        <?php if ($machine->status == 3): ?>
+                                                        <?php if ($machine->assignment_status == 'breakdown'): ?>
                                                             <button type="button" class="btn btn-link text-warning text-gradient px-3 mb-0" 
-                                                                    onclick="openBreakdownModal(<?= $machine->assignment_id ?>, '<?= $machine->machine_code ?>')">
+                                                                    onclick="openBreakdownModal(<?= $machine->machine_assignment_id ?>, '<?= $machine->machine_code ?>')">
                                                                 <i class="material-icons text-sm me-2">build</i>Xử lý
                                                             </button>
                                                         <?php endif; ?>
