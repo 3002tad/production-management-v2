@@ -117,10 +117,10 @@
                                                     <?= htmlspecialchars($material['material_name']); ?>
                                                 </td>
                                                 <td class="text-center text-sm" style="font-family: 'Poppins', sans-serif;">
-                                                    <?= $material['quantity']; ?>
+                                                    <?= $material['quantity_per_unit'] ?? $material['quantity'] ?? 0; ?>
                                                 </td>
                                                 <td class="text-center text-sm" style="font-family: 'Poppins', sans-serif;">
-                                                    <?= htmlspecialchars($material['unit']); ?>
+                                                    <?= !empty($material['unit']) ? htmlspecialchars($material['unit']) : '<em class="text-muted">—</em>'; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -141,18 +141,32 @@
                 <?php endif; ?>
 
                 <!-- Order Statistics & FK Constraint -->
-                <?php if (isset($product->total_orders) && $product->total_orders > 0): ?>
+                <?php if ((isset($product->total_orders) && $product->total_orders > 0) || (!empty($product->references))): ?>
                     <div class="alert alert-warning mt-4" role="alert" style="font-family: 'Poppins', sans-serif;">
                         <strong>
                             <i class="material-icons-round" style="font-size: 18px; vertical-align: middle;">error</i>
                             RÀNG BUỘC KHÓA NGOẠI (FK CONSTRAINT)
                         </strong>
-                        <p class="mb-2 mt-2">
-                            Sản phẩm này có <strong class="text-danger"><?= $product->total_orders; ?> đơn hàng</strong> trong hệ thống!
-                        </p>
+                        <?php if (isset($product->total_orders) && $product->total_orders > 0): ?>
+                            <p class="mb-2 mt-2">
+                                Sản phẩm này có <strong class="text-danger"><?= $product->total_orders; ?> đơn hàng</strong> trong hệ thống!
+                            </p>
+                        <?php endif; ?>
+
+                        <?php if (!empty($product->references)): ?>
+                            <p class="mb-2 mt-2">
+                                Ngoài ra, sản phẩm còn được tham chiếu bởi các bảng khác:
+                            </p>
+                            <ul class="mb-2">
+                                <?php foreach ($product->references as $tbl => $cnt): ?>
+                                    <li><strong><?= htmlspecialchars($tbl); ?></strong>: <?= (int)$cnt; ?> bản ghi</li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php endif; ?>
+
                         <hr>
                         <p class="mb-0 text-danger">
-                            <strong>⚠️ KHÔNG THỂ XÓA</strong> - Vui lòng xóa tất cả đơn hàng sử dụng sản phẩm này trước khi xóa sản phẩm.
+                            <strong>⚠️ KHÔNG THỂ XÓA</strong> - Vui lòng xóa hoặc cập nhật các bản ghi liên quan trước khi xóa sản phẩm.
                         </p>
                     </div>
 
@@ -170,7 +184,7 @@
                                     disabled
                                     style="font-family: 'Poppins', sans-serif;">
                                 <i class="material-icons-round opacity-10" style="font-size: 18px;">delete_forever</i>
-                                Không thể xóa (Có đơn hàng)
+                                Không thể xóa (Có dữ liệu liên quan)
                             </button>
                         </div>
                     </div>

@@ -139,7 +139,7 @@
                         </a>
                     </li>
                     <li class="nav-item d-flex align-items-center">
-                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0">
+                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
                             <i class="fa fa-user me-sm-1"></i>
                             <span class="d-sm-inline d-none"><?= $user['full_name'] ?? 'QC Inspector' ?></span>
                             <i class="material-icons ms-2">logout</i>

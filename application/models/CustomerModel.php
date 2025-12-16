@@ -39,27 +39,35 @@ class CustomerModel extends CI_Model
      * @param bool $active_only Chỉ lấy khách hàng đang hoạt động
      * @return array
      */
-    public function getAllCustomers($active_only = false)
+    public function getAllCustomers($filters = [])
     {
-        $where_clause = $active_only ? 'WHERE c.is_active = 1' : '';
-        
-        $query = $this->db->query("
-            SELECT 
-                c.*,
-                COUNT(DISTINCT p.id_project) AS total_orders,
-                COALESCE(SUM(p.qty_request), 0) AS total_quantity,
-                MAX(p.created_at) AS last_order_date,
-                CASE 
-                    WHEN c.is_active = 1 THEN 'Đang hợp tác'
-                    ELSE 'Ngừng hợp tác'
-                END AS status_text
-            FROM customer c
-            LEFT JOIN project p ON c.id_cust = p.id_cust
-            {$where_clause}
-            GROUP BY c.id_cust
-            ORDER BY c.id_cust ASC
-        ");
-        
+        $this->db->select("c.*, COUNT(DISTINCT p.id_project) AS total_orders, COALESCE(SUM(p.qty_request), 0) AS total_quantity, MAX(p.created_at) AS last_order_date, CASE WHEN c.is_active = 1 THEN 'Đang hợp tác' ELSE 'Ngừng hợp tác' END AS status_text", FALSE);
+        $this->db->from('customer c');
+        $this->db->join('project p', 'c.id_cust = p.id_cust', 'left');
+
+        // Keyword (name / email / phone)
+        if (isset($filters['keyword']) && $filters['keyword'] !== '') {
+            $this->db->group_start();
+            $this->db->like('c.cust_name', $filters['keyword']);
+            $this->db->or_like('c.email', $filters['keyword']);
+            $this->db->or_like('c.telp', $filters['keyword']);
+            $this->db->group_end();
+        }
+
+        // Active filter
+        if (isset($filters['is_active']) && $filters['is_active'] !== '') {
+            $this->db->where('c.is_active', (int)$filters['is_active']);
+        }
+
+        $this->db->group_by('c.id_cust');
+
+        // Min orders (HAVING)
+        if (isset($filters['min_orders']) && $filters['min_orders'] !== '') {
+            $this->db->having('COUNT(DISTINCT p.id_project) >=', (int)$filters['min_orders']);
+        }
+
+        $this->db->order_by('c.id_cust', 'ASC');
+        $query = $this->db->get();
         return $query->result();
     }
 
@@ -212,6 +220,35 @@ class CustomerModel extends CI_Model
                 'success' => false,
                 'message' => $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Update only customer notes (bypass full validation)
+     * Used by AJAX endpoints when editing notes inline from order forms
+     * @param int $id_cust
+     * @param string $notes
+     * @return array ['success' => bool, 'message' => string]
+     */
+    public function updateCustomerNotes($id_cust, $notes)
+    {
+        $this->db->trans_start();
+        try {
+            $old_data = $this->getCustomerById($id_cust);
+
+            $this->db->where('id_cust', $id_cust)->update('customer', ['notes' => $notes]);
+
+            $this->logActivity('update', $id_cust, $old_data, ['notes' => $notes]);
+
+            $this->db->trans_complete();
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception('Lỗi khi cập nhật ghi chú khách hàng');
+            }
+
+            return ['success' => true, 'message' => 'Ghi chú đã được cập nhật'];
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 

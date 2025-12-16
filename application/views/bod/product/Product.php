@@ -45,13 +45,74 @@
 
             <!-- Card Body -->
             <div class="card-body px-0 pb-2">
-                <?php if (isset($keyword)): ?>
-                    <div class="alert alert-info alert-dismissible fade show mx-4 mb-3" role="alert">
-                        <strong><i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">search</i> Kết quả tìm kiếm:</strong> 
-                        "<?= htmlspecialchars($keyword); ?>" - Tìm thấy <?= count($data); ?> sản phẩm
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <!-- Filters (Material Design 3 + Bootstrap grid) -->
+                <div class="px-4 mb-3">
+                    <form class="row g-2 align-items-end" method="GET" action="<?= site_url('BOD/product'); ?>">
+                        <div class="col-md-4">
+                            <label class="form-label text-sm">Tìm kiếm</label>
+                            <input type="text" name="keyword" class="form-control form-control-sm" placeholder="Tên sản phẩm hoặc mô tả" value="<?= htmlspecialchars($filters['keyword'] ?? ''); ?>">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-sm">Có BOM</label>
+                            <select name="has_bom" class="form-select form-select-sm">
+                                <option value="" <?= !isset($filters['has_bom']) || $filters['has_bom']==='' ? 'selected' : ''; ?>>Tất cả</option>
+                                <option value="yes" <?= (isset($filters['has_bom']) && $filters['has_bom']==='yes') ? 'selected' : ''; ?>>Có</option>
+                                <option value="no" <?= (isset($filters['has_bom']) && $filters['has_bom']==='no') ? 'selected' : ''; ?>>Không</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-sm">Min đơn</label>
+                            <input type="number" name="min_orders" min="0" class="form-control form-control-sm" placeholder="0" value="<?= htmlspecialchars($filters['min_orders'] ?? ''); ?>">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-sm">Trạng thái</label>
+                            <select name="is_active" class="form-select form-select-sm">
+                                <option value="" <?= !isset($filters['is_active']) || $filters['is_active']==='' ? 'selected' : ''; ?>>Tất cả</option>
+                                <option value="1" <?= (isset($filters['is_active']) && $filters['is_active']==='1') ? 'selected' : ''; ?>>Hoạt động</option>
+                                <option value="0" <?= (isset($filters['is_active']) && $filters['is_active']==='0') ? 'selected' : ''; ?>>Ngừng</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary align-self-end">Lọc</button>
+                            <a href="<?= site_url('BOD/product'); ?>" class="btn btn-sm btn-outline-secondary align-self-end">Xóa</a>
+                        </div>
+                    </form>
+
+                    <!-- Active filters badges -->
+                    <div class="mt-2">
+                        <?php if (!empty($filters)): ?>
+                            <?php
+                                // Chuẩn hóa nhãn và giá trị hiển thị tiếng Việt
+                                $current_query = $_GET;
+                                $filter_labels = [
+                                    'keyword' => 'Tìm',
+                                    'has_bom' => 'Có BOM',
+                                    'min_orders' => 'Min đơn',
+                                    'is_active' => 'Trạng thái'
+                                ];
+                                $has_bom_map = ['yes' => 'Có', 'no' => 'Không'];
+                                $status_map = ['1' => 'Hoạt động', '0' => 'Ngừng'];
+                            ?>
+                            <?php foreach ($filters as $k=>$v): if ($v === '' || $v === null) continue; ?>
+                                <?php
+                                    $label = $filter_labels[$k] ?? $k;
+                                    $value = $v;
+                                    if ($k === 'has_bom') $value = $has_bom_map[$v] ?? $v;
+                                    if ($k === 'is_active') $value = $status_map[$v] ?? $v;
+                                    // Tạo URL để xóa từng filter
+                                    $params = $current_query;
+                                    unset($params[$k]);
+                                    $remove_url = site_url('BOD/product') . (empty($params) ? '' : ('?' . http_build_query($params)));
+                                ?>
+                                <a href="<?= $remove_url; ?>" class="badge rounded-pill bg-gradient-primary text-white me-1 py-2" style="text-decoration:none;">
+                                    <i class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:6px;">filter_alt</i>
+                                    <?= htmlspecialchars($label . ': ' . $value); ?>
+                                    <i class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-left:8px;">close</i>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
+                </div>
 
                 <div class="table-responsive p-3">
                     <table id="productTable" class="table align-items-center justify-content-center mb-0">
@@ -197,16 +258,39 @@
 
                                         <!-- Thao tác -->
                                         <td class="align-middle text-center">
-                                            <a href="<?= site_url('BOD/product/edit/' . $product->id_product); ?>" 
-                                               class="btn btn-sm bg-gradient-warning mb-0 me-1"
+                                            <a href="<?= site_url('BOD/product/view/' . $product->id_product); ?>" 
+                                               class="btn btn-sm bg-gradient-info mb-0 me-1"
                                                onclick="window.location.href=this.href; return false;"
+data-bs-toggle="tooltip"
+                                               title="Xem chi tiết BOM"
                                                style="font-family: 'Poppins', sans-serif;">
-                                                <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">edit</i>
-                                                Sửa
+                                                <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">visibility</i>
+                                                Xem
                                             </a>
+                                            <?php if (!empty($product->blocking_orders) && $product->blocking_orders > 0): ?>
+                                                <button class="btn btn-sm bg-gradient-warning mb-0 me-1 disabled" 
+                                                        data-bs-toggle="tooltip"
+                                                        title="Không thể sửa: đã có <?= $product->blocking_orders; ?> đơn đã duyệt/đang SX/hoàn thành"
+                                                        style="font-family: 'Poppins', sans-serif;">
+                                                    <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">edit</i>
+                                                    Sửa
+                                                </button>
+                                            <?php else: ?>
+                                                <a href="<?= site_url('BOD/product/edit/' . $product->id_product); ?>" 
+                                                   class="btn btn-sm bg-gradient-warning mb-0 me-1"
+                                                   onclick="window.location.href=this.href; return false;"
+                                                   data-bs-toggle="tooltip"
+                                                   title="Sửa sản phẩm"
+                                                   style="font-family: 'Poppins', sans-serif;">
+                                                    <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">edit</i>
+                                                    Sửa
+                                                </a>
+                                            <?php endif; ?>
                                             <a href="<?= site_url('BOD/product/delete/' . $product->id_product); ?>" 
                                                class="btn btn-sm bg-gradient-danger mb-0"
                                                onclick="window.location.href=this.href; return false;"
+data-bs-toggle="tooltip"
+                                               title="Xóa sản phẩm"
                                                style="font-family: 'Poppins', sans-serif;">
                                                 <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">delete</i>
                                                 Xóa
@@ -490,13 +574,36 @@ function closeToast(element) {
 // DataTables initialization - Wait for jQuery
 window.addEventListener('load', function() {
     if (typeof jQuery !== 'undefined') {
-        $('#productTable').DataTable({
-            "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.19/i18n/Vietnamese.json"
-            },
-            "pageLength": 25,
-            "order": [[1, 'asc']] // Sort by Mã SP ascending (sản phẩm mới nhất ở cuối)
-        });
+        // Guard DataTable initialisation to prevent double init warnings
+        if (!$.fn.DataTable || !$.fn.DataTable.isDataTable || !$.fn.DataTable.isDataTable('#productTable')) {
+            <?php $dt_lang = @file_get_contents(FCPATH . 'asset/Backend/json/Vietnamese.json'); ?>
+            $('#productTable').DataTable({
+                "language": <?= $dt_lang ? $dt_lang : json_encode(['url' => base_url('asset/Backend/json/Vietnamese.json')]); ?>,
+                "pageLength": 25,
+                "order": [[1, 'asc']] // Sort by Mã SP ascending (sản phẩm mới nhất ở cuối)
+            });
+        } else {
+            try {
+                var ptable = $('#productTable').DataTable();
+                var pInfo = ptable.settings && ptable.settings()[0] && ptable.settings()[0].oLanguage && (ptable.settings()[0].oLanguage.sInfo || ptable.settings()[0].oLanguage.sLengthMenu);
+                var pNeedsReinit = false;
+                if (!ptable.settings()[0].oLanguage) pNeedsReinit = true;
+                if (pInfo && (pInfo.indexOf('Showing') !== -1 || pInfo.indexOf('Show') !== -1)) pNeedsReinit = true;
+                if (pNeedsReinit) {
+                    ptable.destroy();
+                    <?php $dt_lang = @file_get_contents(FCPATH . 'asset/Backend/json/Vietnamese.json'); ?>
+                    $('#productTable').DataTable({
+                        "language": <?= $dt_lang ? $dt_lang : json_encode(['url' => base_url('asset/Backend/json/Vietnamese.json')]); ?>,
+                        "pageLength": 25,
+                        "order": [[1, 'asc']]
+                    });
+                } else {
+                    ptable.draw(false);
+                }
+            } catch (e) {
+                console.warn('Product table draw/reinit failed', e);
+            }
+        }
 
         // Initialize tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

@@ -107,7 +107,7 @@
                 <div class="ms-md-auto pe-md-3 d-flex align-items-center"></div>
                 <ul class="navbar-nav justify-content-end">
                     <li class="nav-item d-flex align-items-center">
-                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0">
+                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
                             <i class="fa fa-user me-sm-1"></i>
                             <span class="d-sm-inline d-none"><?= $user['full_name'] ?? 'QC Inspector' ?></span>
                             <i class="material-icons ms-2">logout</i>
@@ -126,6 +126,20 @@
             <span class="alert-text"><?= $this->session->flashdata('upload_success') ?></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+        <script>
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: '<?= addslashes($this->session->flashdata('upload_success')) ?>',
+                    showConfirmButton: true,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#17ad37',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+        </script>
         <?php endif; ?>
         
         <?php if ($this->session->flashdata('upload_error')): ?>

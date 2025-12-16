@@ -21,6 +21,26 @@
                 <div class="form-login text-center">
                     <div class="parent d-flex justify-content-center align-items-center" style="height: 80vh;">
                         <div class="child">
+<?php if($this->session->flashdata('login_error')): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fa fa-exclamation-circle me-2"></i>
+                                <strong>Lỗi!</strong> <?= $this->session->flashdata('login_error') ?>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if($this->session->flashdata('login_success')): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fa fa-check-circle me-2"></i>
+                                <?= $this->session->flashdata('login_success') ?>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                            
                             <form action="<?= site_url('login/'); ?>" method="post">
                                 <h4>Production System</h4>
                                 <h5 class="mt-3">Sign in by entering the information below</h5>

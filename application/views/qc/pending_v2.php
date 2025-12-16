@@ -181,7 +181,7 @@
                         </a>
                     </li>
                     <li class="nav-item d-flex align-items-center">
-                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0">
+                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
                             <i class="fa fa-user me-sm-1"></i>
                             <span class="d-sm-inline d-none">Hệ thống Quản lý Sản xuất</span>
                             <i class="material-icons ms-2">logout</i>
@@ -202,6 +202,21 @@
             <span class="alert-text"><?= $this->session->flashdata('success') ?></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        <script>
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: '<?= addslashes($this->session->flashdata('success')) ?>',
+                    showConfirmButton: true,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#17ad37',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
+        </script>
+        <?php endif; ?>
         <?php endif; ?>
         
         <?php if ($this->session->flashdata('error')): ?>

@@ -104,17 +104,27 @@
                     <div class="row">
                         <!-- Ứng dụng -->
                         <div class="col-md-6 mb-3">
-                            <div class="input-group input-group-outline <?= !empty($product->application) ? 'is-filled' : ''; ?>">
-                                <label class="form-label" style="font-family: 'Poppins', sans-serif;">
+                                                            <label class="form-label" style="font-family: 'Poppins', sans-serif;">
                                     Ứng dụng (Màu mực) <span class="text-danger">*</span>
                                 </label>
+<div class="input-group input-group-outline is-filled">
                                 <input type="text" 
                                        name="application" 
                                        class="form-control"
+list="applicationList"
                                        value="<?= htmlspecialchars($product->application ?? ''); ?>"
                                        required
                                        maxlength="100"
+placeholder="Chọn hoặc nhập (VD: xanh, đen, đỏ)"
                                        style="font-family: 'Poppins', sans-serif;">
+<datalist id="applicationList">
+                                    <option value="xanh">Xanh</option>
+                                    <option value="trắng">Trắng</option>
+                                    <option value="tím">Tím</option>
+                                    <option value="nhiều màu">Nhiều màu</option>
+                                    <option value="xanh lá">Xanh lá</option>
+                                    <option value="bạc">Bạc</option>
+                                </datalist>
                             </div>
                         </div>
 
@@ -163,93 +173,156 @@
                     <!-- BOM Editor Section -->
                     <h6 class="mt-4" style="font-family: 'Poppins', sans-serif;">
                         <i class="material-icons-round" style="font-size: 18px; vertical-align: middle;">precision_manufacturing</i>
-                        Bill of Materials (BOM) - Danh sách Nguyên liệu
+                        Bill of Materials (BOM) - Danh sách Nguyên liệu <span class="text-danger">*</span>
                     </h6>
                     <hr class="horizontal dark mt-2 mb-3">
 
-                    <div id="bomContainer">
-                        <?php if (isset($product->bom_data['materials']) && !empty($product->bom_data['materials'])): ?>
-                            <?php foreach ($product->bom_data['materials'] as $material): ?>
-                                <div class="row bom-row mb-3">
-                                    <div class="col-md-5">
-                                        <label class="form-label" style="font-family: 'Poppins', sans-serif; margin-bottom: 5px;">Nguyên liệu</label>
-                                        <div class="input-group input-group-outline is-filled">
-                                            <input type="text" 
-                                                   name="bom_material_names[]" 
-                                                   class="form-control material-input" 
-                                                   list="materialList"
-                                                   value="<?= htmlspecialchars($material['material_name']); ?>"
-                                                   style="font-family: 'Poppins', sans-serif;">
-                                            <datalist id="materialList">
-                                                <?php foreach ($materials as $mat): ?>
-                                                    <option 
-                                                        value="<?= htmlspecialchars($mat->material_name); ?>" 
-                                                        data-id="<?= $mat->id_material; ?>"
-                                                        data-unit="<?= htmlspecialchars($mat->unit); ?>">
-                                                        <?= htmlspecialchars($mat->material_display); ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </datalist>
-                                            <input type="hidden" 
-                                                   name="bom_materials[]" 
-                                                   class="material-id-input"
-                                                   value="<?= $material['id_material'] ?? ''; ?>">
+                    <div class="alert alert-warning" role="alert" style="font-family: 'Poppins', sans-serif;">
+                        <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">warning</i>
+                        <strong>Bắt buộc:</strong> Chọn ít nhất 1 nguyên liệu và nhập định mức > 0
+                    </div>
+
+                    <?php
+                    // Build array of existing BOM materials for easier lookup
+                    $existingBOM = [];
+                    $customBOM = [];
+                    if (!empty($product->bom_items)) {
+foreach ($product->bom_items as $mat) {
+                            if (!empty($mat->id_material)) {
+                                $existingBOM[$mat->id_material] = $mat; // Truy cập thuộc tính đối tượng
+                            } else {
+                                // Custom NVL (không có trong danh sách material)
+                                $customBOM[] = $mat;
+                            }
+                        }
+                    }
+?>
+
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-items-center mb-0" id="bomTable">
+                                        <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 5%;">Dùng</th>
+                                    <th class="text-left" style="width: 40%;">Nguyên liệu</th>
+                                        <th class="text-left" style="width: 20%;">Tồn kho hiện tại</th>
+                                    <th class="text-left" style="width: 20%;">Số lượng/SP <span class="text-danger">*</span></th>
+                                    <th class="text-left" style="width: 15%;">ĐVT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bomContainer">
+                                                <?php foreach ($materials as $material): ?>
+                                                    <?php 
+                                    $isUsed = isset($existingBOM[$material->id_material]);
+                                    $quantity = $isUsed ? ($existingBOM[$material->id_material]->quantity_per_unit ?? $existingBOM[$material->id_material]->quantity ?? 0) : 0;
+                                    ?>
+                                <tr class="bom-row <?= $isUsed ? 'table-active' : ''; ?>" data-material-id="<?= $material->id_material; ?>">
+                                    <td class="text-center">
+                                                <div class="form-check">
+                                            <input class="form-check-input bom-checkbox" 
+type="checkbox" 
+                                                   name="bom_enabled[]" 
+                                                   value="<?= $material->id_material; ?>"
+                                                   id="bom_check_<?= $material->id_material; ?>"
+                                                   <?= $isUsed ? 'checked' : ''; ?>>
                                         </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label" style="font-family: 'Poppins', sans-serif; margin-bottom: 5px;">Số lượng</label>
-                                        <div class="input-group input-group-outline is-filled">
+                                    </td>
+                                    <td>
+                                        <span class="text-sm font-weight-bold"><?= htmlspecialchars($material->material_name); ?></span>
+                                        <input type="hidden" name="bom_materials[]" value="<?= $material->id_material; ?>">
+                                        <input type="hidden" name="bom_material_names[]" value="<?= htmlspecialchars($material->material_name); ?>">
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-sm bg-gradient-info"><?= number_format($material->stock ?? 0, 2); ?> <?= htmlspecialchars($material->uom); ?></span>
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-outline <?= $isUsed ? 'is-filled' : ''; ?>" style="max-width: 150px;">
                                             <input type="number" 
                                                    name="bom_quantities[]" 
-                                                   class="form-control"
-                                                   value="<?= $material['quantity']; ?>"
+                                                   class="form-control form-control-sm bom-quantity"
                                                    step="0.01"
-                                                   min="0.01"
+                                                   min="0"
+                                                   value="<?= $quantity; ?>"
+                                                   placeholder="0.00"
+                                                   <?= $isUsed ? '' : 'disabled'; ?>
                                                    style="font-family: 'Poppins', sans-serif;">
                                         </div>
+</td>
+                                    <td>
+                                        <input type="hidden" name="bom_uoms[]" value="<?= htmlspecialchars($material->uom); ?>">
+                                        <span class="text-sm"><?= htmlspecialchars($material->uom); ?></span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php if (!empty($customBOM)): ?>
+                                    <?php foreach ($customBOM as $c): ?>
+                                    <tr class="bom-row table-warning" data-material-id="custom">
+                                        <td class="text-center">
+                                            <div class="form-check">
+                                                <input class="form-check-input bom-checkbox" 
+                                                       type="checkbox" 
+                                                       name="bom_enabled[]" 
+                                                       value="custom" 
+                                                       checked>
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label" style="font-family: 'Poppins', sans-serif; margin-bottom: 5px;">Đơn vị</label>
-                                        <div class="input-group input-group-outline is-filled">
+                                    </td>
+                                        <td>
+                                        <div class="input-group input-group-outline is-filled" style="max-width: 300px;">
                                             <input type="text" 
-                                                   name="bom_units[]" 
-                                                   class="form-control unit-input"
-                                                   list="unitList"
-                                                   value="<?= htmlspecialchars($material['unit']); ?>"
+                                                   name="bom_material_names[]" 
+                                                   class="form-control form-control-sm" 
+                                                       placeholder="Nhập tên NVL mới"
+                                                       required
+                                                       value="<?= htmlspecialchars($c->material_name ?? ''); ?>"
                                                    style="font-family: 'Poppins', sans-serif;">
-                                            <datalist id="unitList">
-                                                <option value="g">g (gam)</option>
-                                                <option value="kg">kg (kilogram)</option>
-                                                <option value="pcs">pcs (cái)</option>
-                                                <option value="l">l (lít)</option>
-                                                <option value="ml">ml (mililít)</option>
-                                            </datalist>
-                                        </div>
+                                                                                    </div>
+<input type="hidden" name="bom_materials[]" value="">
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-sm bg-gradient-secondary"><?= isset($c->stock) ? number_format($c->stock, 2) : 'Chưa có'; ?></span>
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-outline is-filled" style="max-width: 150px;">
+                                                <input type="number" 
+                                                       name="bom_quantities[]" 
+                                                       class="form-control form-control-sm bom-quantity" 
+                                                       step="0.01"
+                                                       min="0.01"
+                                                       placeholder="0.00"
+                                                       required
+                                                       value="<?= htmlspecialchars($c->quantity_per_unit ?? ''); ?>"
+                                                       style="font-family: 'Poppins', sans-serif;">
                                     </div>
-                                    <div class="col-md-2">
-                                        <button type="button" 
-                                                class="btn btn-danger btn-sm remove-bom-row w-100"
-                                                style="font-family: 'Poppins', sans-serif; margin-top: 23px;">
+                                    </td>
+                                        <td>
+                                            <div class="d-flex align-items-center" style="max-width: 160px; gap:8px;">
+                                                <div class="input-group input-group-outline is-filled" style="flex:1;">
+                                                    <input type="text" 
+                                                           name="bom_uoms[]" 
+                                                           class="form-control form-control-sm uom-input"
+                                                           list="unitList"
+                                                           placeholder="g, kg, pcs"
+                                                           required
+                                                           value="<?= htmlspecialchars($c->uom ?? ''); ?>"
+                                                           style="font-family: 'Poppins', sans-serif;">
+                                                </div>
+                                        <button type="button" class="btn btn-danger btn-sm remove-bom-row" style="font-family: 'Poppins', sans-serif;">
                                             <i class="material-icons-round" style="font-size: 16px;">delete</i>
-                                            Xóa
-                                        </button>
+                                                                                    </button>
                                     </div>
-                                </div>
+                                </td>
+                                    </tr>
                             <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="alert alert-warning" role="alert" style="font-family: 'Poppins', sans-serif;">
-                                <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">info</i>
-                                Sản phẩm chưa có BOM. Nhấn "Thêm nguyên liệu" để tạo BOM.
-                            </div>
-                        <?php endif; ?>
+                                                <?php endif; ?>
+</tbody>
+                        </table>
                     </div>
 
                     <button type="button" 
-                            id="addBomRow" 
-                            class="btn btn-outline-success btn-sm mt-2"
+                            id="addCustomMaterial" 
+                            class="btn btn-outline-primary btn-sm mt-2"
                             style="font-family: 'Poppins', sans-serif;">
                         <i class="material-icons-round" style="font-size: 16px;">add_circle_outline</i>
-                        Thêm nguyên liệu
+                        Thêm NVL mới (không có trong danh sách)
                     </button>
 
                     <!-- Action Buttons -->
@@ -277,77 +350,51 @@
 
 <!-- BOM Row Template -->
 <template id="bomRowTemplate">
-    <div class="row bom-row mb-3">
-        <div class="col-md-5">
-            <label class="form-label" style="font-family: 'Poppins', sans-serif; margin-bottom: 5px;">Nguyên liệu</label>
-            <div class="input-group input-group-outline is-focused">
-                <input type="text" 
-                       name="bom_material_names[]" 
-                       class="form-control material-input" 
-                       list="materialList"
-                       placeholder="Chọn từ danh sách hoặc nhập mới"
-                       style="font-family: 'Poppins', sans-serif;">
+    <tr class="bom-row custom-material" data-material-id="custom">
+        <td class="text-center">
+        <div class="form-check">
+            <input class="form-check-input bom-checkbox" type="checkbox" name="bom_enabled[]" value="custom" checked>
+            </div>
+        </td>
+        <td>
+            <div class="input-group input-group-outline is-focused" style="max-width: 300px;">
+                <input type="text" name="bom_material_names[]" class="form-control form-control-sm material-input" list="materialList" placeholder="Chọn từ danh sách hoặc nhập mới" style="font-family: 'Poppins', sans-serif;">
                 <datalist id="materialList">
                     <?php foreach ($materials as $material): ?>
-                        <option 
-                            value="<?= htmlspecialchars($material->material_name); ?>" 
-                            data-id="<?= $material->id_material; ?>"
-                            data-unit="<?= htmlspecialchars($material->unit); ?>">
-                            <?= htmlspecialchars($material->material_display); ?>
-                        </option>
+                        <option value="<?= htmlspecialchars($material->material_name); ?>" data-id="<?= $material->id_material; ?>" data-uom="<?= htmlspecialchars($material->uom); ?>"><?= htmlspecialchars($material->material_name); ?></option>
                     <?php endforeach; ?>
                 </datalist>
-                <input type="hidden" name="bom_materials[]" class="material-id-input">
+                <input type="hidden" name="bom_materials[]" class="material-id-input" value="">
             </div>
+        </td>
+        <td>
+            <span class="badge badge-sm bg-gradient-secondary">Chưa có</span>
+        </td>
+        <td>
+            <div class="input-group input-group-outline" style="max-width: 150px;">
+                <input type="number" name="bom_quantities[]" class="form-control form-control-sm" step="0.01" min="0.01" placeholder="VD: 10" required style="font-family: 'Poppins', sans-serif;">
+                            </div>
+</td>
+        <td>
+            <div class="d-flex align-items-center" style="max-width: 160px; gap:8px;">
+                <div class="input-group input-group-outline" style="flex:1;">
+                    <input type="text" name="bom_uoms[]" class="form-control form-control-sm uom-input" list="unitList" placeholder="g, kg, pcs" required style="font-family: 'Poppins', sans-serif;">
         </div>
-        <div class="col-md-3">
-            <label class="form-label" style="font-family: 'Poppins', sans-serif; margin-bottom: 5px;">Số lượng</label>
-            <div class="input-group input-group-outline">
-                <input type="number" 
-                       name="bom_quantities[]" 
-                       class="form-control" 
-                       step="0.01"
-                       min="0.01"
-                       placeholder="VD: 10, 25.5"
-                       style="font-family: 'Poppins', sans-serif;">
-            </div>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label" style="font-family: 'Poppins', sans-serif; margin-bottom: 5px;">Đơn vị</label>
-            <div class="input-group input-group-outline">
-                <input type="text" 
-                       name="bom_units[]" 
-                       class="form-control unit-input"
-                       list="unitList"
-                       placeholder="Chọn: g, kg, pcs"
-                       style="font-family: 'Poppins', sans-serif;">
-                <datalist id="unitList">
-                    <option value="g">Gram</option>
-                    <option value="kg">Kilogram</option>
-                    <option value="pcs">Chiếc</option>
-                    <option value="l">Lít</option>
-                    <option value="ml">Mililit</option>
-                </datalist>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <button type="button" 
-                    class="btn btn-danger btn-sm remove-bom-row w-100"
-                    style="font-family: 'Poppins', sans-serif; margin-top: 23px;">
+                    <button type="button" class="btn btn-danger btn-sm remove-bom-row" style="font-family: 'Poppins', sans-serif;">
                 <i class="material-icons-round" style="font-size: 16px;">delete</i>
-                Xóa
-            </button>
+                            </button>
         </div>
-    </div>
+    </td>
+    </tr>
 </template>
 
 <!-- Scripts -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('editProductForm');
+const bomTable = document.getElementById('bomTable');
     const bomContainer = document.getElementById('bomContainer');
-    const addBomBtn = document.getElementById('addBomRow');
-    const bomRowTemplate = document.getElementById('bomRowTemplate');
+    const addCustomMaterialBtn = document.getElementById('addCustomMaterial');
     const isActiveSwitch = document.getElementById('isActiveSwitch');
     const statusText = document.getElementById('statusText');
 
@@ -371,6 +418,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setupInputHandlers(document);
 
+    // Checkbox handling - Enable/disable quantity input (for edit view)
+    function setupCheckboxHandlers(container) {
+        const checkboxes = container.querySelectorAll('.bom-checkbox');
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const row = this.closest('.bom-row');
+                const quantityInput = row.querySelector('.bom-quantity') || row.querySelector('input[name="bom_quantities[]"]');
+                if (this.checked) {
+                    if (quantityInput) {
+                        quantityInput.disabled = false;
+                        quantityInput.removeAttribute('aria-disabled');
+                        quantityInput.required = true;
+                        if (quantityInput.value === '' || quantityInput.value === '0') quantityInput.value = '';
+                        quantityInput.focus();
+                    }
+                    row.classList.add('table-active');
+                } else {
+                    if (quantityInput) {
+                        quantityInput.disabled = true;
+                        quantityInput.required = false;
+                        quantityInput.value = '0';
+                    }
+                    row.classList.remove('table-active');
+                }
+            });
+        });
+    }
+
+    // initialize checkbox handlers for existing rows
+    setupCheckboxHandlers(document);
+
     // Setup existing remove buttons
     document.querySelectorAll('.remove-bom-row').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -388,15 +466,15 @@ document.addEventListener('DOMContentLoaded', function() {
         <?php foreach ($materials as $material): ?>
         "<?= htmlspecialchars($material->material_name); ?>": {
             id: "<?= $material->id_material; ?>",
-            unit: "<?= htmlspecialchars($material->unit); ?>"
+            uom: "<?= htmlspecialchars($material->uom); ?>"
         },
         <?php endforeach; ?>
     };
 
-    // Auto-fill unit when material is selected from datalist
+    // Auto-fill uom when material is selected from datalist
     function setupMaterialAutofill(row) {
         const materialInput = row.querySelector('.material-input');
-        const unitInput = row.querySelector('.unit-input');
+        const uomInput = row.querySelector('.uom-input');
         const materialIdInput = row.querySelector('.material-id-input');
         
         if (!materialInput) return;
@@ -413,9 +491,9 @@ document.addEventListener('DOMContentLoaded', function() {
             inputTimeout = setTimeout(() => {
                 if (materialData[currentValue] && currentValue !== lastValue) {
                     // Chọn từ danh sách - tự động điền ngay lập tức
-                    unitInput.value = materialData[currentValue].unit;
+                    uomInput.value = materialData[currentValue].uom;
                     materialIdInput.value = materialData[currentValue].id;
-                    unitInput.parentElement.classList.add('is-filled');
+                    uomInput.parentElement.classList.add('is-filled');
                 } else if (!materialData[currentValue]) {
                     // Nhập nguyên liệu mới - xóa ID
                     materialIdInput.value = '';
@@ -426,40 +504,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add BOM Row
-    addBomBtn.addEventListener('click', function() {
-        const newRow = bomRowTemplate.content.cloneNode(true);
-        bomContainer.appendChild(newRow);
-        setupInputHandlers(bomContainer);
+    addCustomMaterialBtn.addEventListener('click', function() {
+        const newRowFragment = bomRowTemplate.content.cloneNode(true);
+        // Append as a table row (template contains a <tr>)
+        bomContainer.appendChild(newRowFragment);
         
-        const lastRow = bomContainer.lastElementChild;
+        const lastRow = bomContainer.lastElementChild; // this should be the new <tr>
+        setupInputHandlers(lastRow);
         setupMaterialAutofill(lastRow);
+setupBomRowValidation(lastRow);
+        setupCheckboxHandlers(lastRow);
         
+// Setup remove button
         const removeBtn = lastRow.querySelector('.remove-bom-row');
+if (removeBtn) {
         removeBtn.addEventListener('click', function() {
             lastRow.remove();
         });
+}
         
-        // Setup dynamic validation for new row
-        setupBomRowValidation(lastRow);
+        // Focus on material input
+        const matInput = lastRow.querySelector('input[name="bom_material_names[]"]');
+        if (matInput) matInput.focus();
     });
     
     // Dynamic validation: nếu nhập nguyên liệu thì bắt buộc nhập số lượng và đơn vị
     function setupBomRowValidation(row) {
         const materialInput = row.querySelector('input[name="bom_material_names[]"]');
         const quantityInput = row.querySelector('input[name="bom_quantities[]"]');
-        const unitInput = row.querySelector('input[name="bom_units[]"]');
+        const uomInput = row.querySelector('input[name="bom_uoms[]"]');
         
-        if (!materialInput || !quantityInput || !unitInput) return;
+        if (!materialInput || !quantityInput || !uomInput) return;
         
         materialInput.addEventListener('input', function() {
             if (this.value.trim()) {
                 // Có nguyên liệu → bắt buộc số lượng và đơn vị
                 quantityInput.setAttribute('required', 'required');
-                unitInput.setAttribute('required', 'required');
+                uomInput.setAttribute('required', 'required');
             } else {
                 // Không có nguyên liệu → không bắt buộc
                 quantityInput.removeAttribute('required');
-                unitInput.removeAttribute('required');
+                uomInput.removeAttribute('required');
             }
         });
         
@@ -472,28 +557,80 @@ document.addEventListener('DOMContentLoaded', function() {
         setupBomRowValidation(row);
     });
 
-    // Form validation
+    // Form validation (follow Add form logic: validate only checked rows and disable unchecked ones before submit)
     form.addEventListener('submit', function(e) {
-        const materials = document.querySelectorAll('select[name="bom_materials[]"]');
-        const quantities = document.querySelectorAll('input[name="bom_quantities[]"]');
-        const units = document.querySelectorAll('input[name="bom_units[]"]');
+        const productName = document.querySelector('input[name="product_name"]').value.trim();
+        const diameter = document.querySelector('input[name="diameter"]').value.trim();
 
-        for (let i = 0; i < materials.length; i++) {
-            if (materials[i].value) {
-                if (!quantities[i].value || parseFloat(quantities[i].value) <= 0) {
+        if (!productName) {
+            e.preventDefault();
+            alert('Vui lòng nhập tên sản phẩm!');
+            return false;
+        }
+
+        if (!diameter) {
+            e.preventDefault();
+            alert('Vui lòng chọn hoặc nhập đường kính!');
+            return false;
+        }
+
+        // Validate BOM - require at least one selected material
+        const checkedBoxes = document.querySelectorAll('.bom-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            alert('⚠️ Bắt buộc chọn ít nhất 1 nguyên liệu cho sản phẩm!');
+            return false;
+        }
+
+        let hasError = false;
+
+        // Validate each checked row (quantity > 0, and for custom rows name & unit present)
+        checkedBoxes.forEach(checkbox => {
+            const row = checkbox.closest('.bom-row');
+            const quantityInput = row.querySelector('.bom-quantity') || row.querySelector('input[name="bom_quantities[]"]');
+            const quantity = quantityInput ? parseFloat(quantityInput.value) : 0;
+
+            if (!quantity || quantity <= 0) {
+                e.preventDefault();
+                alert('Vui lòng nhập số lượng > 0 cho tất cả NVL đã chọn!');
+                if (quantityInput) quantityInput.focus();
+                hasError = true;
+                return false;
+            }
+
+            if (row.classList.contains('custom-material')) {
+                const materialNameInput = row.querySelector('input[name="bom_material_names[]"]');
+                const unitInput = row.querySelector('input[name="bom_uoms[]"]');
+
+                if (materialNameInput && !materialNameInput.value.trim()) {
                     e.preventDefault();
-                    alert('Vui lòng nhập số lượng hợp lệ!');
-                    quantities[i].focus();
+                    alert('Vui lòng nhập tên nguyên liệu!');
+                    materialNameInput.focus();
+                    hasError = true;
                     return false;
                 }
-                if (!units[i].value.trim()) {
+
+                if (unitInput && !unitInput.value.trim()) {
                     e.preventDefault();
                     alert('Vui lòng nhập đơn vị!');
-                    units[i].focus();
+                    unitInput.focus();
+                    hasError = true;
                     return false;
                 }
             }
-        }
+        });
+
+        if (hasError) return false;
+
+        // Disable unchecked rows so they are not submitted (keeps arrays aligned like Add form)
+        document.querySelectorAll('.bom-row').forEach(row => {
+            const checkbox = row.querySelector('.bom-checkbox');
+            if (checkbox && !checkbox.checked) {
+                row.querySelectorAll('input, select, textarea').forEach(input => input.disabled = true);
+            }
+        });
+
+        return true;
     });
 });
 </script>

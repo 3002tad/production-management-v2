@@ -16,7 +16,7 @@
 
             <div class="card-body px-4 pb-4">
                 
-                <!-- Warning message -->
+                                <!-- Warning message -->
                 <div class="alert alert-warning" role="alert">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-exclamation-triangle fa-3x me-3"></i>
@@ -37,28 +37,28 @@
                             <tbody>
                                 <tr>
                                     <td class="text-sm font-weight-bold" style="width: 200px;">Mã đơn hàng:</td>
-                                    <td class="text-sm"><?= $detail->project_name; ?></td>
+                                    <td class="text-sm"><?= $order->project_name; ?></td>
                                 </tr>
                                 <tr>
                                     <td class="text-sm font-weight-bold">Khách hàng:</td>
-                                    <td class="text-sm"><?= $detail->cust_name; ?></td>
+                                    <td class="text-sm"><?= $order->cust_name; ?></td>
                                 </tr>
                                 <tr>
                                     <td class="text-sm font-weight-bold">Sản phẩm:</td>
-                                    <td class="text-sm"><?= $detail->product_name; ?></td>
+                                    <td class="text-sm"><?= $order->product_name; ?></td>
                                 </tr>
                                 <tr>
                                     <td class="text-sm font-weight-bold">Số lượng:</td>
-                                    <td class="text-sm"><?= number_format($detail->qty_request); ?> chiếc</td>
+                                    <td class="text-sm"><?= number_format($order->qty_request); ?> chiếc</td>
                                 </tr>
                                 <tr>
                                     <td class="text-sm font-weight-bold">Hạn giao:</td>
-                                    <td class="text-sm"><?= date('d/m/Y', strtotime($detail->entry_date)); ?></td>
+                                    <td class="text-sm"><?= date('d/m/Y', strtotime($order->entry_date)); ?></td>
                                 </tr>
                                 <tr>
                                     <td class="text-sm font-weight-bold">Trạng thái:</td>
                                     <td class="text-sm">
-                                        <?php if ($detail->pr_status == 1): ?>
+                                        <?php if ($order->pr_status == 1): ?>
                                             <span class="badge bg-gradient-success">Đã duyệt</span>
                                         <?php else: ?>
                                             <span class="badge bg-gradient-warning">Chờ duyệt</span>
@@ -78,16 +78,16 @@
                             <i class="material-icons opacity-10">arrow_back</i>
                             Hủy
                         </a>
-                        <a href="<?= site_url('BOD/deleteProject/' . $detail->id_project); ?>" 
+                        <a href="<?= site_url('BOD/deleteProject/' . $order->id_project); ?>" 
                            class="btn btn-danger mb-0"
-                           onclick="return confirm('⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA?\n\nĐơn hàng: <?= $detail->project_name; ?>\nKhách hàng: <?= $detail->cust_name; ?>\n\nThao tác này KHÔNG THỂ HOÀN TÁC!');">
+                           onclick="return confirm('⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA?\n\nĐơn hàng: <?= $order->project_name; ?>\nKhách hàng: <?= $order->cust_name; ?>\n\nThao tác này KHÔNG THỂ HOÀN TÁC!');">
                             <i class="material-icons opacity-10">delete_forever</i>
                             Xác nhận XÓA
                         </a>
                     </div>
                 </div>
 
-            </div>
+                            </div>
         </div>
     </div>
 </div>

@@ -187,7 +187,7 @@ function showToast(type, message, duration = null) {
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const hasMsg = urlParams.has('msg');
-    const storageKey = 'toast_shown_' + window.location.pathname;
+    const storageKey = 'toast_shown';
     const toastShown = sessionStorage.getItem(storageKey);
     
     if (hasMsg && !toastShown) {
@@ -206,6 +206,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Clear toast flag on navigation
 window.addEventListener('beforeunload', function() {
-    sessionStorage.removeItem('toast_shown_' + window.location.pathname);
+    // global toast_shown persists across pages for the session
 });
 </script>

@@ -110,12 +110,22 @@
 
                 <!-- Action Buttons -->
                 <div class="mt-4">
-                    <a href="<?= site_url('BOD/product/edit/' . $product->id_product); ?>" 
-                       class="btn btn-sm bg-gradient-warning w-100 mb-2"
-                       style="font-family: 'Poppins', sans-serif;">
-                        <i class="material-icons-round" style="font-size: 16px;">edit</i>
-                        Chỉnh sửa
-                    </a>
+                    <?php if (!empty($product->blocking_orders) && $product->blocking_orders > 0): ?>
+                        <button class="btn btn-sm bg-gradient-warning w-100 mb-2 disabled" 
+                                data-bs-toggle="tooltip"
+                                title="Không thể sửa: đã có <?= $product->blocking_orders; ?> đơn đã duyệt/đang SX/hoàn thành"
+                                style="font-family: 'Poppins', sans-serif;">
+                            <i class="material-icons-round" style="font-size: 16px;">edit</i>
+                            Chỉnh sửa
+                        </button>
+                    <?php else: ?>
+                        <a href="<?= site_url('BOD/product/edit/' . $product->id_product); ?>" 
+                           class="btn btn-sm bg-gradient-warning w-100 mb-2"
+                           style="font-family: 'Poppins', sans-serif;">
+                            <i class="material-icons-round" style="font-size: 16px;">edit</i>
+                            Chỉnh sửa
+                        </a>
+                    <?php endif; ?>
                     <a href="<?= site_url('BOD/product'); ?>" 
                        class="btn btn-sm btn-outline-secondary w-100"
                        style="font-family: 'Poppins', sans-serif;">
@@ -202,12 +212,12 @@
                                         </td>
                                         <td class="align-middle text-center">
                                             <span class="text-sm font-weight-bold" style="font-family: 'Poppins', sans-serif;">
-                                                <?= $material['quantity']; ?>
+                                                <?= $material['quantity_per_unit'] ?? $material['quantity'] ?? 0; ?>
                                             </span>
                                         </td>
                                         <td class="align-middle text-center">
                                             <span class="badge badge-sm bg-gradient-secondary" style="font-family: 'Poppins', sans-serif;">
-                                                <?= htmlspecialchars($material['unit']); ?>
+                                                <?= !empty($material['unit']) ? htmlspecialchars($material['unit']) : '<em class="text-muted">—</em>'; ?>
                                             </span>
                                         </td>
                                     </tr>

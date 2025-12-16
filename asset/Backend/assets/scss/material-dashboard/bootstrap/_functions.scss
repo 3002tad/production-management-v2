@@ -195,6 +195,23 @@ $_luminance-list: .0008 .001 .0011 .0013 .0015 .0017 .002 .0022 .0025 .0027 .003
   @return (map-get($rgb, "r") * .2126) + (map-get($rgb, "g") * .7152) + (map-get($rgb, "b") * .0722);
 }
 
+// YIQ contrast helper
+// Returns a readable color (light or dark) for the provided background color
+// Uses the YIQ formula to decide whether to return the dark or light contrast color.
+@function color-yiq($color) {
+  $r: red($color);
+  $g: green($color);
+  $b: blue($color);
+
+  $yiq: ($r * 299 + $g * 587 + $b * 114) / 1000;
+
+  @if $yiq >= 128 {
+    @return $color-contrast-dark;
+  } @else {
+    @return $color-contrast-light;
+  }
+}
+
 // Return opaque color
 // opaque(#fff, rgba(0, 0, 0, .5)) => #808080
 @function opaque($background, $foreground) {
