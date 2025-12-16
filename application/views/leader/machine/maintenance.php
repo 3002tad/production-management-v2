@@ -38,8 +38,8 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('machine/'); ?>">Máy/Dây chuyền</a></li>
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('machine/detail/' . $machine->id); ?>"><?= $machine->code ?></a></li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/machine/'); ?>">Máy/Dây chuyền</a></li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/machine/detail/' . $machine->id); ?>"><?= $machine->code ?></a></li>
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Lịch bảo trì</li>
                 </ol>
                 <h6 class="font-weight-bolder mb-0"><?= $title ?></h6>
@@ -90,7 +90,7 @@
                 <h6>Lọc lịch bảo trì</h6>
             </div>
             <div class="card-body">
-                <form method="GET" action="<?= site_url('machine/maintenance/' . $machine->id); ?>">
+                <form method="GET" action="<?= site_url('leader/machine/maintenance/' . $machine->id); ?>">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="input-group input-group-outline mb-3">
@@ -119,7 +119,7 @@
                             <button type="submit" class="btn btn-primary mb-0">
                                 <i class="material-icons">filter_list</i>&nbsp;&nbsp;Lọc
                             </button>
-                            <a href="<?= site_url('machine/maintenance/' . $machine->id); ?>" class="btn btn-outline-secondary mb-0 ms-2">
+                            <a href="<?= site_url('leader/machine/maintenance/' . $machine->id); ?>" class="btn btn-outline-secondary mb-0 ms-2">
                                 <i class="material-icons">refresh</i>
                             </a>
                         </div>
@@ -264,7 +264,7 @@
                 <h5 class="modal-title" id="addMaintenanceModalLabel">Tạo lịch bảo trì mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="<?= site_url('machine/createMaintenance/' . $machine->id); ?>" id="maintenanceForm">
+            <form method="POST" action="<?= site_url('leader/machine/createMaintenance/' . $machine->id); ?>" id="maintenanceForm">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-12">

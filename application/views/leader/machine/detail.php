@@ -14,7 +14,7 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('machine/'); ?>">Máy/Dây chuyền</a></li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/machine/'); ?>">Máy/Dây chuyền</a></li>
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= $machine->code ?></li>
                 </ol>
                 <h6 class="font-weight-bolder mb-0"><?= $title ?></h6>
@@ -83,8 +83,23 @@
                             <div class="col-md-9">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <p class="text-sm mb-1"><i class="material-icons text-sm">location_on</i> <strong>Vị trí:</strong></p>
-                                        <p class="text-xs text-secondary"><?= $machine->location ?: 'Chưa cập nhật' ?></p>
+                                        <p class="text-sm mb-1"><i class="material-icons text-sm">domain</i> <strong>Khu vực:</strong></p>
+                                        <p class="text-xs text-secondary">
+                                            <?php if (!empty($machine->zone_name)): ?>
+                                                <?= $machine->zone_name ?> (<?= $machine->zone_code ?>)
+                                            <?php else: ?>
+                                                Chưa phân khu
+                                            <?php endif; ?>
+                                        </p>
+                                        
+                                        <p class="text-sm mb-1 mt-3"><i class="material-icons text-sm">settings_input_component</i> <strong>Dây chuyền:</strong></p>
+                                        <p class="text-xs text-secondary">
+                                            <?php if (!empty($machine->line_name)): ?>
+                                                <?= $machine->line_name ?> (<?= $machine->line_code ?>)
+                                            <?php else: ?>
+                                                Chưa phân dây chuyền
+                                            <?php endif; ?>
+                                        </p>
                                         
                                         <p class="text-sm mb-1 mt-3"><i class="material-icons text-sm">calendar_today</i> <strong>Ngày mua:</strong></p>
                                         <p class="text-xs text-secondary"><?= $machine->purchase_date ? date('d/m/Y', strtotime($machine->purchase_date)) : 'Chưa cập nhật' ?></p>
@@ -110,7 +125,7 @@
                         
                         <?php if ($can_edit): ?>
                         <div class="d-flex justify-content-end mt-3">
-                            <a href="<?= site_url('machine/edit/' . $machine->id); ?>" class="btn btn-primary btn-sm">
+                            <a href="<?= site_url('leader/machine/edit/' . $machine->id); ?>" class="btn btn-primary btn-sm">
                                 <i class="material-icons text-sm me-2">edit</i>Chỉnh sửa thông tin
                             </a>
                         </div>
@@ -170,7 +185,7 @@
                         <div class="d-flex justify-content-between">
                             <h6>Lịch bảo trì</h6>
                             <?php if ($can_manage_maintenance): ?>
-                            <a href="<?= site_url('machine/maintenance/' . $machine->id); ?>" class="btn btn-primary btn-sm">
+                            <a href="<?= site_url('leader/machine/maintenance/' . $machine->id); ?>" class="btn btn-primary btn-sm">
                                 <i class="material-icons text-sm">build</i>&nbsp;&nbsp;Quản lý bảo trì
                             </a>
                             <?php endif; ?>
@@ -182,7 +197,7 @@
                             <i class="material-icons" style="font-size: 48px; color: #ccc;">build_circle</i>
                             <p class="text-secondary mt-2">Chưa có lịch bảo trì nào</p>
                             <?php if ($can_manage_maintenance): ?>
-                            <a href="<?= site_url('machine/maintenance/' . $machine->id); ?>" class="btn btn-outline-primary btn-sm mt-2">
+                            <a href="<?= site_url('leader/machine/maintenance/' . $machine->id); ?>" class="btn btn-outline-primary btn-sm mt-2">
                                 <i class="material-icons text-sm">add</i>&nbsp;&nbsp;Tạo lịch bảo trì
                             </a>
                             <?php endif; ?>
@@ -234,7 +249,7 @@
                         </div>
                         <?php if (count($maintenance_schedules) > 5): ?>
                         <div class="text-center mt-3">
-                            <a href="<?= site_url('machine/maintenance/' . $machine->id); ?>" class="btn btn-outline-primary btn-sm">
+                            <a href="<?= site_url('leader/machine/maintenance/' . $machine->id); ?>" class="btn btn-outline-primary btn-sm">
                                 Xem tất cả (<?= count($maintenance_schedules) ?> lịch)
                             </a>
                         </div>

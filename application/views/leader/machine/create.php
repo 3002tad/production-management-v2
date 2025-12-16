@@ -3,7 +3,7 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('machine/'); ?>">Máy/Dây chuyền</a></li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/machine/'); ?>">Máy/Dây chuyền</a></li>
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Thêm mới</li>
                 </ol>
                 <h6 class="font-weight-bolder mb-0"><?= $title ?></h6>
@@ -31,7 +31,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="<?= site_url('machine/store'); ?>" id="createMachineForm">
+                        <form method="POST" action="<?= site_url('leader/machine/store'); ?>" id="createMachineForm">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="input-group input-group-static mb-4">
@@ -81,21 +81,31 @@
                                 </div>
                             </div>
                             
+                            
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="input-group input-group-static mb-4">
-                                        <label>Vị trí đặt máy/Khu máy</label>
-                                        <input type="text" class="form-control" name="location" maxlength="100" 
-                                               placeholder="VD: Khu A - Line 1">
+                                        <label>Dây chuyền *</label>
+                                        <select class="form-control" name="line_id" required>
+                                            <option value="">-- Chọn dây chuyền --</option>
+                                            <?php foreach ($lines as $line): ?>
+                                                <option value="<?= $line->id ?>">
+                                                    <?= $line->line_name ?> (<?= $line->line_code ?>) 
+                                                    <?php if (!empty($line->zone_name)): ?>
+                                                        - <?= $line->zone_name ?>
+                                                    <?php endif; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="input-group input-group-static mb-4">
                                         <label>Ngày mua/lắp đặt</label>
                                         <input type="date" class="form-control" name="purchase_date">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <div class="input-group input-group-static mb-4">
                                         <label>Hết hạn bảo hành</label>
                                         <input type="date" class="form-control" name="warranty_until">
@@ -128,7 +138,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-end">
-                                <a href="<?= site_url('machine/'); ?>" class="btn btn-light me-2">
+                                <a href="<?= site_url('leader/machine/'); ?>" class="btn btn-light me-2">
                                     <i class="material-icons text-sm">arrow_back</i>&nbsp;&nbsp;Hủy
                                 </a>
                                 <button type="submit" class="btn btn-success" id="submitBtn">

@@ -703,25 +703,6 @@ class Leader extends CI_Controller
                 'navlink' => 'staff',
             ];
         }
-        }
-        if ($position) {
-            $this->db->where('staff.position', $position);
-        }
-        if ($status !== null && $status !== '') {
-            $this->db->where('staff.st_status', $status);
-        }
-        if ($search_code) {
-            $this->db->where('staff.id_staff', $search_code);
-        }
-
-        $results = $this->db->get()->result();
-
-        $data = [
-            'staff' => $results,
-            'content' => 'leader/staff/staff',
-            'navlink' => 'staff',
-            'is_read_only' => true,
-            ];
 
         $this->load->view('leader/vbackend', $data);
     }

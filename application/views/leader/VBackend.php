@@ -76,7 +76,15 @@
                         </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'machine') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('machine'); ?>">
+                        <a class="nav-link text-white<?= ($navlink === 'shift') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/shift'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">schedule</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Ca làm việc</span>
+                        </a>
+                    </li>
+                    <li class="nav-item navbar-expand-xs">
+                        <a class="nav-link text-white<?= ($navlink === 'machine') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/machine'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">precision_manufacturing</i>
                             </div>
@@ -132,9 +140,10 @@
         </div>
     </footer>
   <!--   Core JS Files   -->
-      
-
-    <script src="<?= site_url('asset/backend/assets/js/core/popper.min.js'); ?>"></script>
+    <!-- jQuery (MUST LOAD FIRST) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    
+    <script src="<?= site_url('asset/Backend/assets/js/core/popper.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/core/bootstrap.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/plugins/perfect-scrollbar.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/plugins/smooth-scrollbar.min.js'); ?>"></script>

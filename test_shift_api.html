@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Shift API</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Test Shift Management API</h1>
+    
+    <div>
+        <h2>Test 1: Controller Test</h2>
+        <button onclick="testController()">Test Controller</button>
+        <pre id="result1"></pre>
+    </div>
+    
+    <div>
+        <h2>Test 2: Get Available Staff</h2>
+        <input type="number" id="shift_id_staff" value="1" placeholder="Shift ID">
+        <button onclick="testAvailableStaff()">Get Available Staff</button>
+        <pre id="result2"></pre>
+    </div>
+    
+    <div>
+        <h2>Test 3: Get Available Machines</h2>
+        <input type="number" id="shift_id_machine" value="1" placeholder="Shift ID">
+        <button onclick="testAvailableMachines()">Get Available Machines</button>
+        <pre id="result3"></pre>
+    </div>
+
+    <script>
+        const baseUrl = 'http://localhost:8080/production-management-v2/leader/shift/';
+        
+        function testController() {
+            $.get(baseUrl + 'test', function(response) {
+                $('#result1').text(JSON.stringify(response, null, 2));
+            }).fail(function(xhr) {
+                $('#result1').text('Error: ' + xhr.status + '\n' + xhr.responseText);
+            });
+        }
+        
+        function testAvailableStaff() {
+            const shiftId = $('#shift_id_staff').val();
+            $.ajax({
+                url: baseUrl + 'get_available_staff',
+                method: 'POST',
+                data: { shift_id: shiftId },
+                dataType: 'json',
+                success: function(response) {
+                    $('#result2').text(JSON.stringify(response, null, 2));
+                },
+                error: function(xhr, status, error) {
+                    $('#result2').text('Error: ' + xhr.status + '\n' + xhr.responseText);
+                }
+            });
+        }
+        
+        function testAvailableMachines() {
+            const shiftId = $('#shift_id_machine').val();
+            $.ajax({
+                url: baseUrl + 'get_available_machines',
+                method: 'POST',
+                data: { shift_id: shiftId },
+                dataType: 'json',
+                success: function(response) {
+                    $('#result3').text(JSON.stringify(response, null, 2));
+                },
+                error: function(xhr, status, error) {
+                    $('#result3').text('Error: ' + xhr.status + '\n' + xhr.responseText);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

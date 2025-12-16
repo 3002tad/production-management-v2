@@ -25,6 +25,7 @@ class Machine extends CI_Controller
     {
         parent::__construct();
         $this->load->model('leader/MachineModel');
+        $this->load->model('leader/ZoneModel');
         $this->load->library('session');
         
         // Kiểm tra đăng nhập
@@ -61,50 +62,63 @@ class Machine extends CI_Controller
     }
 
     /**
-     * Dashboard - Danh sách máy với filter và search
+     * Dashboard - Danh sách máy grouped by zone and line
      */
     public function index()
     {
         // Clear any old error messages since user has access now
         $this->session->unset_userdata('error');
         
-        // Lấy filter parameters
+        // Get grouped machines
+        $machines_grouped = $this->MachineModel->getMachinesGrouped();
+        
+        // Get zones for filter and zone management tab
+        $zones = $this->ZoneModel->getZones();
+        
+        // Calculate statistics
+        $total_machines = 0;
+        $active_machines = 0;
+        $maintenance_machines = 0;
+        $broken_machines = 0;
+        $total_zones = count($machines_grouped);
+        
+        foreach ($machines_grouped as $zone) {
+            foreach ($zone['lines'] as $line) {
+                foreach ($line['machines'] as $machine) {
+                    $total_machines++;
+                    if ($machine->status == 'active') $active_machines++;
+                    if ($machine->status == 'maintenance') $maintenance_machines++;
+                    if ($machine->status == 'broken') $broken_machines++;
+                }
+            }
+        }
+        
+        // Lấy filter parameters (for future use)
         $filters = [
             'search' => $this->input->get('search'),
             'status' => $this->input->get('status'),
             'stage_type' => $this->input->get('stage_type'),
+            'zone_id' => $this->input->get('zone_id'),
             'capacity_min' => $this->input->get('capacity_min'),
             'capacity_max' => $this->input->get('capacity_max'),
         ];
 
-        // Pagination
-        $page = max(1, (int)$this->input->get('page', 1));
-        $limit = 20;
-        $offset = ($page - 1) * $limit;
-
-        // Lấy dữ liệu
-        $result = $this->MachineModel->getMachines($filters, $limit, $offset);
-        $statistics = $this->MachineModel->getStatistics();
-
-        // Nhóm máy theo stage_type (Line) -> location (Khu) -> machines
-        $grouped_machines = $this->groupMachinesByLineAndArea($result['machines']);
-
         $data = [
             'title' => 'Quản lý Máy/Dây chuyền',
-            'machines' => $result['machines'],
-            'grouped_machines' => $grouped_machines,
-            'total' => $result['total'],
-            'current_page' => $page,
-            'total_pages' => ceil($result['total'] / $limit),
-            'limit' => $limit,
+            'machines_grouped' => $machines_grouped,
+            'zones' => $zones,
+            'total_machines' => $total_machines,
+            'active_machines' => $active_machines,
+            'maintenance_machines' => $maintenance_machines,
+            'broken_machines' => $broken_machines,
+            'total_zones' => $total_zones,
             'filters' => $filters,
-            'statistics' => $statistics,
             'can_edit' => $this->can_edit,
             'content' => 'leader/machine/index',
             'navlink' => 'machine',
         ];
 
-        $this->load->view('leader/vbackend', $data);
+        $this->load->view('leader/VBackend', $data);
     }
 
     /**
@@ -114,17 +128,29 @@ class Machine extends CI_Controller
     {
         if (!$this->can_edit) {
             $this->session->set_flashdata('error', 'Không có quyền tạo máy mới');
-            redirect('machine/');
+            redirect('leader/machine/');
             return;
         }
 
+        // Load zones and production lines for dropdown
+        $zones = $this->MachineModel->getZones();
+        
+        // Get all production lines grouped by zone
+        $this->db->select('pl.*, z.zone_name');
+        $this->db->from('production_lines pl');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code');
+        $lines = $this->db->get()->result();
+
         $data = [
             'title' => 'Thêm Máy/Dây chuyền Mới',
+            'zones' => $zones,
+            'lines' => $lines,
             'content' => 'leader/machine/create',
             'navlink' => 'machine',
         ];
 
-        $this->load->view('leader/vbackend', $data);
+        $this->load->view('leader/VBackend', $data);
     }
 
     /**
@@ -145,7 +171,7 @@ class Machine extends CI_Controller
                 'stage_type' => $this->input->post('stage_type'),
                 'status' => $this->input->post('status', 'active'),
                 'description' => $this->input->post('description'),
-                'location' => $this->input->post('location'),
+                'line_id' => $this->input->post('line_id'),
                 'purchase_date' => $this->input->post('purchase_date'),
                 'warranty_until' => $this->input->post('warranty_until'),
                 'created_by' => $this->session->userdata('username')
@@ -159,20 +185,20 @@ class Machine extends CI_Controller
                     'message' => $result['message'],
                     'machine_code' => $result['machine_code']
                 ]));
-                redirect('machine/');
+                redirect('leader/machine/');
             } else {
                 $this->session->set_flashdata('error_js', json_encode([
                     'message' => $result['message'],
                     'errors' => $result['errors'] ?? []
                 ]));
-                redirect('machine/create');
+                redirect('leader/machine/create');
             }
 
         } catch (Exception $e) {
             $this->session->set_flashdata('error_js', json_encode([
                 'message' => 'Lỗi hệ thống: ' . $e->getMessage()
             ]));
-            redirect('machine/create');
+            redirect('leader/machine/create');
         }
     }
 
@@ -214,7 +240,7 @@ class Machine extends CI_Controller
     {
         if (!$this->can_edit) {
             $this->session->set_flashdata('error', 'Không có quyền chỉnh sửa máy');
-            redirect('machine/');
+            redirect('leader/machine/');
             return;
         }
 
@@ -270,21 +296,21 @@ class Machine extends CI_Controller
                     'title' => 'Cập nhật thành công!',
                     'message' => $message
                 ]));
-                redirect('machine/detail/' . $id);
+                redirect('leader/machine/detail/' . $id);
             } else {
                 $this->session->set_flashdata('error_js', json_encode([
                     'message' => $result['message'],
                     'errors' => $result['errors'] ?? [],
                     'suggestion' => $result['suggestion'] ?? null
                 ]));
-                redirect('machine/edit/' . $id);
+                redirect('leader/machine/edit/' . $id);
             }
 
         } catch (Exception $e) {
             $this->session->set_flashdata('error_js', json_encode([
                 'message' => 'Lỗi hệ thống: ' . $e->getMessage()
             ]));
-            redirect('machine/edit/' . $id);
+            redirect('leader/machine/edit/' . $id);
         }
     }
 
@@ -295,7 +321,7 @@ class Machine extends CI_Controller
     {
         if (!$this->can_manage_maintenance) {
             $this->session->set_flashdata('error', 'Không có quyền quản lý bảo trì');
-            redirect('machine/');
+            redirect('leader/machine/');
             return;
         }
 
@@ -366,13 +392,13 @@ class Machine extends CI_Controller
                 ]));
             }
 
-            redirect('machine/maintenance/' . $machine_id);
+            redirect('leader/machine/maintenance/' . $machine_id);
 
         } catch (Exception $e) {
             $this->session->set_flashdata('error_js', json_encode([
                 'message' => 'Lỗi hệ thống: ' . $e->getMessage()
             ]));
-            redirect('machine/maintenance/' . $machine_id);
+            redirect('leader/machine/maintenance/' . $machine_id);
         }
     }
 
@@ -459,6 +485,68 @@ class Machine extends CI_Controller
     }
 
     /**
+     * Xóa máy
+     */
+    public function delete($machine_id)
+    {
+        header('Content-Type: application/json');
+        
+        if (!$this->can_edit) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền xóa máy']);
+            return;
+        }
+
+        try {
+            $machine = $this->MachineModel->getMachineById($machine_id);
+            
+            if (!$machine) {
+                echo json_encode(['success' => false, 'message' => 'Không tìm thấy máy']);
+                return;
+            }
+
+            // Check if machine is assigned to any shift
+            $this->db->where('machine_id', $machine_id);
+            $shift_count = $this->db->count_all_results('shift_machine_assignments');
+            
+            if ($shift_count > 0) {
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'Không thể xóa máy đang được phân công vào ca làm việc. Vui lòng hủy phân công trước.'
+                ]);
+                return;
+            }
+
+            // Delete related records first (maintenance schedules, status logs)
+            $this->db->where('machine_id', $machine_id);
+            $this->db->delete('machine_maintenances');
+            
+            $this->db->where('machine_id', $machine_id);
+            $this->db->delete('machine_status_logs');
+            
+            // Delete machine
+            $this->db->where('id', $machine_id);
+            if ($this->db->delete('machines')) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Xóa máy thành công'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Không thể xóa máy'
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            log_message('error', 'Delete machine error: ' . $e->getMessage());
+            echo json_encode([
+                'success' => false,
+                'message' => 'Lỗi hệ thống: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Helper: JSON Response
      */
     private function jsonResponse($data, $status_code = 200)
@@ -468,4 +556,69 @@ class Machine extends CI_Controller
              ->set_content_type('application/json')
              ->set_output(json_encode($data));
     }
-}
+
+    /**
+     * Lưu zone (create)
+     */
+    public function save_zone()
+    {
+        header('Content-Type: application/json');
+        
+        if (!$this->can_edit) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền']);
+            return;
+        }
+
+        $zone_data = [
+            'zone_code' => $this->input->post('zone_code'),
+            'zone_name' => $this->input->post('zone_name'),
+            'description' => $this->input->post('description'),
+            'floor' => $this->input->post('floor'),
+            'building' => $this->input->post('building'),
+            'status' => $this->input->post('status', 1),
+        ];
+
+        $result = $this->ZoneModel->createZone($zone_data);
+        echo json_encode($result);
+    }
+
+    /**
+     * Cập nhật zone
+     */
+    public function update_zone($zone_id)
+    {
+        header('Content-Type: application/json');
+        
+        if (!$this->can_edit) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền']);
+            return;
+        }
+
+        $zone_data = [
+            'zone_code' => $this->input->post('zone_code'),
+            'zone_name' => $this->input->post('zone_name'),
+            'description' => $this->input->post('description'),
+            'floor' => $this->input->post('floor'),
+            'building' => $this->input->post('building'),
+            'status' => $this->input->post('status', 1),
+        ];
+
+        $result = $this->ZoneModel->updateZone($zone_id, $zone_data);
+        echo json_encode($result);
+    }
+
+    /**
+     * Xóa zone
+     */
+    public function delete_zone($zone_id)
+    {
+        header('Content-Type: application/json');
+        
+        if (!$this->can_edit) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền']);
+            return;
+        }
+
+        $result = $this->ZoneModel->deleteZone($zone_id);
+        echo json_encode($result);
+    }}

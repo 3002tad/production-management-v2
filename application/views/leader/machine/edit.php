@@ -3,8 +3,8 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('machine/'); ?>">Máy/Dây chuyền</a></li>
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('machine/detail/' . $machine->id); ?>"><?= $machine->code ?></a></li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/machine/'); ?>">Máy/Dây chuyền</a></li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/machine/detail/' . $machine->id); ?>"><?= $machine->code ?></a></li>
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Chỉnh sửa</li>
                 </ol>
                 <h6 class="font-weight-bolder mb-0"><?= $title ?></h6>
@@ -32,7 +32,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="<?= site_url('machine/update/' . $machine->id); ?>" id="editMachineForm">
+                        <form method="POST" action="<?= site_url('leader/machine/update/' . $machine->id); ?>" id="editMachineForm">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="input-group input-group-outline mb-3 is-filled">
@@ -134,7 +134,7 @@
                             </div>
                             
                             <div class="d-flex justify-content-end">
-                                <a href="<?= site_url('machine/detail/' . $machine->id); ?>" class="btn btn-light me-2">
+                                <a href="<?= site_url('leader/machine/detail/' . $machine->id); ?>" class="btn btn-light me-2">
                                     <i class="material-icons text-sm">arrow_back</i>&nbsp;&nbsp;Hủy
                                 </a>
                                 <button type="submit" class="btn btn-success" id="submitBtn">

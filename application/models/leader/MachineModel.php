@@ -27,6 +27,90 @@ class MachineModel extends CI_Model
     }
 
     /**
+     * Lấy danh sách zones
+     */
+    public function getZones()
+    {
+        $this->db->select('*');
+        $this->db->from('zones');
+        $this->db->where('status', 1);
+        $this->db->order_by('zone_code', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Lấy danh sách production lines theo zone
+     */
+    public function getLinesByZone($zone_id = null)
+    {
+        $this->db->select('pl.*, z.zone_name, z.zone_code');
+        $this->db->from('production_lines pl');
+        $this->db->join('zones z', 'z.zone_id = pl.zone_id', 'left');
+        
+        if ($zone_id) {
+            $this->db->where('pl.zone_id', $zone_id);
+        }
+        
+        $this->db->order_by('z.zone_code', 'ASC');
+        $this->db->order_by('pl.line_code', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Lấy machines grouped by zone and line
+     */
+    public function getMachinesGrouped()
+    {
+        $this->db->select('
+            m.*,
+            pl.line_code,
+            pl.line_name,
+            pl.zone_id,
+            z.zone_code,
+            z.zone_name,
+            (SELECT COUNT(*) FROM machine_maintenances mm 
+             WHERE mm.machine_id = m.id AND mm.status IN ("planned", "in_progress")) as pending_maintenances
+        ');
+        $this->db->from('machines m');
+        $this->db->join('production_lines pl', 'pl.id = m.line_id', 'left');
+        $this->db->join('zones z', 'z.zone_id = pl.zone_id', 'left');
+        $this->db->order_by('z.zone_code', 'ASC');
+        $this->db->order_by('pl.line_code', 'ASC');
+        $this->db->order_by('m.code', 'ASC');
+        
+        $machines = $this->db->get()->result();
+        
+        // Group by zone and line
+        $grouped = [];
+        foreach ($machines as $machine) {
+            $zone_key = $machine->zone_id ?: 'unassigned';
+            $line_key = $machine->line_id ?: 'unassigned';
+            
+            if (!isset($grouped[$zone_key])) {
+                $grouped[$zone_key] = [
+                    'zone_id' => $machine->zone_id,
+                    'zone_code' => $machine->zone_code,
+                    'zone_name' => $machine->zone_name ?: 'Chưa phân khu',
+                    'lines' => []
+                ];
+            }
+            
+            if (!isset($grouped[$zone_key]['lines'][$line_key])) {
+                $grouped[$zone_key]['lines'][$line_key] = [
+                    'line_id' => $machine->line_id,
+                    'line_code' => $machine->line_code,
+                    'line_name' => $machine->line_name ?: 'Chưa phân dây chuyền',
+                    'machines' => []
+                ];
+            }
+            
+            $grouped[$zone_key]['lines'][$line_key]['machines'][] = $machine;
+        }
+        
+        return $grouped;
+    }
+
+    /**
      * Lấy danh sách máy với filter và pagination
      * 
      * @param array $filters Filter conditions
@@ -97,9 +181,20 @@ class MachineModel extends CI_Model
      */
     public function getMachineById($id)
     {
-        $this->db->select('*');
+        $this->db->select('
+            machines.*,
+            pl.id as line_id,
+            pl.line_code,
+            pl.line_name,
+            z.zone_id,
+            z.zone_code,
+            z.zone_name,
+            z.description as zone_description
+        ');
         $this->db->from('machines');
-        $this->db->where('id', $id);
+        $this->db->join('production_lines pl', 'machines.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->where('machines.id', $id);
         
         return $this->db->get()->row();
     }
@@ -152,6 +247,7 @@ class MachineModel extends CI_Model
                 'status' => $data['status'] ?? 'active',
                 'description' => trim($data['description'] ?? ''),
                 'location' => trim($data['location'] ?? ''),
+                'line_id' => !empty($data['line_id']) ? intval($data['line_id']) : null,
                 'purchase_date' => !empty($data['purchase_date']) ? $data['purchase_date'] : null,
                 'warranty_until' => !empty($data['warranty_until']) ? $data['warranty_until'] : null,
                 'created_by' => $data['created_by'] ?? null

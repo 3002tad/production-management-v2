@@ -86,6 +86,9 @@ class Login extends CI_Controller
                     // Get role for redirect (use resolved role mapping)
                     $roleName = $resolvedRole;
 
+                    // Debug: Log role information
+                    log_message('debug', 'Login - User: ' . $data_user->username . ' | Role: ' . $roleName . ' | Session Role: ' . $this->session->userdata('role'));
+
                     // Redirect based on role
                     $this->redirect_by_role($roleName);
                     exit();

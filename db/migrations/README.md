@@ -43,6 +43,9 @@ db/migrations/
 | Module | Migrations | Status | Location |
 |--------|-----------|--------|----------|
 | UC15_BCSC | 2 (fix_worker_role, create_incident_table) | ✅ Ready | `Cap2/UC15_BCSC/` |
+| Machine Management | 008_create_machine_management_tables.sql | ✅ Ready | `db/migrations/` |
+| Staff Updates | staff(1).sql | ✅ Ready | `db/migrations/` |
+| Shift Management | shifts_module.sql | ✅ Ready | `db/migrations/` |
 
 ---
 
@@ -66,9 +69,21 @@ source d:/Code/PTUD/production-management-v2/db/migrations/006_migrate_to_full_r
 
 # Bước 4: 📝 CAP2 UC15_BCSC - Worker Incident Management
 source d:/Code/PTUD/production-management-v2/db/migrations/Cap2/UC15_BCSC/001_fix_worker_role_and_seed_incidents.sql
+
+# Bước 5: 🏭 Machine Management Module
+source d:/Code/PTUD/production-management-v2/db/migrations/008_create_machine_management_tables.sql
+
+# Bước 6: 👥 Staff Table Updates
+source d:/Code/PTUD/production-management-v2/db/migrations/staff(1).sql
+
+# Bước 7: 📅 Shift Management Module
+source d:/Code/PTUD/production-management-v2/db/migrations/shifts_module.sql
 ```
 
-**Note:** CAP1 migrations must be run before CAP2. CAP1 sets up the RBAC foundation that CAP2 modules depend on.
+**Note:** 
+- CAP1 migrations must be run before CAP2. CAP1 sets up the RBAC foundation that CAP2 modules depend on.
+- Machine Management (008) must be run before Shift Management
+- Staff updates must be run before Shift Management
 
 ### **Option 2: Chạy qua phpMyAdmin**
 
