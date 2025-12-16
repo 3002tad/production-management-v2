@@ -197,9 +197,20 @@
 
                                         <!-- Thao tác -->
                                         <td class="align-middle text-center">
+                                            <a href="<?= site_url('BOD/product/view/' . $product->id_product); ?>" 
+                                               class="btn btn-sm bg-gradient-info mb-0 me-1"
+                                               onclick="window.location.href=this.href; return false;"
+data-bs-toggle="tooltip"
+                                               title="Xem chi tiết BOM"
+                                               style="font-family: 'Poppins', sans-serif;">
+                                                <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">visibility</i>
+                                                Xem
+                                            </a>
                                             <a href="<?= site_url('BOD/product/edit/' . $product->id_product); ?>" 
                                                class="btn btn-sm bg-gradient-warning mb-0 me-1"
                                                onclick="window.location.href=this.href; return false;"
+data-bs-toggle="tooltip"
+                                               title="Sửa sản phẩm"
                                                style="font-family: 'Poppins', sans-serif;">
                                                 <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">edit</i>
                                                 Sửa
@@ -207,6 +218,8 @@
                                             <a href="<?= site_url('BOD/product/delete/' . $product->id_product); ?>" 
                                                class="btn btn-sm bg-gradient-danger mb-0"
                                                onclick="window.location.href=this.href; return false;"
+data-bs-toggle="tooltip"
+                                               title="Xóa sản phẩm"
                                                style="font-family: 'Poppins', sans-serif;">
                                                 <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">delete</i>
                                                 Xóa
@@ -492,7 +505,7 @@ window.addEventListener('load', function() {
     if (typeof jQuery !== 'undefined') {
         $('#productTable').DataTable({
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.19/i18n/Vietnamese.json"
+                "url": "<?= base_url('asset/Backend/json/Vietnamese.json'); ?>"
             },
             "pageLength": 25,
             "order": [[1, 'asc']] // Sort by Mã SP ascending (sản phẩm mới nhất ở cuối)

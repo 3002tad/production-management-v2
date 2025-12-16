@@ -4,9 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="apple-touch-icon" sizes="76x76" href="./assets/img/apple-icon.png">
-  <link rel="icon" type="image/png" href="./assets/img/favicon.png">
-  <title>
+  <link rel="apple-touch-icon" sizes="76x76" href="<?php echo base_url('asset/Backend/assets/img/apple-icon.png'); ?>">
+  <link rel="icon" type="image/png" href="<?php echo base_url('asset/Backend/assets/img/favicon.png'); ?>">  <title>
     Production System 
   </title>
   <!--     Fonts and icons     -->
@@ -19,9 +18,11 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" />
 
   <!-- Font Awesome Icons -->
-  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
   <!-- CSS Files -->
   <link id="pagestyle" href="<?= site_url('asset/backend/assets/css/material-dashboard.css?v=3.0.0'); ?>" rel="stylesheet" />
 </head>
@@ -39,121 +40,41 @@
         <hr class="horizontal light mt-0 mb-2">
             <div class="col-14">
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link text-white<?= ($navlink === 'beranda') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/index'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">dashboard</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_dashboard'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'customer') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/customer'); ?>">
-                            <div class="text-white text me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">people</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_customer'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'project') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/project'); ?>">
-                            <div class="text-white me-2 d-flex align-items justify-content">
-                            <i class="material-icons opacity-10">task</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_project'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'product') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/product'); ?>">
-                            <div class="text-white me-2 d-flex align-items justify-content">
-                            <i class="material-icons opacity-10">lan</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_product'); ?></span>
-                        </a>
-                    </li>
-
-                    <li class="navbar-vertical">
+                                        <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
-                    <span class="nav-link-text ms-1 p-2"><?= lang('section_schedule'); ?></span>
+                    <span class="nav-link-text ms-1 p-2">QUẢN LÝ NGƯỜI DÙNG</span>
                     </div>
                     </li>
                     <hr class="horizontal light mt-0 mb-2">
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'planning') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/planning'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">schedule</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_planning'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'plan_shift') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/plan_shift'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">tune</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_shiftment'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
+                                        <li class="nav-item navbar-expand-xs">
                         <a class="nav-link text-white<?= ($navlink === 'staff') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">manage_accounts</i>
                             </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_staff'); ?></span>
+                            <span class="nav-link-text ms-1">Nhân viên</span>
+                        </a>
+                    </li>
+                    <li class="nav-item navbar-expand-xs">
+                        <a class="nav-link text-white<?= ($navlink === 'user') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/user'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">person</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Người dùng</span>
                         </a>
                     </li>
 
                     <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
-                    <span class="nav-link-text ms-1 p-2"><?= lang('section_processing'); ?></span>
+                    <span class="nav-link-text ms-1 p-2">HỆ THỐNG</span>
                     </div>
                     </li>
                     <hr class="horizontal light mt-0 mb-2">
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'production') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/production'); ?>">
+                        <a class="nav-link text-white" href="<?= site_url('login/logout'); ?>" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">settings_input_component</i>
+                            <i class="material-icons opacity-10">exit_to_app</i>
                             </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_production'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'machine') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/machine'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">build</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_machine'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'material') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/material'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">view_in_ar</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_raw_materials'); ?></span>
-                        </a>
-                    </li>
-
-                    <li class="navbar-vertical">
-                    <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
-                    <span class="nav-link-text ms-1 p-2"><?= lang('section_reports'); ?></span>
-                    </div>
-                    </li>
-                    <hr class="horizontal light mt-0 mb-2">
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'sorting') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/sorting'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">receipt</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_report'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'finished') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/finished'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">room_preferences</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_warehousing'); ?></span>
+                            <span class="nav-link-text ms-1">Đăng xuất</span>
                         </a>
                     </li>
                 </ul>
@@ -174,36 +95,139 @@
         </div>
     </footer>
   <!--   Core JS Files   -->
-      
+      <!-- jQuery MUST be loaded FIRST -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 
     <script src="<?= site_url('asset/backend/assets/js/core/popper.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/core/bootstrap.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/plugins/perfect-scrollbar.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/plugins/smooth-scrollbar.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/plugins/chartjs.min.js'); ?>"></script>
-    <!-- Forms Validations Plugin -->
-    <script src="<?= site_url('asset/backend/assets/js/plugins/jquery.validate.min.js'); ?>"></script>
-    <!-- Plugin for the Wizard, full documentation here: https://github.com/VinceG/twitter-bootstrap-wizard -->
-    <script src="<?= site_url('asset/backend/assets/js/plugins/jquery.bootstrap-wizard.js'); ?>"></script>
-    <!--	Plugin for Select, full documentation here: http://silviomoreto.github.io/bootstrap-select -->
-    <script src="<?= site_url('asset/backend/assets/js/plugins/bootstrap-selectpicker.js'); ?>"></script>
-    <!--  DataTables.net Plugin, full documentation here: https://datatables.net/  --><script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.js"></script>
-    <!--	Plugin for Tags, full documentation here: https://github.com/bootstrap-tagsinput/bootstrap-tagsinputs  -->
-    <script src="<?= site_url('asset/backend/assets/js/plugins/bootstrap-tagsinput.js'); ?>"></script>
-    <!-- Plugin for Fileupload, full documentation here: http://www.jasny.net/bootstrap/javascript/#fileinput -->
-    <script src="<?= site_url('asset/backend/assets/js/plugins/jasny-bootstrap.min.js'); ?>"></script>
-    <!--  Plugin for the Sliders, full documentation here: http://refreshless.com/nouislider/ -->
-    <script src="<?= site_url('asset/backend/assets/js/plugins/nouislider.min.js'); ?>"></script>
-    <!-- Library for adding dinamically elements -->
-    <script src="<?= site_url('asset/backend/assets/js/plugins/arrive.min.js'); ?>"></script>
-    <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
-    <script src="<?= site_url('asset/backend/assets/js/material-dashboard.js?v=2.1.2'); ?>" type="text/javascript"></script>
-    <!-- Material Dashboard DEMO methods, don't include it in your project! -->
-    <script src="<?= site_url('asset/backend/assets/demo/demo.js'); ?>"></script>
-    <script src="<?= site_url('asset/backend/assets/js/script.js'); ?>"></script>
+        <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
+    <script>
+    // Define safe versions of Material Dashboard functions before loading the library
+    window.navbarColorOnResize = function() {
+      // Safe no-op function to prevent errors when navbar elements don't exist
+      if (typeof referenceButtons !== 'undefined' && referenceButtons !== null && referenceButtons.classList) {
+        // If elements exist, we could call original logic here, but for now just prevent errors
+        return;
+      }
+    };
+
+    window.sidenavTypeOnResize = function() {
+      // Safe version that handles missing elements gracefully
+      let elements = document.querySelectorAll('[onclick="sidebarType(this)"]');
+      if (window.innerWidth < 1200) {
+        elements.forEach(function(el) {
+          if (el && el.classList) {
+            el.classList.add('disabled');
+          }
+        });
+      } else {
+        elements.forEach(function(el) {
+          if (el && el.classList) {
+            el.classList.remove('disabled');
+          }
+        });
+      }
+    };
+
+    $(document).ready(function() {
+      // Load Material Dashboard JS after jQuery and DOM is ready
+      var script = document.createElement('script');
+      script.src = '<?= site_url('asset/backend/assets/js/material-dashboard.js?v=2.1.2'); ?>';
+      script.onload = function() {
+        console.log('Material Dashboard v2 loaded');
+        // Initialize components after script loads
+        initializeDashboardComponents();
+      };
+      script.onerror = function() { console.warn('Material Dashboard v2 failed to load'); };
+      document.head.appendChild(script);
+    });
+
+    function initializeDashboardComponents() {
+      // Initialize scrollbar for Windows
+      var win = navigator.platform.indexOf('Win') > -1;
+      if (win && document.querySelector('#sidenav-scrollbar')) {
+        var options = { damping: '0.5' };
+        if (typeof Scrollbar !== 'undefined') {
+          Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
+        }
+      }
+    }
+  </script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
 
   <script>
+// Show flashdata messages (following Project pattern exactly)
+    $(document).ready(function() {
+      // Kiểm tra URL parameter ?msg= và giá trị cụ thể
+      var urlParams = new URLSearchParams(window.location.search);
+      var msgType = urlParams.get('msg'); // 'success' hoặc 'error'
+      
+      // Kiểm tra sessionStorage để tránh hiển thị lại khi refresh
+      var toastShown = sessionStorage.getItem('toast_shown_' + window.location.pathname);
+      
+      // Chỉ hiển thị toast khi:
+      // 1. Có msg parameter trong URL (redirect từ action)
+      // 2. Chưa được hiển thị trong session này
+      if (msgType && !toastShown) {
+        <?php if($this->session->flashdata('success')): ?>
+        // Chỉ hiển thị success nếu msg=success
+        if (msgType === 'success') {
+          Swal.fire({
+            icon: 'success',
+            title: 'Thành công!',
+            text: '<?= addslashes($this->session->flashdata('success')) ?>',
+            showConfirmButton: true,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#17ad37',
+            timer: 3000,
+            timerProgressBar: true
+          });
+          
+          // Đánh dấu đã hiển thị
+          sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
+          
+          // Xóa msg parameter khỏi URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        <?php endif; ?>
+
+        <?php if($this->session->flashdata('error')): ?>
+        // Chỉ hiển thị error nếu msg=error
+        if (msgType === 'error') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: '<?= addslashes($this->session->flashdata('error')) ?>',
+            showConfirmButton: true,
+            confirmButtonText: 'Đóng',
+            confirmButtonColor: '#dc3545'
+          });
+          
+          // Đánh dấu đã hiển thị
+          sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
+          
+          // Xóa msg parameter khỏi URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        <?php endif; ?>
+      }
+      
+      // Xóa flag khi navigate sang trang khác (cho phép toast hiện lại lần sau)
+      window.addEventListener('beforeunload', function() {
+        sessionStorage.removeItem('toast_shown_' + window.location.pathname);
+      });
+    });
+
+    if (document.getElementById("chart-bars")) {
     var ctx = document.getElementById("chart-bars").getContext("2d");
 
     new Chart(ctx, {
@@ -283,8 +307,9 @@
         },
       },
     });
+}
 
-
+if (document.getElementById("chart-line")) {
     var ctx2 = document.getElementById("chart-line").getContext("2d");
 
     new Chart(ctx2, {
@@ -449,20 +474,14 @@
         },
       },
     });
-  </script>
-  <script>
-    var win = navigator.platform.indexOf('Win') > -1;
-    if (win && document.querySelector('#sidenav-scrollbar')) {
-      var options = {
-        damping: '0.5'
       }
-      Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
-    }
   </script>
+
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
-  <script src="./assets/js/material-dashboard.min.js?v=3.0.0"></script>
+  <!-- Material Dashboard JS is already loaded in head section with error handling -->
+
 </body>
 
 </html>

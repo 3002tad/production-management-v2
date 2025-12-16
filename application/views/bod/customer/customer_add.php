@@ -39,16 +39,16 @@
                                 <label class="form-label" style="font-family: 'Poppins', sans-serif;">
                                     Tên khách hàng <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" 
-                                       name="cust_name" 
-                                       class="form-control" 
-                                       required
-                                       maxlength="100"
-                                       style="font-family: 'Poppins', sans-serif;">
+                                    <input type="text" 
+                                        name="cust_name" 
+                                        class="form-control" 
+                                        required
+                                        maxlength="50"
+                                        style="font-family: 'Poppins', sans-serif;">
                             </div>
                             <small class="text-muted" style="font-family: 'Poppins', sans-serif;">
                                 <i class="material-icons-round" style="font-size: 12px;">info</i>
-                                Tối đa 100 ký tự
+                                Tối đa 50 ký tự
                             </small>
                         </div>
 
@@ -88,9 +88,9 @@
                                        maxlength="15"
                                        style="font-family: 'Poppins', sans-serif;">
                             </div>
-                            <small class="text-muted" id="telpHint" style="font-family: 'Poppins', sans-serif;">
+                                <small class="text-muted" id="telpHint" style="font-family: 'Poppins', sans-serif;">
                                 <i class="material-icons-round" style="font-size: 12px;">info</i>
-                                Chỉ số, 8-15 chữ số (lưu dạng INT trong DB)
+                                Chỉ số, 8-15 chữ số (lưu dạng chuỗi số VARCHAR(20) trong DB)
                             </small>
                             <small class="text-danger" id="telpError" style="font-family: 'Poppins', sans-serif; display: none;">
                                 <i class="material-icons-round" style="font-size: 12px;">error</i>

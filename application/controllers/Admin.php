@@ -311,18 +311,50 @@ class Admin extends CI_Controller
 
     public function addProduct()
     {
-            $add = [
-                'id_product' => $this->crudModel->generateCode(1, 'id_product', 'product'),
-                'product_name' => trim($this->input->post('product_name')),
-                'summary' => trim($this->input->post('summary')),
-                'application' => trim($this->input->post('application')),
-                'diameter' => floatval($this->input->post('diameter')),
+            // Tải ProductModel để xử lý logic nghiệp vụ
+        $this->load->model('ProductModel');
 
+        // --- VALIDATION: Đảm bảo BOM đã được cung cấp ---
+        // Giả định form gửi lên một mảng có tên là 'materials'
+        // Ví dụ: <input name="materials[0][id_material]">, <input name="materials[0][quantity]">
+        $materials = $this->input->post('materials');
+
+        if (empty($materials) || !is_array($materials) || count($materials) == 0) {
+            // Gửi thông báo lỗi cho người dùng
+            $this->session->set_flashdata('error', 'Không thể tạo sản phẩm. Vui lòng định mức Nguyên vật liệu (BOM).');
+            
+            // Chuyển hướng về lại form
+            redirect('admin/product/addproduct');
+            return; // Dừng xử lý
+        }
+        // --- KẾT THÚC VALIDATION ---
+
+        // Chuẩn bị dữ liệu sản phẩm từ input của form
+        $productData = [
+            'id_product'   => $this->crudModel->generateCode(1, 'id_product', 'product'),
+                'product_name' => trim($this->input->post('product_name')),
+                'summary'      => trim($this->input->post('summary')),
+                'application'  => trim($this->input->post('application')),
+                'diameter'     => floatval($this->input->post('diameter')),
             ];
 
-            $this->crudModel->addData('product', $add);
+// Gọi phương thức của model để tạo sản phẩm và BOM trong một transaction
+        $newProductId = $this->ProductModel->createProductWithBom($productData, $materials);
 
+        if ($newProductId) {
+            // Nếu thành công, báo thành công và chuyển về trang danh sách sản phẩm
+            $this->session->set_flashdata('success', 'Sản phẩm và Định mức NVL đã được tạo thành công.');
+            $this->session->set_flashdata('success_js', json_encode([
+                'title' => 'Thành công!',
+                'message' => 'Thêm sản phẩm thành công.',
+                'product_name' => $productData['product_name'] ?? ''
+            ]));
             redirect(site_url('Admin/product'));
+} else {
+            // Nếu thất bại, báo lỗi và quay lại form
+            $this->session->set_flashdata('error', 'Đã có lỗi xảy ra trong quá trình lưu vào database. Vui lòng thử lại.');
+            redirect(site_url('admin/product/addproduct'));
+        }
     }
 
     public function planning()
@@ -939,6 +971,11 @@ class Admin extends CI_Controller
 
         $this->crudModel->deleteData('p_material', 'id_pmaterial', $id_pmaterial);
 
+        // AUTO-REFRESH: Làm mới cảnh báo cho TẤT CẢ đơn hàng sử dụng material này
+        // (Vì stock đã thay đổi → Ảnh hưởng đến tính toán NVL)
+        $this->load->model('OrderModel');
+        $this->OrderModel->refreshAllWarnings();
+
         redirect(site_url('admin/material'));
     }
 
@@ -1153,5 +1190,287 @@ class Admin extends CI_Controller
         $this->session->unset_userdata('role');
         $this->session->unset_userdata('user_id');
         redirect('login/');
+    }
+
+    // ========================================================================
+    // ========================================================================
+    // UC6 - QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN (Forward to admin/UserController)
+    // Actor: Admin (system_admin role)
+    // ========================================================================
+    // NOTE: UC6 methods đã được refactor vào admin/UserController.php
+    //       Methods dưới đây giữ lại để backward compatibility với routes cũ
+
+    /**
+     * UC6 - Danh sách người dùng
+     * Route: /Admin/user (backward compatibility)
+     * Forward to: admin/UserController/index
+     */
+    public function user()
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission: user.view
+        if (!$this->_hasPermission('user.view')) {
+            show_error('Bạn không có quyền xem danh sách người dùng.', 403);
+        }
+
+        // Get filters từ GET params
+        $filters = [
+            'role_id'   => $this->input->get('role_id'),
+            'is_active' => $this->input->get('is_active'),
+            'search'    => $this->input->get('search')
+        ];
+
+        // Cache roles to avoid repeated queries
+        $roles = $this->db->order_by('level', 'DESC')->get('roles')->result();
+        
+        $data = [
+            'users'      => $this->UserManagementModel->getAllUsers($filters),
+            'roles'      => $roles,
+            'statistics' => $this->UserManagementModel->getStatistics(),
+            'content'    => 'admin/user/user_list',
+            'navlink'    => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    /**
+     * UC6 - Hiển thị form tạo user mới
+     * Route: /Admin/user_add (backward compatibility)
+     * Forward to: admin/UserController/add
+     */
+    public function user_add()
+    {
+        // Check permission: user.create
+        if (!$this->_hasPermission('user.create')) {
+            show_error('Bạn không có quyền tạo người dùng.', 403);
+        }
+
+        $this->load->model('admin/UserManagementModel');
+
+        // Get staff chưa có user
+        $staff_without_user = $this->UserManagementModel->getStaffWithoutUser();
+
+        $data = [
+            'staff_without_user' => $staff_without_user,
+            'roles'              => $this->db->order_by('level', 'DESC')->get('roles')->result(),
+            'content'            => 'admin/user/user_add',
+            'navlink'            => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+    /**
+     * UC6 - Xử lý tạo user mới (POST)
+     * Route: /Admin/user_add_process (backward compatibility)
+     * Forward to: admin/UserController/add_process
+     */
+    public function user_add_process()
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission
+        if (!$this->_hasPermission('user.create')) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền.']);
+            return;
+        }
+
+        $staff_id = $this->input->post('staff_id');
+        
+        $data = [
+            'username'  => $this->input->post('username'),
+            'password'  => $this->input->post('password'),
+            'role_id'   => $this->input->post('role_id')
+        ];
+
+        $result = $this->UserManagementModel->createUser($staff_id, $data, $this->session->userdata('user_id'));
+
+        if ($result['success']) {
+            $this->session->set_flashdata('success', $result['message']);
+            redirect(site_url('admin/user?msg=success'));
+        } else {
+            $this->session->set_flashdata('error', $result['message']);
+            redirect(site_url('admin/user_add?msg=error'));
+        }
+    }
+    /**
+     * UC6 - Hiển thị form sửa user
+     * Route: /Admin/user_edit/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/edit/{user_id}
+     */
+    public function user_edit($user_id)
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission: user.edit
+        if (!$this->_hasPermission('user.edit')) {
+            show_error('Bạn không có quyền sửa người dùng.', 403);
+        }
+
+        $user = $this->UserManagementModel->getUserById($user_id);
+        if (!$user) {
+            show_404();
+        }
+
+        $data = [
+            'user'    => $user,
+            'roles'   => $this->db->order_by('level', 'DESC')->get('roles')->result(),
+            'content' => 'admin/user/user_edit',
+            'navlink' => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    /**
+     * UC6 - Xử lý sửa user (POST)
+     * Route: /Admin/user_edit_process (backward compatibility)
+     * Forward to: admin/UserController/edit_process
+     */
+    public function user_edit_process()
+    {
+        if (!$this->load->is_loaded('UserManagementModel')) {
+            $this->load->model('admin/UserManagementModel');
+        }
+
+        // Check permission
+        if (!$this->_hasPermission('user.edit')) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền.']);
+            return;
+        }
+
+        $user_id = $this->input->post('user_id');
+        $data = [
+            'role_id'   => $this->input->post('role_id')
+        ];
+
+        $result = $this->UserManagementModel->updateUser($user_id, $data, $this->session->userdata('user_id'));
+
+        if ($result['success']) {
+            $this->session->set_flashdata('success', $result['message']);
+            redirect(site_url('admin/user?msg=success'));
+        } else {
+            $this->session->set_flashdata('error', $result['message']);
+            redirect(site_url('admin/user?msg=error'));
+        }
+    }
+
+    /**
+     * UC6 - Khóa/Mở khóa user
+     * Route: /Admin/user_lock/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/lock/{user_id}
+     */
+    public function user_lock($user_id)
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        $user = $this->UserManagementModel->getUserById($user_id);
+        if (!$user) {
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy user.']);
+            return;
+        }
+
+        if ($user->is_active == 1) {
+            // Khóa user
+            if (!$this->_hasPermission('user.lock')) {
+                echo json_encode(['success' => false, 'message' => 'Không có quyền khóa user.']);
+                return;
+            }
+
+            $reason = $this->input->post('reason') ?: 'Khóa bởi admin';
+            $result = $this->UserManagementModel->lockUser($user_id, $reason, $this->session->userdata('user_id'));
+        } else {
+            // Mở khóa user
+            if (!$this->_hasPermission('user.unlock')) {
+                echo json_encode(['success' => false, 'message' => 'Không có quyền mở khóa user.']);
+                return;
+            }
+
+            $result = $this->UserManagementModel->unlockUser($user_id, $this->session->userdata('user_id'));
+        }
+
+                    echo json_encode($result);
+                }
+
+    /**
+     * UC6 - Reset password user
+     * Route: /Admin/user_reset_password/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/reset_password/{user_id}
+     */
+    public function user_reset_password($user_id)
+    {
+        // Only accept POST
+        if ($this->input->method() !== 'post') {
+            echo json_encode(['success' => false, 'message' => 'Method not allowed.']);
+            return;
+        }
+
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission
+        if (!$this->_hasPermission('user.reset_password')) {
+                            echo json_encode(['success' => false, 'message' => 'Không có quyền reset password.']);
+                            return;
+        }
+
+        $result = $this->UserManagementModel->resetPassword($user_id, $this->session->userdata('user_id'));
+
+        // Set header
+            header('Content-Type: application/json');
+            echo json_encode($result);
+                }
+
+    /**
+     * UC6 - Chi tiết user + audit log
+     * Route: /Admin/user_detail/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/detail/{user_id}
+     */
+    public function user_detail($user_id)
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission
+        if (!$this->_hasPermission('user.view')) {
+            show_error('Bạn không có quyền xem chi tiết user.', 403);
+        }
+
+        $user = $this->UserManagementModel->getUserById($user_id);
+        if (!$user) {
+            show_404();
+        }
+
+        $data = [
+            'user'       => $user,
+            'audit_logs' => $this->UserManagementModel->getUserAuditLog($user_id, 50),
+            'content'    => 'admin/user/user_detail',
+            'navlink'    => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    /**
+     * Helper: Check permission
+     * 
+     * @param string $permission_name (e.g., 'user.view', 'user.create')
+     * @return bool
+     */
+    private function _hasPermission($permission_name)
+    {
+        $role_id = $this->session->userdata('role_id');
+        if (!$role_id) {
+            return false;
+        }
+
+        // Query permission
+        $this->db->select('rp.id');
+        $this->db->from('role_permissions rp');
+        $this->db->join('permissions p', 'rp.permission_id = p.permission_id');
+        $this->db->where('rp.role_id', $role_id);
+        $this->db->where('p.permission_name', $permission_name);
+        $query = $this->db->get();
+
+        return $query->num_rows() > 0;
     }
 }

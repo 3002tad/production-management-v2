@@ -59,7 +59,7 @@
                                        class="form-control" 
                                        value="<?= htmlspecialchars($customer->cust_name); ?>"
                                        required
-                                       maxlength="100"
+                                       maxlength="50"
                                        style="font-family: 'Poppins', sans-serif;">
                             </div>
                         </div>
@@ -104,7 +104,7 @@
                             </div>
                             <small class="text-muted" id="telpHint" style="font-family: 'Poppins', sans-serif;">
                                 <i class="material-icons-round" style="font-size: 12px;">info</i>
-                                Chỉ số, 8-15 chữ số (INT)
+                                Chỉ số, 8-15 chữ số (lưu dạng chuỗi số VARCHAR(20) trong DB)
                             </small>
                             <small class="text-danger" id="telpError" style="font-family: 'Poppins', sans-serif; display: none;">
                                 <i class="material-icons-round" style="font-size: 12px;">error</i>

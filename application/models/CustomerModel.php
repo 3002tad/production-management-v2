@@ -216,6 +216,35 @@ class CustomerModel extends CI_Model
     }
 
     /**
+     * Update only customer notes (bypass full validation)
+     * Used by AJAX endpoints when editing notes inline from order forms
+     * @param int $id_cust
+     * @param string $notes
+     * @return array ['success' => bool, 'message' => string]
+     */
+    public function updateCustomerNotes($id_cust, $notes)
+    {
+        $this->db->trans_start();
+        try {
+            $old_data = $this->getCustomerById($id_cust);
+
+            $this->db->where('id_cust', $id_cust)->update('customer', ['notes' => $notes]);
+
+            $this->logActivity('update', $id_cust, $old_data, ['notes' => $notes]);
+
+            $this->db->trans_complete();
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception('Lỗi khi cập nhật ghi chú khách hàng');
+            }
+
+            return ['success' => true, 'message' => 'Ghi chú đã được cập nhật'];
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Xóa khách hàng
      * Quy tắc: Không xóa được nếu đã có đơn hàng (FK constraint)
      * Pattern giống OrderModel.deleteOrder()

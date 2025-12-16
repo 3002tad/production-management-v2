@@ -1,599 +1,295 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-/**
- * ProductModel - Xử lý nghiệp vụ quản lý sản phẩm bút bi
- * 
- * Use Case: UC2 - Quản lý Sản phẩm
- * Actor: Ban Giám Đốc (BOD)
- * 
- * Pattern: Follow OrderModel structure for consistency
- * Database Schema: 
- *   - id_product: INT(25) AI
- *   - product_name: VARCHAR(50)
- *   - summary: LONGTEXT (thông tin chi tiết)
- *   - application: VARCHAR(100) (màu mực: Xanh, Đen, Đỏ, Nhiều màu)
- *   - diameter: DECIMAL(3,1) DEFAULT 0.5 (0.5, 0.7, 1.0 mm)
- *   - bom: JSON (định mức nguyên vật liệu)
- *   - is_active, created_at, updated_at, created_by
- * 
- * @author  Production Management System v2
- * @date    2025-11-24
- */
-class ProductModel extends CI_Model
-{
-    /**
-     * Constructor
-     */
-    public function __construct()
-    {
+class ProductModel extends CI_Model {
+
+    public function __construct() {
         parent::__construct();
         $this->load->database();
     }
 
     /**
-     * Lấy tất cả sản phẩm với thống kê đơn hàng
-     * Pattern giống OrderModel.getAllOrders()
-     * 
-     * @param bool $active_only Chỉ lấy sản phẩm đang sản xuất
+     * Lấy tất cả sản phẩm kèm theo số lượng NVL trong BOM.
      * @return array
      */
-    public function getAllProducts($active_only = false)
+    public function getAllProducts()
     {
-        $where_clause = $active_only ? 'WHERE p.is_active = 1' : '';
-        
-        $query = $this->db->query("
-            SELECT 
-                p.*,
-                COUNT(DISTINCT pr.id_project) AS total_orders,
-                COALESCE(SUM(pr.qty_request), 0) AS total_quantity,
-                MAX(pr.created_at) AS last_order_date,
-                CASE 
-                    WHEN p.is_active = 1 THEN 'Đang sản xuất'
-                    ELSE 'Ngừng sản xuất'
-                END AS status_text,
-                CONCAT(p.diameter, 'mm') AS diameter_display
-            FROM product p
-            LEFT JOIN project pr ON p.id_product = pr.id_product
-            {$where_clause}
-            GROUP BY p.id_product
-            ORDER BY p.id_product ASC
-        ");
-        
-        return $query->result();
+        $this->db->select('p.*, COALESCE(JSON_LENGTH(p.bom), 0) as bom_count, COUNT(pr.id_project) as order_count');
+        $this->db->from('product p');
+        $this->db->join('project pr', 'p.id_product = pr.id_product', 'left');
+        $this->db->group_by('p.id_product');
+        $this->db->order_by('p.product_name', 'ASC');
+        return $this->db->get()->result();
     }
 
     /**
-     * Lấy thông tin sản phẩm theo ID
-     * Kèm theo BOM (JSON decoded) và thống kê
-     * 
-     * @param int $id_product
+     * Lấy thông tin sản phẩm theo ID.
+     * @param string $productId
      * @return object|null
      */
-    public function getProductById($id_product)
+    public function getProductById($productId)
     {
-        $query = $this->db->query("
-            SELECT 
-                p.*,
-                COUNT(DISTINCT pr.id_project) AS total_orders,
-                IFNULL(SUM(pr.qty_request), 0) AS total_quantity,
-                SUM(IF(pr.pr_status = 3, 1, 0)) AS completed_orders,
-                SUM(IF(pr.pr_status IN (1,2), 1, 0)) AS active_orders,
-                MAX(pr.created_at) AS last_order_date,
-                CONCAT(p.diameter, 'mm') AS diameter_display,
-                u.username AS created_by_username
-            FROM product p
-            LEFT JOIN project pr ON p.id_product = pr.id_product
-            LEFT JOIN user u ON p.created_by = u.user_id
-            WHERE p.id_product = ?
-            GROUP BY p.id_product
-        ", [$id_product]);
+        return $this->db->get_where('product', ['id_product' => $productId])->row();
+    }
 
-        $product = $query->row();
+    /**
+     * Lấy danh sách tất cả nguyên vật liệu đang hoạt động.
+     * @return array Danh sách các nguyên vật liệu.
+     */
+    public function getMaterialsList()
+{
+            // Include current stock so views can display "Tồn kho hiện tại"
+        $this->db->select('id_material, material_name, uom, COALESCE(stock, 0) as stock');
+        $this->db->from('material');
+        $this->db->order_by('material_name', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Tạo một sản phẩm mới và Định mức NVL (BOM) của nó trong một transaction.
+     * Đảm bảo rằng cả hai đều được lưu thành công hoặc không có gì được lưu.
+     *
+     * @param array $productData Dữ liệu cho bảng 'product'.
+     * @param array $materials   Mảng các nguyên vật liệu cho BOM.
+     *                           Mỗi item là một mảng ['id_material' => x, 'quantity' => y].
+     * @return mixed Trả về ID sản phẩm mới nếu thành công, ngược lại trả về false.
+     */
+    public function createProductWithBom($productData, $materials)     {
+        $this->db->trans_begin();
+
+        // Chuẩn bị dữ liệu BOM dưới dạng JSON
+        $bomJson = [];
+        if (!empty($materials) && is_array($materials)) {
+            foreach ($materials as $material) {
+                // Accept both existing materials (with id) and custom materials (without id)
+                $qty = isset($material['quantity_per_unit']) ? $material['quantity_per_unit'] : (isset($material['quantity']) ? $material['quantity'] : null);
+                $hasQty = is_numeric($qty) && $qty > 0;
+                $hasName = !empty($material['material_name']);
+                $hasId = !empty($material['id_material']);
+
+            if ($hasQty && ($hasId || $hasName)) {
+                    $bomJson[] = [
+                        'id_material'       => $hasId ? $material['id_material'] : null,
+                        'material_name'     => $material['material_name'] ?? null,
+                        'quantity_per_unit' => (float)$qty,
+                        'uom'               => $material['uom'] ?? null
+                    ];
+            }
+}
+        }
+        $productData['bom'] = !empty($bomJson) ? json_encode($bomJson, JSON_UNESCAPED_UNICODE) : null;
+
+        $this->db->insert('product', $productData);
+        $productId = $productData['id_product'];
+
+            if ($this->db->trans_status() === FALSE) {
+                            $this->db->trans_rollback();
+            return false;
+        } else {
+            $this->db->trans_commit();
+            return $productId;
+        }
+    }
+
+    /**
+     * Lấy thông tin sản phẩm và BOM của nó.
+     * 
+     * @param string $productId ID của sản phẩm.
+     * @return object|null Trả về object sản phẩm kèm theo mảng 'bom_items' hoặc null nếu không tìm thấy.
+     */
+    public function getProductByIdWithBom($productId)
+    {
+        // 1. Lấy thông tin sản phẩm chính
+        $product = $this->db->get_where('product', ['id_product' => $productId])->row();
+
+        if (!$product) {
+                return null;
+            }
         
-        // Decode BOM JSON thành array để dễ xử lý
-        if ($product) {
-            if (!empty($product->bom)) {
-                $bom_decoded = json_decode($product->bom, true);
-                // Support both formats: [{}, {}] and ['materials' => [{}, {}]]
-                if (isset($bom_decoded['materials'])) {
-                    $product->bom_data = $bom_decoded;
-                } else {
-                    // Wrap in 'materials' key for consistency
-                    $product->bom_data = ['materials' => $bom_decoded];
+        $product->bom_items = []; // Khởi tạo mảng rỗng cho bom_items
+
+        // 2. Nếu cột 'bom' có dữ liệu JSON, giải mã nó
+        if (!empty($product->bom)) {
+            $bom_from_json = json_decode($product->bom, true);
+
+            if (is_array($bom_from_json)) {
+                $material_ids = array_column($bom_from_json, 'id_material');
+        
+        if (!empty($material_ids)) {
+                    // Lấy thông tin material_name và uom từ bảng material
+                    // Include current stock for BOM display and calculations
+                    $materials_data = $this->db->select('id_material, material_name, uom, COALESCE(stock, 0) as stock')
+                                               ->where_in('id_material', $material_ids)
+                                               ->get('material')
+                                               ->result_array();
+                    
+                    $material_map = [];
+                    foreach ($materials_data as $m) {
+                        $material_map[$m['id_material']] = $m;
+    }
+
+    // Ghép thông tin từ bảng material vào bom_items
+                    foreach ($bom_from_json as $item) {
+                        if (isset($material_map[$item['id_material']])) {
+                            $item['material_name'] = $material_map[$item['id_material']]['material_name'];
+                            $item['uom'] = $material_map[$item['id_material']]['uom'];
+                            $item['stock'] = $material_map[$item['id_material']]['stock'];
+                        } else {
+                            $item['stock'] = 0;
+                        }
+                        $product->bom_items[] = (object)$item; // Convert to object for consistency
+                    }
                 }
-            } else {
-                $product->bom_data = ['materials' => []];
             }
         }
-        
+
+        // Backwards-compatibility for views expecting bom_data['materials'] (associative arrays)
+        $product->bom_data = ['materials' => []];
+        if (!empty($product->bom_items)) {
+            foreach ($product->bom_items as $itm) {
+                // Convert object item -> associative array for legacy views
+                $product->bom_data['materials'][] = json_decode(json_encode($itm), true);
+            }
+        }
+
         return $product;
     }
 
     /**
-     * Tạo ID sản phẩm tự động
-     * Pattern giống CustomerModel.generateCustomerId()
-     * Format: AUTO INCREMENT từ 1001
+     * Cập nhật một sản phẩm và Định mức NVL (BOM) của nó trong một transaction.
      * 
-     * @return int
+     * @param string $productId   ID của sản phẩm cần cập nhật.
+     * @param array  $productData Dữ liệu mới cho bảng 'product'.
+     * @param array  $materials   Mảng nguyên vật liệu mới cho BOM.
+     * @return bool True nếu thành công, ngược lại false.
      */
-    public function generateProductId()
-    {
-        $query = $this->db->query("
-            SELECT COALESCE(MAX(id_product), 1000) + 1 AS next_id
-            FROM product
-        ");
-        
-        return (int) $query->row()->next_id;
-    }
-
     /**
-     * Tạo sản phẩm mới (với BOM)
-     * Pattern giống OrderModel.createOrder() với transaction
-     * 
-     * @param array $product_data
-     * @return array ['success' => bool, 'message' => string, 'id_product' => int|null]
-     */
-    public function addProduct($product_data)
-    {
-        $this->db->trans_start();
-
-        try {
-            // Validate trước khi insert
-            $validation = $this->validateProductData($product_data);
-            if (!$validation['valid']) {
-                throw new Exception($validation['message']);
-            }
-
-            // Validate BOM nếu có
-            if (!empty($product_data['bom'])) {
-                $bom_validation = $this->validateBOM($product_data['bom']);
-                if (!$bom_validation['valid']) {
-                    throw new Exception($bom_validation['message']);
-                }
-                // Encode BOM thành JSON string
-                $product_data['bom'] = json_encode($product_data['bom'], JSON_UNESCAPED_UNICODE);
-            }
-
-            // Generate ID tự động
-            $product_data['id_product'] = $this->generateProductId();
-            $product_data['is_active'] = 1;
-            $product_data['created_by'] = $this->session->userdata('user_id');
-
-            // Insert vào database
-            $this->db->insert('product', $product_data);
-            
-            $insert_id = $product_data['id_product'];
-
-            // Log activity
-            $this->logActivity('create', $insert_id, null, $product_data);
-
-            // Commit transaction
-            $this->db->trans_complete();
-
-            if ($this->db->trans_status() === FALSE) {
-                throw new Exception('Lỗi khi lưu vào cơ sở dữ liệu');
-            }
-
-            return [
-                'success' => true,
-                'message' => 'Sản phẩm đã được tạo thành công',
-                'id_product' => $insert_id
-            ];
-
-        } catch (Exception $e) {
-            $this->db->trans_rollback();
-            
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
-                'id_product' => null
-            ];
-        }
-    }
-
-    /**
-     * Cập nhật thông tin sản phẩm (kể cả BOM)
-     * Pattern giống OrderModel.updateOrder()
-     * 
-     * @param int $id_product
-     * @param array $update_data
-     * @return array ['success' => bool, 'message' => string]
-     */
-    public function updateProduct($id_product, $update_data)
-    {
-        $this->db->trans_start();
-
-        try {
-            // Validate
-            $validation = $this->validateProductData($update_data, $id_product);
-            if (!$validation['valid']) {
-                throw new Exception($validation['message']);
-            }
-
-            // Validate & encode BOM nếu có
-            if (isset($update_data['bom'])) {
-                if (!empty($update_data['bom'])) {
-                    $bom_validation = $this->validateBOM($update_data['bom']);
-                    if (!$bom_validation['valid']) {
-                        throw new Exception($bom_validation['message']);
-                    }
-                    $update_data['bom'] = json_encode($update_data['bom'], JSON_UNESCAPED_UNICODE);
-                } else {
-                    $update_data['bom'] = null;
-                }
-            }
-
-            // Lấy dữ liệu cũ để log
-            $old_data = $this->getProductById($id_product);
-            
-            // Update (updated_at tự động)
-            $this->db->where('id_product', $id_product);
-            $this->db->update('product', $update_data);
-
-            // Log activity
-            $this->logActivity('update', $id_product, $old_data, $update_data);
-
-            $this->db->trans_complete();
-
-            if ($this->db->trans_status() === FALSE) {
-                throw new Exception('Lỗi khi cập nhật dữ liệu');
-            }
-
-            return [
-                'success' => true,
-                'message' => 'Thông tin sản phẩm đã được cập nhật'
-            ];
-
-        } catch (Exception $e) {
-            $this->db->trans_rollback();
-            
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
-        }
-    }
-
-    /**
-     * Xóa sản phẩm
-     * Quy tắc: Không xóa được nếu đã có đơn hàng (FK constraint)
-     * Pattern giống OrderModel.deleteOrder()
-     * 
-     * @param int $id_product
-     * @return array ['success' => bool, 'message' => string]
-     */
-    public function deleteProduct($id_product)
-    {
-        $this->db->trans_start();
-
-        try {
-            // Kiểm tra FK constraint với project table
-            if ($this->hasOrders($id_product)) {
-                throw new Exception(
-                    'Không thể xóa sản phẩm đã có đơn hàng. ' .
-                    'Vui lòng xóa đơn hàng trước hoặc đánh dấu sản phẩm là không hoạt động.'
-                );
-            }
-
-            // Lấy data để log
-            $old_data = $this->getProductById($id_product);
-
-            // Xóa sản phẩm
-            $this->db->delete('product', ['id_product' => $id_product]);
-
-            // Log activity
-            $this->logActivity('delete', $id_product, $old_data, null);
-
-            $this->db->trans_complete();
-
-            if ($this->db->trans_status() === FALSE) {
-                throw new Exception('Lỗi khi xóa sản phẩm');
-            }
-
-            return [
-                'success' => true,
-                'message' => 'Sản phẩm đã được xóa thành công'
-            ];
-
-        } catch (Exception $e) {
-            $this->db->trans_rollback();
-            
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
-        }
-    }
-
-    /**
-     * Kiểm tra sản phẩm có đơn hàng không
-     * FK constraint check - Pattern giống OrderModel check planning
-     * 
-     * @param int $id_product
-     * @return bool
-     */
-    public function hasOrders($id_product)
-    {
-        $query = $this->db->get_where('project', ['id_product' => $id_product]);
-        return $query->num_rows() > 0;
-    }
-
-    /**
-     * Validate dữ liệu sản phẩm
-     * Pattern giống OrderModel.validateOrderData()
-     * 
-     * Database constraints:
-     *   - product_name: VARCHAR(50) - Tối đa 50 ký tự
-     *   - summary: LONGTEXT
-     *   - application: VARCHAR(100) - Màu mực
-     *   - diameter: DECIMAL(3,1) - 0.5, 0.7, 1.0
-     * 
-     * @param array $data
-     * @param int|null $id_product (Exclude khi check duplicate)
-     * @return array ['valid' => bool, 'message' => string]
-     */
-    public function validateProductData($data, $id_product = null)
-    {
-        // 1. Tên sản phẩm
-        if (empty($data['product_name'])) {
-            return [
-                'valid' => false,
-                'message' => 'Vui lòng nhập tên sản phẩm'
-            ];
-        }
-        
-        // Kiểm tra ký tự hợp lệ: chữ, số, khoảng trắng và ký tự (.,- )
-        if (!preg_match('/^[\p{L}0-9\s.,-]+$/u', $data['product_name'])) {
-            return [
-                'valid' => false,
-                'message' => 'Tên sản phẩm chỉ chứa chữ cái, số và ký tự (.,-)'
-            ];
-        }
-        
-        if (strlen($data['product_name']) > 50) {
-            return [
-                'valid' => false,
-                'message' => 'Tên sản phẩm tối đa 50 ký tự'
-            ];
-        }
-
-        // 2. Đường kính (phải là số dương trong khoảng hợp lý)
-        if (isset($data['diameter'])) {
-            $diameter = floatval($data['diameter']);
-            if ($diameter <= 0 || $diameter > 10) {
-                return [
-                    'valid' => false,
-                    'message' => 'Đường kính phải là số dương từ 0.01mm đến 10mm'
-                ];
-            }
-        }
-
-        // 3. Màu mực/Application
-        if (isset($data['application']) && strlen($data['application']) > 100) {
-            return [
-                'valid' => false,
-                'message' => 'Màu mực tối đa 100 ký tự'
-            ];
-        }
-
-        // Tất cả validation pass
-        return [
-            'valid' => true,
-            'message' => 'OK'
-        ];
-    }
-
-    /**
-     * Validate BOM (Bill of Materials) structure
-     * BOM format: {materials: [{id_material, material_name, quantity, unit}]}
-     * 
-     * @param array $bom
-     * @return array ['valid' => bool, 'message' => string]
-     */
-    public function validateBOM($bom)
-    {
-        // BOM phải là array hoặc JSON string
-        if (is_string($bom)) {
-            $bom = json_decode($bom, true);
-        }
-        
-        if (!is_array($bom)) {
-            return [
-                'valid' => false,
-                'message' => 'BOM không đúng định dạng (phải là array)'
-            ];
-        }
-
-        // Support cả 2 formats:
-        // Format 1 (old): ['materials' => [{...}, {...}]]
-        // Format 2 (new): [{...}, {...}]
-        $materials = isset($bom['materials']) ? $bom['materials'] : $bom;
-        
-        if (!is_array($materials)) {
-            return [
-                'valid' => false,
-                'message' => 'BOM materials phải là mảng'
-            ];
-        }
-
-        // Validate từng material
-        foreach ($materials as $index => $material) {
-            // Cho phép material mới (không có id_material)
-            if (!empty($material['id_material'])) {
-                // Kiểm tra material tồn tại trong database (chỉ khi có ID)
-                $exists = $this->db->get_where('material', [
-                    'id_material' => $material['id_material']
-                ]);
-                
-                if ($exists->num_rows() == 0) {
-                    return [
-                        'valid' => false,
-                        'message' => "Material ID {$material['id_material']} không tồn tại"
-                    ];
-                }
-            } else {
-                // Material mới - phải có material_name
-                if (empty($material['material_name'])) {
-                    return [
-                        'valid' => false,
-                        'message' => "Material #{$index}: Phải có tên nguyên liệu"
-                    ];
-                }
-            }
-
-            // Kiểm tra quantity
-            if (!isset($material['quantity']) || $material['quantity'] <= 0) {
-                return [
-                    'valid' => false,
-                    'message' => "Material #{$index}: Số lượng phải lớn hơn 0"
-                ];
-            }
-
-            // Kiểm tra unit
-            if (empty($material['unit'])) {
-                return [
-                    'valid' => false,
-                    'message' => "Material #{$index}: Thiếu đơn vị (unit)"
-                ];
-            }
-        }
-
-        return [
-            'valid' => true,
-            'message' => 'OK'
-        ];
-    }
-
-    /**
-     * Lấy danh sách nguyên vật liệu (cho BOM builder)
-     * Dùng trong form tạo/sửa sản phẩm - Cache trong session
-     * 
-     * @param bool $refresh Force refresh cache
+     * Tìm các bảng tham chiếu đến product(id_product) và đếm số hàng tham chiếu.
+     * Trả về mảng ['table_name' => count]
+     *
+     * @param string|int $productId
      * @return array
      */
-    public function getMaterialsList($refresh = false)
+    public function findReferences($productId)
     {
-        // Cache trong session trong 5 phút
-        $cache_key = 'materials_list_cache';
-        $cache_time_key = 'materials_list_cache_time';
-        $cache_duration = 300; // 5 phút
-        
-        if (!$refresh) {
-            $cached_data = $this->session->userdata($cache_key);
-            $cached_time = $this->session->userdata($cache_time_key);
-            
-            if ($cached_data && $cached_time && (time() - $cached_time < $cache_duration)) {
-                return $cached_data;
-            }
+        $refs = [];
+        try {
+            $refs_sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE REFERENCED_TABLE_NAME = 'product' AND REFERENCED_COLUMN_NAME = 'id_product' AND TABLE_SCHEMA = DATABASE()";
+            $tables = $this->db->query($refs_sql)->result_array();
+        } catch (Exception $e) {
+            log_message('error', 'Failed to query INFORMATION_SCHEMA for product references: ' . $e->getMessage());
+            return [];
         }
-        
-        $query = $this->db->query("
-            SELECT 
-                id_material,
-                material_name,
-                stock,
-                'g' AS unit,
-                CONCAT(material_name, ' (Tồn: ', stock, 'g)') AS material_display
-            FROM material
-            WHERE stock > 0
-            ORDER BY material_name ASC
-        ");
-        
-        $materials = $query->result();
-        
-        // Lưu vào session cache
-        $this->session->set_userdata($cache_key, $materials);
-        $this->session->set_userdata($cache_time_key, time());
 
-        return $materials;
+        foreach ($tables as $r) {
+            $table = $r['TABLE_NAME'];
+            $escaped_table = $this->db->escape_str($table);
+            $count_row = $this->db->query("SELECT COUNT(*) as c FROM `" . $escaped_table . "` WHERE `id_product` = ?", [$productId])->row();
+            $count = isset($count_row->c) ? (int)$count_row->c : 0;
+            if ($count > 0) $refs[$table] = $count;
+        }
+
+        return $refs;
+    }
+
+    public function updateProductWithBom($productId, $productData, $materials) {
+        $this->db->trans_begin();
+
+        // Chuẩn bị dữ liệu BOM dưới dạng JSON
+        $bomJson = [];
+        if (!empty($materials) && is_array($materials)) {
+            foreach ($materials as $material) {
+                $qty = isset($material['quantity_per_unit']) ? $material['quantity_per_unit'] : (isset($material['quantity']) ? $material['quantity'] : null);
+                $hasQty = is_numeric($qty) && $qty > 0;
+                $hasName = !empty($material['material_name']);
+                $hasId = !empty($material['id_material']);
+
+                if ($hasQty && ($hasId || $hasName)) {
+            $bomJson[] = [
+                'id_material'       => $hasId ? $material['id_material'] : null,
+                'material_name'     => $material['material_name'] ?? null,
+                'quantity_per_unit' => (float)$qty,
+                        'uom'               => $material['uom'] ?? null
+            ];
+        }
+}
+        }
+        $productData['bom'] = !empty($bomJson) ? json_encode($bomJson, JSON_UNESCAPED_UNICODE) : null;
+
+        // 1. Cập nhật thông tin sản phẩm chính
+        $this->db->where('id_product', $productId);
+        $this->db->update('product', $productData);
+        
+        // Các bước xóa và thêm batch vào bảng 'bom' riêng biệt sẽ không còn cần thiết.
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return false;
+        } else {
+            $this->db->trans_commit();
+            
+            // ===== REFRESH PROJECT ANALYSIS =====
+            // Khi BOM thay đổi, cần cập nhật phân tích của tất cả đơn hàng liên quan
+            try {
+                $this->load->model('OrderModel');
+                $refresh_result = $this->OrderModel->refreshProductWarnings($productId);
+                // Log result for debugging (optional)
+                log_message('info', 'BOM updated for product ' . $productId . ': ' . $refresh_result['message']);
+            } catch (Exception $e) {
+                // Don't fail the update if refresh fails, just log it
+                log_message('error', 'Failed to refresh project warnings after BOM update: ' . $e->getMessage());
+            }
+            
+            return true;
+        }
     }
 
     /**
-     * Ghi log hoạt động vào audit_log
-     * Pattern giống OrderModel và CustomerModel
+     * Xóa một sản phẩm.
+     * Do có `ON DELETE CASCADE` trên bảng `bom`, các định mức liên quan sẽ tự động bị xóa.
      * 
-     * @param string $action (create, update, delete)
-     * @param int $record_id
-     * @param object|array|null $old_value
-     * @param array|null $new_value
-     * @return void
-     */
-    private function logActivity($action, $record_id, $old_value, $new_value)
-    {
-        $user_id = $this->session->userdata('user_id');
-        $username = $this->session->userdata('username');
-        
-        $log_data = [
-            'user_id'    => $user_id,
-            'username'   => $username,
-            'action'     => $action,
-            'module'     => 'product',
-            'record_id'  => $record_id,
-            'old_value'  => $old_value ? json_encode($old_value, JSON_UNESCAPED_UNICODE) : null,
-            'new_value'  => $new_value ? json_encode($new_value, JSON_UNESCAPED_UNICODE) : null,
-            'ip_address' => $this->input->ip_address(),
-            'user_agent' => $this->input->user_agent(),
-        ];
-        
-        $this->db->insert('audit_log', $log_data);
-    }
-
-    /**
-     * Tìm kiếm sản phẩm
-     * 
-     * @param string $keyword
+     * @param string $productId ID của sản phẩm cần xóa.
      * @return array
      */
-    public function searchProducts($keyword)
+    public function deleteProduct($productId)
     {
-        $query = $this->db->query("
-            SELECT 
-                p.*,
-                COUNT(DISTINCT pr.id_project) AS total_orders,
-                CONCAT(p.diameter, 'mm') AS diameter_display
-            FROM product p
-            LEFT JOIN project pr ON p.id_product = pr.id_product
-            WHERE p.product_name LIKE ?
-               OR p.application LIKE ?
-               OR p.summary LIKE ?
-            GROUP BY p.id_product
-            ORDER BY p.created_at DESC
-        ", ["%{$keyword}%", "%{$keyword}%", "%{$keyword}%"]);
+        // Reuse reference finder to provide consistent diagnostics
+        $blocking = $this->findReferences($productId);
+        if (!empty($blocking)) {
+            $parts = [];
+            foreach ($blocking as $t => $c) {
+                $parts[] = $t . ' (' . $c . ')';
+            }
+            $message = 'Không thể xóa sản phẩm vì tồn tại tham chiếu trong: ' . implode(', ', $parts) . '. Hãy xóa hoặc cập nhật dữ liệu liên quan trước.';
+            log_message('warning', 'Product delete blocked for id=' . $productId . ' references: ' . json_encode($blocking));
+            return ['success' => false, 'message' => $message, 'refs' => $blocking];
+        }
 
-        return $query->result();
-    }
+        // Also keep the backwards-compatible project usage check (additional safeguard)
+        $usage_count = $this->db->where('id_product', $productId)->count_all_results('project');
+        if ($usage_count > 0) {
+            return ['success' => false, 'message' => 'Không thể xóa sản phẩm đang được sử dụng trong ' . $usage_count . ' đơn hàng.'];
+        }
 
-    /**
-     * Lấy danh sách đường kính có sẵn
-     * Giống OrderModel.getDiameters()
-     * 
-     * @return array
-     */
-    public function getDiameters()
-    {
-        return [
-            '0.5' => '0.5mm',
-            '0.7' => '0.7mm',
-            '1.0' => '1.0mm'
-        ];
-    }
+        $this->db->where('id_product', $productId);
+        $this->db->delete('product');
 
-    /**
-     * Thống kê sản phẩm
-     * 
-     * @return object
-     */
-    public function getProductStatistics()
-    {
-        $query = $this->db->query("
-            SELECT 
-                COUNT(*) AS total_products,
-                SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active_products,
-                SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) AS inactive_products
-            FROM product
-        ");
+        // Check for DB error details
+        $db_error = $this->db->error(); // ['code' => ..., 'message' => ...]
 
-        return $query->row();
+        if ($db_error['code'] !== 0) {
+            // Log the underlying DB error for debugging
+            log_message('error', 'Product delete failed for id=' . $productId . ' DB error: ' . json_encode($db_error));
+            return ['success' => false, 'message' => 'Lỗi database khi xóa sản phẩm: ' . ($db_error['message'] ?: 'Không xác định')];
+        }
+
+        // Ensure a row was actually deleted
+        if ($this->db->affected_rows() > 0) {
+            log_message('info', 'Product deleted successfully id=' . $productId);
+            return ['success' => true, 'message' => 'Xóa sản phẩm thành công.'];
+        }
+
+        log_message('warning', 'Product delete affected 0 rows for id=' . $productId);
+        return ['success' => false, 'message' => 'Không tìm thấy sản phẩm để xóa hoặc không thể xóa (ràng buộc khoá ngoại).'];
     }
 }

@@ -162,6 +162,14 @@ if (function_exists('opcache_invalidate')) {
 
                                         <!-- Thao tác -->
                                         <td class="align-middle text-center">
+                                            <a href="<?= site_url('BOD/customer/view/' . $customer->id_cust); ?>" 
+                                               class="btn btn-sm bg-gradient-info mb-0 me-1"
+                                               data-bs-toggle="tooltip" 
+                                               title="Xem chi tiết khách hàng"
+                                               style="font-family: 'Poppins', sans-serif;">
+                                                <i class="material-icons-round" style="font-size: 16px; vertical-align: middle;">visibility</i>
+                                                Xem
+                                            </a>
                                             <a href="<?= site_url('BOD/customer/edit/' . $customer->id_cust); ?>" 
                                                class="btn btn-sm bg-gradient-warning mb-0 me-1"
                                                onclick="window.location.href=this.href; return false;"
@@ -442,7 +450,7 @@ window.addEventListener('load', function() {
     if (typeof jQuery !== 'undefined') {
         $('#customerTable').DataTable({
             "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.19/i18n/Vietnamese.json"
+                "url": "<?= base_url('asset/Backend/json/Vietnamese.json'); ?>"
             },
             "pageLength": 25,
             "order": [[1, 'asc']], // Sort by Mã KH ascending (tăng dần)

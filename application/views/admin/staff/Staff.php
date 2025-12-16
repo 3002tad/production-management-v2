@@ -41,6 +41,8 @@
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_staff_name'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_phone'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_email'); ?></th>
+<th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Bộ phận</th>
+                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Chức vụ</th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_status'); ?></th>
                         <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7"><?= lang('table_action'); ?></th>
                         </tr>
@@ -63,6 +65,12 @@
                         </td>
                         <td class="pl-4">
                             <span class="text-sm font-weight-bold"><?= $value->email; ?></span>
+                        </td>
+<td class="pl-4">
+                            <span class="text-sm font-weight-bold"><?= $value->department ?: '-'; ?></span>
+                        </td>
+                        <td class="pl-4">
+                            <span class="text-sm font-weight-bold"><?= $value->position ?: '-'; ?></span>
                         </td>
                         <td class="pl-4">
                         <?php if ( $value->st_status == 1) :?>

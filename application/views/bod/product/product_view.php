@@ -202,12 +202,12 @@
                                         </td>
                                         <td class="align-middle text-center">
                                             <span class="text-sm font-weight-bold" style="font-family: 'Poppins', sans-serif;">
-                                                <?= $material['quantity']; ?>
+                                                <?= $material['quantity_per_unit'] ?? $material['quantity'] ?? 0; ?>
                                             </span>
                                         </td>
                                         <td class="align-middle text-center">
                                             <span class="badge badge-sm bg-gradient-secondary" style="font-family: 'Poppins', sans-serif;">
-                                                <?= htmlspecialchars($material['unit']); ?>
+                                                <?= !empty($material['unit']) ? htmlspecialchars($material['unit']) : '<em class="text-muted">—</em>'; ?>
                                             </span>
                                         </td>
                                     </tr>
