@@ -876,7 +876,6 @@ class BOD extends CI_Controller
         if (!$this->input->is_ajax_request()) {
             show_404();
         }
-=======
 
     
     
