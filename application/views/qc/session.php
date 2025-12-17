@@ -207,7 +207,7 @@
     <!-- Recommendation (if available) -->
     <?php if ($recommendation && $session->status === 'OPEN'): ?>
         <div class="recommendation-box <?= strtolower($recommendation['recommendation']) === 'approve' ? 'approve' : (strtolower($recommendation['recommendation']) === 'reject' ? 'reject' : 'review') ?>">
-            <i class="fas fa-lightbulb"></i> <strong>AI Recommendation:</strong> 
+            <i class="fas fa-lightbulb"></i> <strong>Gợi ý:</strong> 
             <?= $recommendation['recommendation'] ?>
             <br>
             <small><?= $recommendation['analysis'] ?></small>
@@ -507,7 +507,7 @@
             });
         }
         
-        // Result select change handler
+        // Xử lý thay đổi lựa chọn kết quả
         document.querySelectorAll('.result-select').forEach(select => {
             select.addEventListener('change', function() {
                 const item = this.closest('.checklist-item');

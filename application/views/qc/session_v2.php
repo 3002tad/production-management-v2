@@ -21,15 +21,15 @@
             background-color: #f8f9fa;
             transform: translateX(5px);
         }
-        .ai-recommendation {
+        .suggestion-card {
             border-left: 4px solid #1A73E8;
             background: linear-gradient(195deg, rgba(26, 115, 232, 0.05) 0%, rgba(22, 98, 196, 0.05) 100%);
         }
-        .ai-recommendation.recommend-approve {
+        .suggestion-card.suggestion-approve {
             border-left-color: #43A047;
             background: linear-gradient(195deg, rgba(67, 160, 71, 0.05) 0%, rgba(56, 142, 60, 0.05) 100%);
         }
-        .ai-recommendation.recommend-reject {
+        .suggestion-card.suggestion-reject {
             border-left-color: #E53935;
             background: linear-gradient(195deg, rgba(229, 57, 53, 0.05) 0%, rgba(211, 47, 47, 0.05) 100%);
         }
@@ -367,10 +367,10 @@
                 </div>
             </div>
 
-            <!-- AI Recommendation & Decision Panel -->
+            <!-- Card Gợi ý kết luận & Bảng quyết định -->
             <div class="col-lg-4">
-                <!-- AI Recommendation Card (Use Case Bước 6: Gợi ý kết luận Pass/Fail) -->
-                <div class="card ai-recommendation <?= isset($recommendation) ? 'recommend-' . strtolower($recommendation['recommendation'] ?? '') : '' ?>">
+                <!-- Card Gợi ý (Bước 6: Gợi ý kết luận Pass/Fail) -->
+                <div class="card suggestion-card <?= isset($recommendation) ? 'suggestion-' . strtolower($recommendation['recommendation'] ?? '') : '' ?>">
                     <div class="card-header pb-0">
                         <h6><i class="material-icons">psychology</i> Use Case Bước 6: Gợi ý kết luận</h6>
                     </div>
@@ -389,7 +389,7 @@
                                 </span>
                             </div>
                             
-                            <p class="text-sm"><strong>Phân tích AI:</strong></p>
+                            <p class="text-sm"><strong>Phân tích:</strong></p>
                             <p class="text-xs"><?= $recommendation['analysis'] ?></p>
                             
                             <?php if (!empty($recommendation['action'])): ?>
@@ -403,7 +403,7 @@
                         <?php else: ?>
                             <p class="text-xs text-secondary">
                                 <i class="material-icons text-xs">info</i> 
-                                Hoàn thành checklist để nhận gợi ý từ AI
+                                Hoàn thành checklist để nhận gợi ý
                             </p>
                         <?php endif; ?>
                     </div>

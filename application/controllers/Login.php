@@ -21,10 +21,10 @@ class Login extends CI_Controller
             $old_role = $this->session->userdata('role');
             
             if ($role_name) {
-                // New RBAC system
+                // Hệ thống RBAC mới
                 $this->redirect_by_role($role_name);
             } elseif ($old_role) {
-                // Old system fallback
+                // Dự phòng hệ thống cũ
                 $old_role === 'admin' ? redirect('admin/staff') : redirect('leader/');
             } else {
                 redirect('login/');
@@ -34,7 +34,7 @@ class Login extends CI_Controller
             $this->form_validation->set_rules('password', 'Password', 'required');
 
             $this->form_validation->set_message('required', '<div class="alert alert-danger" style="margin-top: 3px">
-                    <div class="header"><b><i class="fa fa-exclamation-circle"></i> {field}</b> harus diisi</div></div>');
+                    <div class="header"><b><i class="fa fa-exclamation-circle"></i> {field}</b> bắt buộc</div></div>');
 
             if ($this->form_validation->run() === true) {
                 $username = $this->input->post('username', true);
@@ -86,7 +86,7 @@ class Login extends CI_Controller
                         return;
                     }
 
-                    // Set login success message (only for system admin)
+                    // Thiết lập thông báo đăng nhập thành công (chỉ cho system_admin)
                     if (isset($data->role_name) && $data->role_name === 'system_admin') {
                         $this->session->set_flashdata('success', 'Đăng nhập thành công! Chào mừng ' . $data->full_name);
                     }
@@ -115,7 +115,7 @@ class Login extends CI_Controller
                 if (file_exists(APPPATH . 'controllers/BOD.php')) {
                     redirect(site_url('bod/?msg=success'));
                 } else {
-                    redirect(site_url('admin/staff?msg=success')); // Fallback to admin staff if BOD controller not found
+                    redirect(site_url('admin/staff?msg=success')); // Fallback về trang quản trị (nếu controller BOD không tồn tại)
                 }
                 break;
             case 'system_admin':
@@ -125,11 +125,11 @@ class Login extends CI_Controller
                 redirect(site_url('leader/?msg=success'));
                 break;
             case 'warehouse_staff':
-                // Check if Warehouse controller exists, otherwise fallback to leader
+                // Kiểm tra nếu controller Warehouse tồn tại, nếu không fallback về leader
                 if (file_exists(APPPATH . 'controllers/Warehouse.php')) {
                     redirect(site_url('warehouse/?msg=success'));
                 } else {
-                    redirect(site_url('leader/?msg=success')); // Temporary fallback
+                    redirect(site_url('leader/?msg=success')); // Fallback tạm thời
                 }
                 break;
             case 'qc_staff':
@@ -137,7 +137,7 @@ class Login extends CI_Controller
                 if (file_exists(APPPATH . 'controllers/Qc.php')) {
                     redirect(site_url('qc/?msg=success'));
                 } else {
-                    redirect(site_url('leader/?msg=success')); // Temporary fallback
+                    redirect(site_url('leader/?msg=success')); // Fallback tạm thời
                 }
                 break;
             case 'technical_staff':
@@ -145,7 +145,7 @@ class Login extends CI_Controller
                 if (file_exists(APPPATH . 'controllers/Technical.php')) {
                     redirect(site_url('technical/?msg=success'));
                 } else {
-                    redirect(site_url('leader/?msg=success')); // Temporary fallback
+                    redirect(site_url('leader/?msg=success')); // Fallback tạm thời
                 }
                 break;
             case 'worker':
@@ -153,7 +153,7 @@ class Login extends CI_Controller
                 if (file_exists(APPPATH . 'controllers/Worker.php')) {
                     redirect(site_url('worker/?msg=success'));
                 } else {
-                    redirect(site_url('leader/?msg=success')); // Temporary fallback
+                    redirect(site_url('leader/?msg=success')); // Fallback tạm thời
                 }
                 break;
             default:

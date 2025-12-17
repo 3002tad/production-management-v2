@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function() {
         notesActions.style.display = 'block';
     });
 
-    // Nút lưu (prevent duplicate handlers)
+    // Nút lưu (ngăn trùng handler)
     if (!saveNotesBtn.dataset.notesHandlerAttached) {
         saveNotesBtn.addEventListener('click', function() {
             if (saveNotesBtn.dataset.saving === '1') return; // prevent double clicks

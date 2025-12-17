@@ -47,9 +47,9 @@ $(document).ready(function() {
         // Display
         "pageLength": <?= isset($page_length) ? $page_length : 25; ?>,
         "order": <?= isset($order) ? json_encode($order) : '[[1, "desc"]]'; ?>,
-        "dom": 'lrtip', // Remove default search (custom search provided)
+        "dom": 'lrtip', // Loại bỏ ô tìm mặc định (đã cung cấp chức năng tìm kiếm tùy chỉnh)
         
-        // Performance optimization
+        // Tối ưu hiệu năng
         "deferRender": true,
         "processing": false,
         "serverSide": false, // Change to true for large datasets
@@ -101,7 +101,7 @@ $(document).ready(function() {
     });
     <?php endif; ?>
     
-    // Event delegation for tooltips (performance optimization)
+    // Phân phối sự kiện cho tooltip (tối ưu hiệu năng)
     $('body').tooltip({
         selector: '[data-bs-toggle="tooltip"]',
         trigger: 'hover'

@@ -8,15 +8,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Actor: Ban Giám Đốc (BOD)
  * 
  * Pattern: Follow OrderModel structure for consistency
- * Database Schema: 
- *   - id_cust: INT(25) AI
- *   - cust_name: VARCHAR(50)
- *   - address: VARCHAR(50) - GIỚ <br>I HẠN 50 ký tự
- *   - telp: INT(20) - CHỈ LƯU SỐ
- *   - email: VARCHAR(25) - GIỚI HẠN 25 ký tự
- *   - is_active: TINYINT(1) DEFAULT 1
- *   - notes: TEXT
- *   - created_at, updated_at, created_by
+ * Cấu trúc bảng (tóm tắt):
+ *   - id_cust: INT AUTO_INCREMENT (ID khách hàng)
+ *   - cust_name: VARCHAR(50) - Tên khách hàng
+ *   - address: VARCHAR(50) - Địa chỉ, tối đa 50 ký tự
+ *   - telp: VARCHAR(20) - Số điện thoại (đã chuyển sang VARCHAR để hỗ trợ mã vùng)
+ *   - email: VARCHAR(255) - Email liên hệ
+ *   - is_active: TINYINT(1) DEFAULT 1 - Trạng thái hoạt động
+ *   - notes: TEXT - Ghi chú
+ *   - created_at, updated_at, created_by - Thông tin audit
  * 
  * @author  Production Management System v2
  * @date    2025-11-24

@@ -21,7 +21,7 @@ class BOD extends CI_Controller
         $this->load->library('session');
         
         if (!$this->session->userdata('user_id')) {
-            // For AJAX requests, return a JSON 401 instead of redirecting to login page
+            // Trường hợp AJAX: trả về HTTP 401 JSON thay vì redirect về trang login
             if ($this->input->is_ajax_request() || $this->input->post('ajax') === '1' || $this->input->get('ajax') === '1') {
                 log_message('warning', 'BOD::__construct - AJAX request with expired session from ' . $this->input->server('REMOTE_ADDR'));
                 $this->output->set_status_header(401)
@@ -169,7 +169,7 @@ class BOD extends CI_Controller
     }
 
     /**
-     * Store Customer - POST handler for add form
+     * Lưu Khách hàng - Xử lý POST của form thêm
      */
     public function storeCustomer()
     {
@@ -195,7 +195,7 @@ class BOD extends CI_Controller
     }
 
     /**
-     * Update Customer - POST handler for edit form
+     * Cập nhật Khách hàng - Xử lý POST của form chỉnh sửa
      */
     public function updateCustomer()
     {
@@ -217,7 +217,7 @@ class BOD extends CI_Controller
     }
 
     /**
-     * Destroy Customer - POST handler for delete
+     * Xóa Khách hàng - Xử lý POST xóa
      */
     public function destroyCustomer()
     {
@@ -242,7 +242,7 @@ class BOD extends CI_Controller
     }
 
     /**
-     * Store Product - POST handler for add form
+     * Lưu Sản phẩm - Xử lý POST của form thêm
      */
     public function storeProduct()
     {
@@ -316,7 +316,7 @@ class BOD extends CI_Controller
     }
 
     /**
-     * Update Product - POST handler for edit form
+     * Cập nhật Sản phẩm - Xử lý POST của form chỉnh sửa
      */
     public function updateProduct()
     {
@@ -398,7 +398,7 @@ class BOD extends CI_Controller
     public function updateCustomerNotes()
     {
         // Ensure this is an AJAX request for security/API usage clarity
-        // Some proxies or server configurations may strip headers; accept a fallback 'ajax=1' POST param
+        // Một số proxy/cấu hình server có thể loại bỏ header; chấp nhận tham số POST fallback 'ajax=1'
             if (!$this->input->is_ajax_request() && $this->input->post('ajax') !== '1') {
                 // Log useful diagnostics to help debug header/session issues
                 $hdr = [
@@ -447,7 +447,7 @@ class BOD extends CI_Controller
     }
 
     /**
-     * Destroy Product - POST handler for delete
+     * Xóa Sản phẩm - Xử lý POST xóa
      */
     public function destroyProduct()
     {
@@ -606,7 +606,7 @@ class BOD extends CI_Controller
                     ]));
                     $msg_type = 'warning';
                 } else {
-                     // Informational success - include capacity message when available
+                     // Thông báo thành công mang tính thông tin - kèm message về năng lực nếu có
                      $success_message = $capacity_check['message'] ?? 'Đơn hàng đã được tạo và phân bổ kho thành công.';
                      $this->session->set_flashdata('success_js', json_encode([
                          'title' => 'Tạo đơn thành công!',

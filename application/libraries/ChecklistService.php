@@ -9,7 +9,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * - AQL calculation and decision recommendation
  * - Near-threshold detection
  * 
- * @author AI Pair Programmer
+ * @author Production Management System v2 Team
  * @date 2025-11-02
  */
 class ChecklistService
@@ -54,7 +54,7 @@ class ChecklistService
     
     /**
      * Calculate decision recommendation based on AQL
-     * Use Case 19 - Step 6: AI suggestion for Pass/Fail
+     * Use Case 19 - Bước 6: Gợi ý kết luận Pass/Fail
      * Alternative Flow 6.1: Near threshold detection
      * 
      * @param int $session_id
@@ -182,7 +182,7 @@ class ChecklistService
     
     /**
      * Validate decision request
-     * Use Case 19 - Step 7: Decision validation
+     * Use Case 19 - Bước 7: Kiểm tra quyết định
      * Alternative Flow 8.1: Reject requires reason + attachment
      * 
      * @param int $session_id

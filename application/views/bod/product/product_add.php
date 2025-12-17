@@ -384,7 +384,7 @@ const bomTable = document.getElementById('bomTable');
         // Focus on material name input
         newRow.querySelector('input[name="bom_material_names[]"]').focus();
         
-        // Setup checkbox handler for new row
+        // Thiết lập bộ xử lý checkbox cho dòng mới
         const checkbox = newRow.querySelector('.bom-checkbox');
         checkbox.addEventListener('change', function() {
             if (!this.checked) {

@@ -2,15 +2,14 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * OrderModel - Xử lý nghiệp vụ đơn hàng bút bi (Tối ưu hóa bởi Gemini)
+ * OrderModel - Xử lý nghiệp vụ đơn hàng bút bi
  *
  * @author  Production Management System v2
  * @date    2025-12-10
  * @logic
- *  - Loại bỏ hoàn toàn sự phụ thuộc vào database triggers.
- *  - Toàn bộ logic về tồn kho (thành phẩm & nguyên vật liệu) được xử lý ở tầng ứng dụng.
+ *  - Không phụ thuộc trigger ở database; toàn bộ logic tồn kho xử lý trong ứng dụng.
  *  - Sử dụng database transactions để đảm bảo tính toàn vẹn dữ liệu (ACID).
- *  - Một hàm private `_updateInventoryAndWarnings` là nguồn chân lý duy nhất cho mọi thay đổi về kho.
+ *  - Phương thức private `_updateInventoryAndWarnings` là nguồn chân lý duy nhất cho mọi thay đổi về tồn kho và cảnh báo.
  */
 class OrderModel extends CI_Model
 {
@@ -21,7 +20,7 @@ class OrderModel extends CI_Model
     }
 
     // ========================================================================
-    // PUBLIC GETTERS (No change in logic)
+    // PUBLIC GETTERS (Không thay đổi logic hiện tại)
     // ========================================================================
 
     public function getAllOrders($filters = [])
@@ -241,9 +240,9 @@ class OrderModel extends CI_Model
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE) {
-            $db_error = $this->db->error(); // Get the database error details
+            $db_error = $this->db->error(); // Lấy chi tiết lỗi database
             $error_message = 'Lỗi database khi xóa đơn hàng. Code: ' . $db_error['code'] . ' Message: ' . $db_error['message'];
-            log_message('error', $error_message); // Log the error for server-side debugging
+            log_message('error', $error_message); // Ghi log lỗi để debug phía server
             return ['success' => false, 'message' => $error_message];
         }
         return ['success' => true, 'message' => 'Đơn hàng đã được xóa và kho đã được hoàn trả.'];
@@ -649,7 +648,7 @@ class OrderModel extends CI_Model
         $available_stock = max(0, $total_stock - $allocated_production);
 
         // ===== 4. CHECK DEADLINE FIRST =====
-        // Treat "near deadline" as an urgent warning (do not block by default)
+        // Xử lý 'gần hạn' như cảnh báo khẩn cấp (mặc định không chặn tạo đơn)
         if ($deadline_too_close) {
             $deadline_urgent = true;
             // We'll add the warning into the $warnings array later so it appears in analysis
@@ -659,11 +658,11 @@ class OrderModel extends CI_Model
 
         // ===== 5. CHECK STOCK SUFFICIENCY =====
         if ($qty_request <= $available_stock) {
-            // Scenario 1: Có sẵn kho (informational)
+            // Scenario 1: Có sẵn kho (mang tính thông tin)
             return [
                 'feasible' => true,
                 'warning_type' => 'stock_available',
-                // informational: don't set warning_flag so controller shows success toast
+                // Thông tin: không đặt warning_flag để controller hiển thị thông báo thành công
                 'warning_flag' => 0,
                 'warning_details' => json_encode([
                     'finished_stock_info' => "✓ Có {$total_stock} cái trong kho, đã phân bổ {$allocated_production}, còn {$available_stock} cái khả dụng, dùng {$qty_request} cho đơn này",
@@ -790,7 +789,7 @@ class OrderModel extends CI_Model
 
         // CẢNH BÁO NVL - HIỂN THỊ CHI TIẾT SỐ SẢN PHẨM CÓ THỂ TẠO
         if (!empty($material_warnings)) {
-            // Mark warning type so UI badge matches
+            // Đặt loại cảnh báo để badge giao diện khớp
             $warning_type = 'material_shortage';
             $warnings['material_warning'] = "⚠️ " . implode(', ', $material_warnings);
             if ($material_shifts_available < $shifts_needed) {
@@ -915,7 +914,7 @@ class OrderModel extends CI_Model
                 return ['success' => false, 'message' => 'Đơn hàng không tồn tại'];
             }
 
-            // Re-run capacity check with current data
+            // Chạy lại kiểm tra năng lực với dữ liệu hiện tại
             $capacity_check = $this->checkCapacity(
                 $project->id_product,
                 $project->qty_request,
@@ -923,7 +922,7 @@ class OrderModel extends CI_Model
                 $id_project
             );
 
-            // Update project with new analysis (use safe defaults to avoid undefined index warnings)
+            // Cập nhật project với kết quả phân tích mới (dùng giá trị mặc định an toàn để tránh undefined index)
             $update_data = [
                 'warning_details' => $capacity_check['warning_details'] ?? null,
                 'warning_flag' => $capacity_check['warning_flag'] ?? 0,
@@ -955,7 +954,7 @@ class OrderModel extends CI_Model
     {
         try {
             $projects = $this->db->where('id_product', $id_product)
-                                ->where_in('pr_status', [0, 1, 2]) // Only active projects
+                                ->where_in('pr_status', [0, 1, 2]) // Chỉ các project đang active
                                 ->get('project')->result();
 
             $updated_count = 0;
@@ -985,7 +984,7 @@ class OrderModel extends CI_Model
     public function refreshAllWarnings($id_product = null)
     {
         try {
-            $this->db->where_in('pr_status', [0,1,2]); // active projects only
+            $this->db->where_in('pr_status', [0,1,2]); // Chỉ các project đang active
             if ($id_product !== null) {
                 $this->db->where('id_product', $id_product);
             }

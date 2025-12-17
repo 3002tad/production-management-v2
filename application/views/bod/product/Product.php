@@ -506,7 +506,7 @@ function closeToast(element) {
     }
 }
 
-// Toast Notification Handler - Run immediately (before jQuery loads)
+// Trình xử lý thông báo (toast) - Chạy ngay lập tức (trước khi jQuery tải xong)
 (function() {
     const urlParams = new URLSearchParams(window.location.search);
     var msgType = urlParams.get('msg'); // Get msg value

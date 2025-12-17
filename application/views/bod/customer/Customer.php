@@ -439,7 +439,7 @@ function closeToast(element) {
     }
 }
 
-// Toast Notification Handler - Run immediately (before jQuery loads)
+// Trình xử lý thông báo (toast) - Chạy ngay lập tức (trước khi jQuery tải xong)
 (function() {
     const urlParams = new URLSearchParams(window.location.search);
     var msgType = urlParams.get('msg'); // Get msg value, not just check existence
@@ -513,7 +513,7 @@ window.addEventListener('load', function() {
                 "order": [[1, 'asc']], // Sort by Mã KH ascending (tăng dần)
                 "deferRender": true, // Lazy rendering for performance
                 "processing": false,
-                "dom": 'lrtip' // Remove default search box (we have custom one)
+                "dom": 'lrtip' // Loại bỏ ô tìm mặc định (đã có tìm kiếm tùy chỉnh)
             });
         } else {
             try {

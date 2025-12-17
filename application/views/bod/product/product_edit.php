@@ -446,7 +446,7 @@ const bomTable = document.getElementById('bomTable');
         });
     }
 
-    // initialize checkbox handlers for existing rows
+    // Khởi tạo bộ xử lý checkbox cho các dòng đã có
     setupCheckboxHandlers(document);
 
     // Setup existing remove buttons

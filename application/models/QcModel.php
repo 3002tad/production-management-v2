@@ -10,7 +10,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * - Decisions (APPROVE/REJECT)
  * - Attachments and adjustment requests
  * 
- * @author AI Pair Programmer
+ * @author Production Management System v2 Team
  * @date 2025-11-02
  */
 class QcModel extends CI_Model

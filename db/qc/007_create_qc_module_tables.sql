@@ -2,7 +2,7 @@
 -- Migration 007: QC Module - Quality Control & Verification
 -- =====================================================
 -- Purpose: Implement QC inspection system for shift closures
--- Author: AI Pair Programmer
+-- Author: Production Management System v2 Team
 -- Date: 2025-11-02
 -- Dependencies: Requires shift_closures, users, roles tables
 -- =====================================================

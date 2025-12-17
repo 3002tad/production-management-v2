@@ -14,13 +14,13 @@ class ProductModel extends CI_Model {
      */
     public function getAllProducts($filters = [])
     {
-        // Provide `total_orders` and `blocking_orders` aliases to match views (and use DISTINCT to avoid duplicates)
-        // blocking_orders counts projects with pr_status in (1,2,3) which should prevent editing
+        // Cung cấp alias `total_orders` và `blocking_orders` để phù hợp với view (dùng DISTINCT để tránh trùng)
+        // blocking_orders đếm số project có pr_status trong (1,2,3) và sẽ ngăn việc sửa sản phẩm
         $this->db->select('p.*, COALESCE(JSON_LENGTH(p.bom), 0) as bom_count, COUNT(DISTINCT pr.id_project) as total_orders, COALESCE(SUM(CASE WHEN pr.pr_status IN (1,2,3) THEN 1 ELSE 0 END), 0) as blocking_orders');
         $this->db->from('product p');
         $this->db->join('project pr', 'p.id_product = pr.id_product', 'left');
 
-        // Apply filters safely
+        // Áp dụng bộ lọc một cách an toàn
         if (!empty($filters['keyword'])) {
             $this->db->group_start();
             $this->db->like('p.product_name', $filters['keyword']);
@@ -66,8 +66,8 @@ class ProductModel extends CI_Model {
      * @return array Danh sách các nguyên vật liệu.
      */
     public function getMaterialsList()
-{
-            // Include current stock so views can display "Tồn kho hiện tại"
+    {
+        // Trả về danh sách nguyên vật liệu cùng tồn kho hiện tại để hiển thị ở giao diện
         $this->db->select('id_material, material_name, uom, COALESCE(stock, 0) as stock');
         $this->db->from('material');
         $this->db->order_by('material_name', 'ASC');
@@ -90,7 +90,7 @@ class ProductModel extends CI_Model {
         $bomJson = [];
         if (!empty($materials) && is_array($materials)) {
             foreach ($materials as $material) {
-                // Accept both existing materials (with id) and custom materials (without id)
+                // Chấp nhận cả NVL đã có id và NVL tùy chỉnh không có id
                 $qty = isset($material['quantity_per_unit']) ? $material['quantity_per_unit'] : (isset($material['quantity']) ? $material['quantity'] : null);
                 $hasQty = is_numeric($qty) && $qty > 0;
                 $hasName = !empty($material['material_name']);
@@ -170,7 +170,7 @@ class ProductModel extends CI_Model {
                             $item['stock'] = $material_map[$item['id_material']]['stock'];
                         } else {
                             $item['stock'] = 0;
-                            // keep any unit provided in BOM, otherwise null
+                            // Giữ unit nếu có trong BOM, ngược lại null
                             $item['unit'] = $item['unit'] ?? null;
                         }
 
@@ -290,7 +290,7 @@ class ProductModel extends CI_Model {
      */
     public function deleteProduct($productId)
     {
-        // Reuse reference finder to provide consistent diagnostics
+        // Tái sử dụng hàm tìm tham chiếu để trả về chẩn đoán nhất quán
         $blocking = $this->findReferences($productId);
         if (!empty($blocking)) {
             $parts = [];

@@ -29,7 +29,7 @@ class UserManagementModel extends CI_Model
     }
 
     // ========================================================================
-    // READ OPERATIONS
+    // PHẦN: CÁC PHƯƠNG THỨC LẤY DỮ LIỆU (READ)
     // ========================================================================
 
     /**
@@ -127,7 +127,7 @@ class UserManagementModel extends CI_Model
     }
 
     // ========================================================================
-    // CREATE OPERATION
+    // PHẦN: TẠO (CREATE)
     // ========================================================================
 
     /**
@@ -150,7 +150,7 @@ class UserManagementModel extends CI_Model
             ];
         }
 
-        // Server-side validation: username pattern + length
+        // Validate phía server: mẫu username và độ dài
         $username = isset($data['username']) ? trim($data['username']) : '';
         if ($username === '' || strlen($username) < 3 || strlen($username) > 11 || !preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
             return [
@@ -168,7 +168,7 @@ class UserManagementModel extends CI_Model
             ];
         }
 
-        // Validate role_id exists
+        // Kiểm tra role_id có tồn tại
         if (!isset($data['role_id']) || !$this->db->get_where('roles', ['role_id' => $data['role_id']])->row()) {
             return [
                 'success' => false,
@@ -238,7 +238,7 @@ class UserManagementModel extends CI_Model
     }
 
     // ========================================================================
-    // UPDATE OPERATION
+    // PHẦN: CẬP NHẬT (UPDATE)
     // ========================================================================
 
     /**
@@ -495,7 +495,7 @@ class UserManagementModel extends CI_Model
      */
     private function logAudit($user_id, $action, $module, $record_id, $old_value, $new_value)
     {
-        // Get username for logging
+        // Lấy username để ghi log
         $user = $this->db->select('username')->get_where('user', ['user_id' => $user_id])->row();
         $username = $user ? $user->username : 'system';
 
@@ -545,18 +545,18 @@ class UserManagementModel extends CI_Model
     {
         $stats = [];
 
-        // Total users
+        // Tổng số user
         $stats['total_users'] = $this->db->count_all('user');
 
-        // Active users
+        // Số user đang hoạt động
         $this->db->where('is_active', 1);
         $stats['active_users'] = $this->db->count_all_results('user');
 
-        // Locked users
+        // Số user bị khóa
         $this->db->where('is_active', 0);
         $stats['locked_users'] = $this->db->count_all_results('user');
 
-        // Must change password
+        // Số user cần đổi mật khẩu (must_change_password)
         $this->db->where('must_change_password', 1);
         $stats['must_change_password'] = $this->db->count_all_results('user');
 
