@@ -108,14 +108,38 @@ class Technical extends CI_Controller
 
         $new_incident_count = (int) $this->db->where('status', 0)->count_all_results('incident_reports');
 
+        // Load zones
+        $this->load->model('leader/ZoneModel');
+        $zones = $this->ZoneModel->getZones();
+
+        // Load machines with line/zone info
+        $this->db->select('m.id, m.code as machine_code, m.name as machine_name, m.stage_type, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('machines m');
+        $this->db->join('production_lines pl', 'm.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code, m.code');
+        $machines = $this->db->get()->result();
+
+        // Load production lines
+        $this->db->select('pl.id, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('production_lines pl');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code');
+        $lines = $this->db->get()->result();
+
+        // Load shifts
+        $this->load->model('leader/ShiftModel');
+        $shifts = $this->ShiftModel->getShifts(['date_from' => date('Y-m-d', strtotime('-7 days'))]);
+
         $data = [
             'incident' => $incident,
-            'machines' => $this->db->get('machine')->result(),
-            'staff' => $this->db->get('staff')->result(),
-            'plan_shifts' => $this->db->get('plan_shift')->result(),
+            'zones' => $zones,
+            'machines' => $machines,
+            'lines' => $lines,
+            'shifts' => $shifts,
             'user_role' => $this->user_role,
             'new_incident_count' => $new_incident_count,
-            'content' => 'uc15_bcsc/edit',
+            'content' => 'uc15_bcsc/edit_v2',
             'navlink' => 'beranda',
         ];
 
@@ -136,11 +160,9 @@ class Technical extends CI_Controller
             show_404();
         }
 
-        $this->form_validation->set_rules('id_machine', 'Mã máy', 'required');
-        $this->form_validation->set_rules('id_planshift', 'Mã dây chuyền', 'numeric');
         $this->form_validation->set_rules('category', 'Loại sự cố', 'required|in_list[equipment,quality,safety,other]');
         $this->form_validation->set_rules('severity_level', 'Mức độ nghiêm trọng', 'required|in_list[1,2,3,4]');
-        $this->form_validation->set_rules('incident_description', 'Ghi rõ sự cố', 'required|min_length[10]');
+        $this->form_validation->set_rules('incident_description', 'Mô tả sự cố', 'required|min_length[10]');
 
         if ($this->form_validation->run() === false) {
             $this->edit($id);
@@ -150,8 +172,9 @@ class Technical extends CI_Controller
         $upload_data = $this->handle_file_upload();
 
         $data = [
-            'id_machine' => $this->input->post('id_machine'),
-            'id_planshift' => $this->input->post('id_planshift') ?: null,
+            'id_machine' => $this->input->post('id_machine') ?: null,
+            'line_id' => $this->input->post('line_id') ?: null,
+            'shift_id' => $this->input->post('shift_id') ?: null,
             'category' => $this->input->post('category'),
             'severity_level' => $this->input->post('severity_level'),
             'incident_description' => $this->input->post('incident_description'),
@@ -185,9 +208,11 @@ class Technical extends CI_Controller
         $result = $this->bcscModel->update($id, $data);
 
         if ($result) {
+            $this->session->unset_userdata('error');
             $this->session->set_flashdata('success', 'Báo cáo sự cố đã được cập nhật thành công');
             redirect('uc15_bcsc/technical');
         } else {
+            $this->session->unset_userdata('success');
             $this->session->set_flashdata('error', 'Lỗi khi cập nhật báo cáo sự cố');
             redirect('uc15_bcsc/technical/edit/' . $id);
         }

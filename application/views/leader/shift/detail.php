@@ -336,7 +336,7 @@
                     <input type="hidden" name="shift_id" value="<?= $shift->shift_id ?>">
                     <div class="mb-3">
                         <label class="form-label">Chọn nhân viên</label>
-                        <select name="id_staff" class="form-control" required id="staffSelect">
+                        <select name="staff_id" class="form-control" required id="staffSelect">
                             <option value="">-- Chọn --</option>
                         </select>
                     </div>

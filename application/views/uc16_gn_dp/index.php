@@ -28,7 +28,19 @@
                 <?php if (!empty($incidents)): foreach ($incidents as $incident): ?>
                   <tr>
                     <td><?= $incident->id; ?></td>
-                    <td><?= $incident->machine_name ?? $incident->id_machine; ?></td>
+                    <td>
+                      <?php if (!empty($incident->zone_name)): ?>
+                        <small class="text-muted"><?= htmlspecialchars($incident->zone_name); ?></small> &rarr; 
+                      <?php endif; ?>
+                      <?php if (!empty($incident->line_code)): ?>
+                        <span class="badge badge-secondary"><?= htmlspecialchars($incident->line_code); ?></span>
+                      <?php endif; ?>
+                      <?php if (!empty($incident->machine_code)): ?>
+                        &rarr; <strong><?= htmlspecialchars($incident->machine_code); ?></strong>
+                      <?php else: ?>
+                        <em class="text-muted">(Toàn line)</em>
+                      <?php endif; ?>
+                    </td>
                     <td><?= $incident->category; ?></td>
                     <td><?= $incident->severity_level; ?></td>
                     <td><?= ($incident->status == 1) ? 'Đã hoàn thành' : (($incident->status==2)?'Đang báo cáo':'Chưa hoàn thành'); ?></td>

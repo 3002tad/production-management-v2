@@ -1,5 +1,15 @@
+<?php
+// DEPRECATED: This view is no longer used. Please use add_v2.php instead.
+// Redirecting to correct controller...
+redirect('uc15_bcsc/uc15_bcsc/add');
+exit;
+?>
 <div class="row pr-2">
     <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <strong>DEPRECATED VIEW:</strong> This form (add.php) is deprecated. The system should be using add_v2.php. 
+            If you see this message, please clear your browser cache (Ctrl+Shift+Delete) and refresh.
+        </div>
         <!-- Flash Messages -->
         <?php if ($this->session->flashdata('error')): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">

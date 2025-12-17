@@ -17,11 +17,21 @@ class UC15_BCSCModel extends CI_Model {
      */
     public function get_all()
     {
-        return $this->db->select('ir.id, ir.user_id, ir.id_machine, ir.id_planshift, ir.category, ir.severity_level, ir.incident_description, ir.media_path, ir.status, ir.assignee_id, ir.resolution_notes, ir.resolved_at, ir.created_at, ir.updated_at, u.username as user_name, m.machine_name, a.username as assignee_name')
+        return $this->db->select('ir.*, 
+            u.username as user_name, 
+            m.code as machine_code, m.name as machine_name,
+            pl.line_code, pl.line_name,
+            z.zone_code, z.zone_name,
+            ps.shift_code, ps.shift_name, ps.shift_date,
+            a.username as assignee_name')
             ->from($this->table . ' ir')
             ->join('user u', 'ir.user_id = u.user_id', 'left')
-            ->join('machine m', 'ir.id_machine = m.id_machine', 'left')
+            ->join('machines m', 'ir.id_machine = m.id', 'left')
+            ->join('production_lines pl', 'ir.line_id = pl.id OR m.line_id = pl.id', 'left')
+            ->join('zones z', 'pl.zone_id = z.zone_id', 'left')
+            ->join('production_shifts ps', 'ir.shift_id = ps.shift_id', 'left')
             ->join('user a', 'ir.assignee_id = a.user_id', 'left')
+            ->order_by('ir.severity_level', 'DESC')
             ->order_by('ir.created_at', 'DESC')
             ->get()
             ->result();
@@ -32,10 +42,19 @@ class UC15_BCSCModel extends CI_Model {
      */
     public function get_by_id($id)
     {
-        return $this->db->select('ir.*, u.username as user_name, m.machine_name, a.username as assignee_name')
+        return $this->db->select('ir.*, 
+            u.username as user_name,
+            m.code as machine_code, m.name as machine_name, m.stage_type,
+            pl.line_code, pl.line_name,
+            z.zone_code, z.zone_name,
+            ps.shift_code, ps.shift_name, ps.shift_date, ps.start_time, ps.end_time,
+            a.username as assignee_name')
             ->from($this->table . ' ir')
             ->join('user u', 'ir.user_id = u.user_id', 'left')
-            ->join('machine m', 'ir.id_machine = m.id_machine', 'left')
+            ->join('machines m', 'ir.id_machine = m.id', 'left')
+            ->join('production_lines pl', 'ir.line_id = pl.id OR m.line_id = pl.id', 'left')
+            ->join('zones z', 'pl.zone_id = z.zone_id', 'left')
+            ->join('production_shifts ps', 'ir.shift_id = ps.shift_id', 'left')
             ->join('user a', 'ir.assignee_id = a.user_id', 'left')
             ->where('ir.id', $id)
             ->get()

@@ -121,7 +121,22 @@ class UC16_GN_DP extends CI_Controller
             ->where("LOWER(r.role_name) LIKE 'technical%'")
             ->get()
             ->result();
-        $machines = $this->db->select('id_machine, machine_name')->get('machine')->result();
+        
+        // Load machines with hierarchy (zone -> line -> machine)
+        $this->db->select('m.id, m.code as machine_code, m.name as machine_name, m.stage_type, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('machines m');
+        $this->db->join('production_lines pl', 'm.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->where('m.status', 'active');
+        $this->db->order_by('z.zone_code, pl.line_code, m.code');
+        $machines = $this->db->get()->result();
+        
+        // Load production lines with zone info for line-wide assignments
+        $this->db->select('pl.id, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('production_lines pl');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code');
+        $lines = $this->db->get()->result();
 
         $data = [
             'incident' => $incident,
@@ -129,6 +144,7 @@ class UC16_GN_DP extends CI_Controller
             'users' => $users,
             'technicians' => $technicians,
             'machines' => $machines,
+            'lines' => $lines,
             'user_role' => $this->user_role,
             'can_assign' => $this->is_leader(),
             'content' => 'uc16_gn_dp/view',

@@ -90,11 +90,61 @@ class UC15_BCSC extends CI_Controller
             show_error('Access Denied - Only Worker can add incident reports', 403, 'Forbidden');
         }
 
+        // Load zones for dropdown
+        $this->load->model('leader/ZoneModel');
+        $zones = $this->ZoneModel->getZones();
+
+        // Load machines with line and zone info
+        $this->db->select('m.id, m.code as machine_code, m.name as machine_name, m.stage_type, m.status, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('machines m');
+        $this->db->join('production_lines pl', 'm.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->where('m.status', 'active');
+        $this->db->order_by('z.zone_code, pl.line_code, m.code');
+        $machines = $this->db->get()->result();
+        
+        // Debug log
+        if (ENVIRONMENT === 'development') {
+            log_message('debug', 'UC15_BCSC::add() - Loaded machines: ' . count($machines));
+            log_message('debug', 'UC15_BCSC::add() - SQL: ' . $this->db->last_query());
+        }
+
+        // Load production lines with zone info
+        $this->db->select('pl.id, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('production_lines pl');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code');
+        $lines = $this->db->get()->result();
+
+        // Load active/upcoming shifts (today and future)
+        $this->load->model('leader/ShiftModel');
+        $shifts = $this->ShiftModel->getShifts([
+            'date_from' => date('Y-m-d'),
+            'shift_status' => ''
+        ]);
+
+        // Auto-detect current shift based on time
+        $current_shift_id = null;
+        $current_time = date('H:i:s');
+        $current_date = date('Y-m-d');
+        
+        foreach ($shifts as $shift) {
+            if ($shift->shift_date == $current_date) {
+                // Check if current time is within shift time range
+                if ($current_time >= $shift->start_time && $current_time <= $shift->end_time) {
+                    $current_shift_id = $shift->shift_id;
+                    break;
+                }
+            }
+        }
+
         $data = [
-            'machines' => $this->db->get('machine')->result(),
-            'staff' => $this->db->get('staff')->result(),
-            'plan_shifts' => $this->db->get('plan_shift')->result(),
-            'content' => 'uc15_bcsc/add',
+            'zones' => $zones,
+            'machines' => $machines,
+            'lines' => $lines,
+            'shifts' => $shifts,
+            'current_shift_id' => $current_shift_id, // Pass to view
+            'content' => 'uc15_bcsc/add_v2',
             'navlink' => 'beranda',
         ];
 
@@ -110,12 +160,11 @@ class UC15_BCSC extends CI_Controller
             show_error('Access Denied - Only Worker can add incident reports', 403, 'Forbidden');
         }
 
-        $this->form_validation->set_rules('id_machine', 'Mã máy', 'required');
-        $this->form_validation->set_rules('id_planshift', 'Mã dây chuyền', 'numeric'); // Optional field
+        // Line is required, machine is optional
+        $this->form_validation->set_rules('line_id', 'Dây chuyền', 'required|numeric');
         $this->form_validation->set_rules('category', 'Loại sự cố', 'required|in_list[equipment,quality,safety,other]');
         $this->form_validation->set_rules('severity_level', 'Mức độ nghiêm trọng', 'required|in_list[1,2,3,4]');
-        $this->form_validation->set_rules('incident_description', 'Ghi rõ sự cố', 'required|min_length[10]');
-        $this->form_validation->set_rules('status', 'Trạng thái', 'required');
+        $this->form_validation->set_rules('incident_description', 'Mô tả sự cố', 'required|min_length[10]');
 
         $this->form_validation->set_message('required', '{field} không được để trống');
         $this->form_validation->set_message('min_length', '{field} phải có ít nhất 10 ký tự');
@@ -129,23 +178,28 @@ class UC15_BCSC extends CI_Controller
 
         $data = [
             'user_id' => $this->session->userdata('user_id'),
-            'id_machine' => $this->input->post('id_machine'),
-            'id_planshift' => $this->input->post('id_planshift') ?: null,
+            'id_machine' => $this->input->post('id_machine') ?: null,
+            'line_id' => $this->input->post('line_id') ?: null,
+            'shift_id' => $this->input->post('shift_id') ?: null,
+            'id_planshift' => null, // Deprecated field
             'category' => $this->input->post('category'),
             'severity_level' => $this->input->post('severity_level'),
             'incident_description' => $this->input->post('incident_description'),
             'media_path' => $upload_data['file_path'],
-            'status' => $this->input->post('status'),
-            'assignee_id' => $this->input->post('assignee_id') ?: null,
+            'status' => 0, // Always start as pending
+            'assignee_id' => null, // Technical staff will assign later
             'created_at' => date('Y-m-d H:i:s'),
         ];
 
         $result = $this->bcscModel->insert($data);
 
         if ($result) {
+            // Clear any old flashdata before setting new message
+            $this->session->unset_userdata('error');
             $this->session->set_flashdata('success', 'Báo cáo sự cố đã được tạo thành công');
             redirect('uc15_bcsc/uc15_bcsc');
         } else {
+            $this->session->unset_userdata('success');
             $this->session->set_flashdata('error', 'Lỗi khi tạo báo cáo sự cố');
             redirect('uc15_bcsc/uc15_bcsc/add');
         }
@@ -171,12 +225,37 @@ class UC15_BCSC extends CI_Controller
         } else {
             $coordination = [];
         }
+        // Load zones
+        $this->load->model('leader/ZoneModel');
+        $zones = $this->ZoneModel->getZones();
+
+        // Load machines with line/zone info
+        $this->db->select('m.id, m.code as machine_code, m.name as machine_name, m.stage_type, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('machines m');
+        $this->db->join('production_lines pl', 'm.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code, m.code');
+        $machines = $this->db->get()->result();
+
+        // Load production lines
+        $this->db->select('pl.id, pl.line_code, pl.line_name, z.zone_name');
+        $this->db->from('production_lines pl');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code');
+        $lines = $this->db->get()->result();
+
+        // Load shifts
+        $this->load->model('leader/ShiftModel');
+        $shifts = $this->ShiftModel->getShifts(['date_from' => date('Y-m-d', strtotime('-7 days'))]);
+
         $data = [
             'incident' => $incident,
-            'machines' => $this->db->get('machine')->result(),
-            'staff' => $this->db->get('staff')->result(),
-            'plan_shifts' => $this->db->get('plan_shift')->result(),
-            'content' => 'uc15_bcsc/edit',
+            'zones' => $zones,
+            'machines' => $machines,
+            'lines' => $lines,
+            'shifts' => $shifts,
+            'user_role' => $this->user_role,
+            'content' => 'uc15_bcsc/edit_v2',
             'navlink' => 'beranda',
         ];
 
@@ -197,11 +276,9 @@ class UC15_BCSC extends CI_Controller
             show_404();
         }
 
-        $this->form_validation->set_rules('id_machine', 'Mã máy', 'required');
-        $this->form_validation->set_rules('id_planshift', 'Mã dây chuyền', 'numeric'); // Optional field
         $this->form_validation->set_rules('category', 'Loại sự cố', 'required|in_list[equipment,quality,safety,other]');
         $this->form_validation->set_rules('severity_level', 'Mức độ nghiêm trọng', 'required|in_list[1,2,3,4]');
-        $this->form_validation->set_rules('incident_description', 'Ghi rõ sự cố', 'required|min_length[10]');
+        $this->form_validation->set_rules('incident_description', 'Mô tả sự cố', 'required|min_length[10]');
 
         if ($this->form_validation->run() === false) {
             $this->edit($id);
@@ -211,8 +288,9 @@ class UC15_BCSC extends CI_Controller
         $upload_data = $this->handle_file_upload();
 
         $data = [
-            'id_machine' => $this->input->post('id_machine'),
-            'id_planshift' => $this->input->post('id_planshift') ?: null,
+            'id_machine' => $this->input->post('id_machine') ?: null,
+            'line_id' => $this->input->post('line_id') ?: null,
+            'shift_id' => $this->input->post('shift_id') ?: null,
             'category' => $this->input->post('category'),
             'severity_level' => $this->input->post('severity_level'),
             'incident_description' => $this->input->post('incident_description'),
@@ -230,9 +308,12 @@ class UC15_BCSC extends CI_Controller
         $result = $this->bcscModel->update($id, $data);
 
         if ($result) {
+            // Clear any old flashdata
+            $this->session->unset_userdata('error');
             $this->session->set_flashdata('success', 'Báo cáo sự cố đã được cập nhật thành công');
             redirect('uc15_bcsc/uc15_bcsc');
         } else {
+            $this->session->unset_userdata('success');
             $this->session->set_flashdata('error', 'Lỗi khi cập nhật báo cáo sự cố');
             redirect('uc15_bcsc/uc15_bcsc/edit/' . $id);
         }

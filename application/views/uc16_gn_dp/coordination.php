@@ -26,14 +26,26 @@
           <!-- placeholder column to keep layout aligned when machine select hidden -->
         </div>
         <div class="col-md-4" id="machine_select_wrap" style="display:none;">
-          <label>Mã máy (chọn máy cần đổi)</label>
+          <label>Máy cần đổi</label>
           <select name="machine_id" class="form-control">
             <option value="">-- Chọn máy --</option>
-            <?php if (!empty($machines)): foreach ($machines as $m): ?>
-              <option value="<?= htmlspecialchars($m->id_machine); ?>">
-                <?= htmlspecialchars($m->machine_name . ' (' . $m->id_machine . ')'); ?>
+            <?php if (!empty($machines)): 
+              $current_zone = '';
+              foreach ($machines as $m): 
+                // Group by zone/line
+                $zone_line_label = ($m->zone_name ?? 'N/A') . ' - ' . ($m->line_code ?? 'N/A');
+                if ($current_zone != $zone_line_label):
+                  if ($current_zone != '') echo '</optgroup>';
+                  $current_zone = $zone_line_label;
+                  echo '<optgroup label="' . htmlspecialchars($current_zone) . '">';
+                endif;
+            ?>
+              <option value="<?= $m->id; ?>">
+                <?= htmlspecialchars($m->machine_code); ?> - <?= htmlspecialchars($m->machine_name); ?> (<?= htmlspecialchars($m->stage_type); ?>)
               </option>
-            <?php endforeach; endif; ?>
+            <?php endforeach; 
+              if ($current_zone != '') echo '</optgroup>';
+            endif; ?>
           </select>
         </div>
       </div>

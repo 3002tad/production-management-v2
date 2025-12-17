@@ -25,7 +25,19 @@
                 <?php if (!empty($incidents)): foreach ($incidents as $inc): ?>
                   <tr>
                     <td class="pl-4"><?= $inc->id; ?></td>
-                    <td class="pl-4"><?= $inc->id_machine; ?></td>
+                    <td class="pl-4">
+                      <?php if (!empty($inc->zone_name)): ?>
+                        <small class="text-muted"><?= htmlspecialchars($inc->zone_name); ?></small> &rarr; 
+                      <?php endif; ?>
+                      <?php if (!empty($inc->line_code)): ?>
+                        <span class="badge badge-secondary"><?= htmlspecialchars($inc->line_code); ?></span>
+                      <?php endif; ?>
+                      <?php if (!empty($inc->machine_code)): ?>
+                        &rarr; <strong><?= htmlspecialchars($inc->machine_code); ?></strong>
+                      <?php else: ?>
+                        <em class="text-muted">(Toàn line)</em>
+                      <?php endif; ?>
+                    </td>
                     <td class="pl-4"><?= htmlspecialchars($inc->category); ?></td>
                     <td class="pl-4">Mức <?= $inc->severity_level; ?></td>
                     <td class="pl-4"><?= ($inc->status==0)?'Mới':(($inc->status==2)?'Đang xử lý':'Hoàn thành'); ?></td>

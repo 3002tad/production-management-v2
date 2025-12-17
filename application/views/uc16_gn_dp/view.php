@@ -10,11 +10,43 @@
           </div>
         </div>
         <div class="card-body px-5 py-4">
-          <div class="row mb-4">
-            <div class="col-md-6">
-              <h6>Máy</h6>
-              <p><?= $incident->machine_name ?? $incident->id_machine; ?></p>
+          <!-- Location & Hierarchy -->
+          <div class="card bg-light mb-4">
+            <div class="card-body">
+              <h6 class="mb-3"><i class="fas fa-map-marker-alt"></i> Vị trí & Thông tin</h6>
+              <div class="row">
+                <div class="col-md-3">
+                  <small class="text-muted">Ca làm việc</small>
+                  <?php if (!empty($incident->shift_code)): ?>
+                    <p class="mb-0"><span class="badge badge-info"><?= htmlspecialchars($incident->shift_code); ?></span></p>
+                    <small><?= htmlspecialchars($incident->shift_name ?? ''); ?></small>
+                  <?php else: ?>
+                    <p class="text-muted"><em>Chưa xác định</em></p>
+                  <?php endif; ?>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted">Khu vực</small>
+                  <p class="mb-0"><?= htmlspecialchars($incident->zone_name ?? 'N/A'); ?></p>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted">Dây chuyền</small>
+                  <p class="mb-0"><span class="badge badge-secondary"><?= htmlspecialchars($incident->line_code ?? 'N/A'); ?></span></p>
+                  <small><?= htmlspecialchars($incident->line_name ?? ''); ?></small>
+                </div>
+                <div class="col-md-3">
+                  <small class="text-muted">Máy móc</small>
+                  <?php if (!empty($incident->machine_code)): ?>
+                    <p class="mb-0"><span class="badge badge-dark"><?= htmlspecialchars($incident->machine_code); ?></span></p>
+                    <small><?= htmlspecialchars($incident->machine_name ?? ''); ?></small>
+                  <?php else: ?>
+                    <p class="text-warning"><em>Toàn dây chuyền</em></p>
+                  <?php endif; ?>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div class="row mb-4">
             <div class="col-md-6">
               <h6>Trạng thái</h6>
               <p><?= ($incident->status==1)?'Đã hoàn thành':(($incident->status==2)?'Đang báo cáo':'Chưa hoàn thành'); ?></p>

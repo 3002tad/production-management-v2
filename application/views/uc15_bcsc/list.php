@@ -37,10 +37,9 @@
                         <thead>
                             <tr>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">STT</th>
-                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Người báo cáo</th>
+                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Ca/Khu/Dây chuyền</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Máy</th>
-                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Loại sự cố</th>
-                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Mức độ</th>
+                                <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Loại/Mức độ</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Mô tả</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Trạng thái</th>
                                 <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Ngày tạo</th>
@@ -59,34 +58,57 @@
                                             </div>
                                         </td>
                                         <td class="pl-4">
-                                            <span class="text-sm font-weight-bold"><?= $incident->user_name ?? 'N/A'; ?></span>
+                                            <div>
+                                                <?php if (!empty($incident->shift_name)): ?>
+                                                    <span class="badge badge-sm bg-info"><?= $incident->shift_code; ?></span>
+                                                    <span class="text-xs"><?= $incident->shift_name; ?></span>
+                                                    <br>
+                                                <?php endif; ?>
+                                                <?php if (!empty($incident->zone_name)): ?>
+                                                    <span class="text-xs font-weight-bold"><?= $incident->zone_name; ?></span>
+                                                    <br>
+                                                <?php endif; ?>
+                                                <?php if (!empty($incident->line_name)): ?>
+                                                    <span class="text-xs text-secondary"><?= $incident->line_code; ?> - <?= $incident->line_name; ?></span>
+                                                <?php else: ?>
+                                                    <span class="text-xs text-secondary">-</span>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                         <td class="pl-4">
-                                            <span class="text-sm font-weight-bold"><?= $incident->machine_name ?? 'N/A'; ?></span>
+                                            <?php if (!empty($incident->machine_name)): ?>
+                                                <div>
+                                                    <span class="text-xs font-weight-bold"><?= $incident->machine_code; ?></span>
+                                                    <br>
+                                                    <span class="text-xs text-secondary"><?= $incident->machine_name; ?></span>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-xs text-secondary">-</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td class="pl-4">
                                             <?php 
                                                 $category_map = [
-                                                    'equipment' => ['Thiết bị', 'primary'],
-                                                    'quality' => ['Chất lượng', 'info'],
-                                                    'safety' => ['An toàn', 'danger'],
-                                                    'other' => ['Khác', 'secondary']
+                                                    'equipment' => ['🔧 Thiết bị', 'primary'],
+                                                    'quality' => ['✓ Chất lượng', 'info'],
+                                                    'safety' => ['⚠ An toàn', 'danger'],
+                                                    'other' => ['• Khác', 'secondary']
                                                 ];
                                                 $cat = $category_map[$incident->category] ?? ['N/A', 'secondary'];
-                                            ?>
-                                            <span class="badge bg-<?= $cat[1]; ?>"><?= $cat[0]; ?></span>
-                                        </td>
-                                        <td class="pl-4">
-                                            <?php 
+                                                
                                                 $severity_map = [
-                                                    1 => ['Thấp', 'success'],
-                                                    2 => ['Trung bình', 'warning'],
-                                                    3 => ['Cao', 'danger'],
-                                                    4 => ['Nghiêm trọng', 'dark']
+                                                    1 => ['1', 'success'],
+                                                    2 => ['2', 'warning'],
+                                                    3 => ['3', 'danger'],
+                                                    4 => ['4', 'dark']
                                                 ];
-                                                $sev = $severity_map[$incident->severity_level] ?? ['N/A', 'secondary'];
+                                                $sev = $severity_map[$incident->severity_level] ?? ['?', 'secondary'];
                                             ?>
-                                            <span class="badge bg-<?= $sev[1]; ?>"><?= $sev[0]; ?></span>
+                                            <div>
+                                                <span class="badge bg-<?= $cat[1]; ?> badge-sm"><?= $cat[0]; ?></span>
+                                                <br>
+                                                <span class="badge bg-<?= $sev[1]; ?> badge-sm mt-1">Mức <?= $sev[0]; ?></span>
+                                            </div>
                                         </td>
                                         <td class="pl-4">
                                             <span class="text-sm"><?= substr($incident->incident_description, 0, 40); ?><?= strlen($incident->incident_description) > 40 ? '...' : ''; ?></span>

@@ -78,8 +78,14 @@ class Shift extends CI_Controller
     /**
      * Chi tiết 1 ca - Tab Nhân sự & Tab Máy
      */
-    public function detail($shift_id)
+    public function detail($shift_id = null)
     {
+        if (!$shift_id) {
+            $this->session->set_flashdata('error', 'Không tìm thấy ca làm việc');
+            redirect('leader/shift');
+            return;
+        }
+
         $shift = $this->shiftModel->getShiftById($shift_id);
 
         if (!$shift) {

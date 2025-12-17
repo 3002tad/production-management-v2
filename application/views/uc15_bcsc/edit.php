@@ -1,5 +1,13 @@
+<?php
+// DEPRECATED: This view is no longer used. Please use edit_v2.php instead.
+// If you see this page, the controller is misconfigured or browser cache needs clearing.
+?>
 <div class="row pr-2">
     <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <strong>⚠️ DEPRECATED VIEW:</strong> This form (edit.php) is no longer in use. The system should be using edit_v2.php. 
+            <br>If you see this message, please <strong>clear your browser cache</strong> (Ctrl+Shift+Delete or Ctrl+F5) and refresh.
+        </div>
         <!-- Flash Messages -->
         <?php if ($this->session->flashdata('error')): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">

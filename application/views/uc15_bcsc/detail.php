@@ -26,41 +26,144 @@
             </div>
 
             <div class="card-body px-5 py-4">
-                <!-- Thông tin chung -->
+                <!-- Thông tin cơ bản -->
                 <div class="row mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="mb-3">
-                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">Người báo cáo</h6>
+                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">
+                                <i class="material-icons text-xs">person</i> Người báo cáo
+                            </h6>
                             <p class="text-base font-weight-bold"><?= $incident->user_name ?? 'N/A'; ?></p>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="mb-3">
-                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">Tên máy</h6>
-                            <p class="text-base font-weight-bold"><?= $incident->machine_name ?? 'N/A'; ?></p>
+                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">
+                                <i class="material-icons text-xs">category</i> Loại sự cố
+                            </h6>
+                            <p class="text-base">
+                                <?php 
+                                $category_icons = [
+                                    'equipment' => '🔧 Thiết bị',
+                                    'quality' => '✓ Chất lượng',
+                                    'safety' => '⚠ An toàn',
+                                    'other' => '• Khác'
+                                ];
+                                echo $category_icons[$incident->category] ?? $incident->category;
+                                ?>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">
+                                <i class="material-icons text-xs">priority_high</i> Mức độ
+                            </h6>
+                            <p class="text-base">
+                                <?php 
+                                $severity_colors = [1 => 'info', 2 => 'warning', 3 => 'danger', 4 => 'dark'];
+                                $severity_labels = [1 => 'Thấp', 2 => 'Trung bình', 3 => 'Cao', 4 => 'Nghiêm trọng'];
+                                $color = $severity_colors[$incident->severity_level] ?? 'secondary';
+                                $label = $severity_labels[$incident->severity_level] ?? 'N/A';
+                                ?>
+                                <span class="badge bg-<?= $color; ?>"><?= $label; ?></span>
+                            </p>
                         </div>
                     </div>
                 </div>
 
+                <!-- Vị trí sự cố -->
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-3">
+                            <i class="material-icons text-xs">location_on</i> Vị trí & Thời gian sự cố
+                        </h6>
+                        <div class="row">
+                            <?php if (!empty($incident->shift_code)): ?>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <strong class="text-xs text-secondary">Ca làm việc:</strong>
+                                    <p class="text-sm mb-0">
+                                        <span class="badge bg-info"><?= $incident->shift_code; ?></span>
+                                        <?= $incident->shift_name; ?>
+                                    </p>
+                                    <?php if (!empty($incident->shift_date)): ?>
+                                        <small class="text-muted">
+                                            <?= date('d/m/Y', strtotime($incident->shift_date)); ?> 
+                                            (<?= date('H:i', strtotime($incident->start_time)); ?>-<?= date('H:i', strtotime($incident->end_time)); ?>)
+                                        </small>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <strong class="text-xs text-secondary">Khu vực:</strong>
+                                    <p class="text-sm mb-0">
+                                        <i class="material-icons text-xs">factory</i> 
+                                        <?= $incident->zone_name ?? 'N/A'; ?>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <strong class="text-xs text-secondary">Dây chuyền:</strong>
+                                    <p class="text-sm mb-0">
+                                        <span class="badge bg-primary"><?= $incident->line_code ?? 'N/A'; ?></span>
+                                        <?= $incident->line_name ?? ''; ?>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <strong class="text-xs text-secondary">Máy móc:</strong>
+                                    <p class="text-sm mb-0">
+                                        <?php if (!empty($incident->machine_code)): ?>
+                                            <span class="badge bg-secondary"><?= $incident->machine_code; ?></span>
+                                            <?= $incident->machine_name; ?>
+                                        <?php else: ?>
+                                            <em class="text-muted">Sự cố cả dây chuyền</em>
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trạng thái -->
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">Mã dây chuyền</h6>
-                            <p class="text-base font-weight-bold"><?= $incident->id_planshift; ?></p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">Trạng thái</h6>
+                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">
+                                <i class="material-icons text-xs">flag</i> Trạng thái xử lý
+                            </h6>
                             <?php if ($incident->status == 1): ?>
                                 <span class="badge bg-success">
                                     <i class="material-icons text-xs me-1">check_circle</i>Đã hoàn thành
                                 </span>
-                            <?php else: ?>
+                            <?php elseif ($incident->status == 2): ?>
                                 <span class="badge bg-warning">
-                                    <i class="material-icons text-xs me-1">pending</i>Chưa hoàn thành
+                                    <i class="material-icons text-xs me-1">hourglass_empty</i>Đang xử lý
+                                </span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">
+                                    <i class="material-icons text-xs me-1">pending</i>Chờ xử lý
                                 </span>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6 class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 mb-2">
+                                <i class="material-icons text-xs">person_outline</i> Người xử lý
+                            </h6>
+                            <p class="text-base">
+                                <?= !empty($incident->assignee_name) ? $incident->assignee_name : '<em class="text-muted">Chưa gán</em>'; ?>
+                            </p>
                         </div>
                     </div>
                 </div>
