@@ -590,7 +590,7 @@ class BOD extends CI_Controller
                     'message' => 'Không thể tạo đơn hàng',
                     'details' => [$capacity_check['message']]
                 ]));
-                redirect(site_url('BOD/project/addproject'));
+                redirect(site_url('BOD/project/addproject') . '?msg=error');
                 return;
             }
 
@@ -648,7 +648,7 @@ class BOD extends CI_Controller
 
         } catch (Exception $e) {
             $this->session->set_flashdata('error_js', json_encode(['message' => 'Không thể tạo đơn hàng', 'details' => ['Lỗi: ' . $e->getMessage()]]));
-            redirect(site_url('BOD/project/addproject'));
+            redirect(site_url('BOD/project/addproject') . '?msg=error');
         }
     }
 
