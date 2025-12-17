@@ -42,7 +42,7 @@
                         <tbody>
                             <?php if (!empty($data)): ?>
                                 <?php $i = 1; ?>
-                                <?php foreach (array_reverse($data) as $order): ?>
+                                <?php foreach ($data as $order): ?>
                                     <?php if (!empty($order->id_plan)): // đã có planning, ẩn khỏi danh sách ?>
                                         <?php continue; ?>
                                     <?php endif; ?>

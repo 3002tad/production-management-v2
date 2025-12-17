@@ -136,7 +136,8 @@
                         <tbody>
                             <?php if (!empty($data)): ?>
                                 <?php $i = 1; ?>
-                                <?php foreach (array_reverse($data) as $order): ?>
+                                <?php foreach ($data as $order): ?>
+
                                     <tr>
                                         <!-- STT -->
                                         <td>
