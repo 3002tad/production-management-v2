@@ -1159,7 +1159,16 @@ window.addEventListener('load', function() {
             $('#table').DataTable({
                 "language": <?= $dt_lang ? $dt_lang : json_encode(['url' => base_url('asset/Backend/json/Vietnamese.json')]); ?>,
                 "order": [[1, 'asc']],
-                "pagingType": "simple_numbers"
+                "pagingType": "simple_numbers",
+                "drawCallback": function(settings) {
+                    // Recalculate STT (first column) on each draw so numbering matches visible order
+                    var api = this.api();
+                    api.column(0, {page:'current'}).nodes().each(function(cell, i) {
+                        var $h = cell.querySelector('h6');
+                        if ($h) $h.textContent = (i+1);
+                        else cell.textContent = (i+1);
+                    });
+                }
             });
         } else {
             // If already initialised, check if language is English; if so destroy+reinit to apply Vietnamese.
@@ -1176,7 +1185,15 @@ window.addEventListener('load', function() {
                         "language": <?= $dt_lang ? $dt_lang : json_encode(['url' => base_url('asset/Backend/json/Vietnamese.json')]); ?>,
                         "pageLength": 10,
                         "order": [[1, 'asc']],
-                        "pagingType": "simple_numbers"
+                        "pagingType": "simple_numbers",
+                        "drawCallback": function(settings) {
+                            var api = this.api();
+                            api.column(0, {page:'current'}).nodes().each(function(cell, i) {
+                                var $h = cell.querySelector('h6');
+                                if ($h) $h.textContent = (i+1);
+                                else cell.textContent = (i+1);
+                            });
+                        }
                     });
                 } else {
                     table.draw(false);

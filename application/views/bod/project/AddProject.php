@@ -378,6 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Xóa parameter khỏi URL
             window.history.replaceState({}, document.title, window.location.pathname);
+        }
         <?php endif; ?>
 
         <?php if ($this->session->flashdata('warning_js')): ?>
@@ -392,7 +393,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 sessionStorage.setItem('toast_shown_addproject', 'true');
                 window.history.replaceState({}, document.title, window.location.pathname);
-            }
         <?php endif; ?>
 
         <?php if ($this->session->flashdata('error_js')): ?>
