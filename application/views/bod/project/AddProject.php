@@ -354,7 +354,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // SessionStorage backup - tránh hiển thị lại khi refresh
     var toastShown = sessionStorage.getItem('toast_shown_addproject');
     
-    if (msgType && !toastShown) {
+    // Also trigger toast if server rendered flashdata exists even without ?msg param
+    var serverHasFlash = <?= ($this->session->flashdata('success_js') || $this->session->flashdata('warning_js') || $this->session->flashdata('error_js')) ? 'true' : 'false'; ?>;
+    if ((msgType || serverHasFlash) && !toastShown) {
         <?php if ($this->session->flashdata('success_js')): ?>
             // SUCCESS - Only if msg=success
             if (msgType === 'success') {
