@@ -707,7 +707,7 @@ class BOD extends CI_Controller
                         'message' => 'Không thể cập nhật đơn hàng',
                         'details' => [$capacity_check['message']]
                     ]));
-                    redirect(site_url('BOD/project/updateproject/' . $id_project));
+                    redirect(site_url('BOD/project/updateproject/' . $id_project) . '?msg=error');
                     return;
                 }
             }
