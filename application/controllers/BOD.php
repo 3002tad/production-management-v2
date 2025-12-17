@@ -891,9 +891,6 @@ class BOD extends CI_Controller
     
     
     
-}
->>>>>>> origin/Q.Hung
-
         $id_project = $this->input->post('id_project', TRUE);
         if (!$id_project) {
             echo json_encode(['success' => false, 'message' => 'Thiếu ID đơn hàng']);
