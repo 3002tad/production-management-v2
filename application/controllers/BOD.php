@@ -836,7 +836,6 @@ class BOD extends CI_Controller
         }
     }
 
-<<<<<<< HEAD
     /**
      * Performs a soft delete (cancel) for an order.
      * Updates pr_status to 4 ('Hủy') and optionally stores a reason.
