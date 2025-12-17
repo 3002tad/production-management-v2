@@ -59,7 +59,8 @@ class OrderModel extends CI_Model
             $this->db->where('p.entry_date <=', $filters['date_to']);
         }
 
-        $this->db->order_by('p.created_at', 'DESC');
+        // Order by project id ascending (stt) as requested
+        $this->db->order_by('p.id_project', 'ASC');
         $query = $this->db->get();
         return $query->result();
     }
@@ -102,7 +103,7 @@ class OrderModel extends CI_Model
             JOIN customer c ON p.id_cust = c.id_cust
             JOIN product pr ON p.id_product = pr.id_product
             WHERE p.id_cust = ?
-            ORDER BY p.created_at DESC
+            ORDER BY p.id_project ASC
         ", [$customer_id]);
         return $query->result();
     }
@@ -124,7 +125,7 @@ class OrderModel extends CI_Model
             JOIN customer c ON p.id_cust = c.id_cust
             JOIN product pr ON p.id_product = pr.id_product
             WHERE p.id_product = ?
-            ORDER BY p.created_at DESC
+            ORDER BY p.id_project ASC
         ", [$product_id]);
         return $query->result();
     }
