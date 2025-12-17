@@ -1,5 +1,5 @@
 <?php
-// Danh sách Kế hoạch cho vai trò Leader - dựa trên layout của BOD
+// Danh sách Kế hoạch - Hiển thị plan_name, qty_target, end_date, pl_status
 ?>
 <div class="row">
     <div class="col-12">
@@ -10,6 +10,12 @@
                         <div class="col-8 d-flex align-items-center">
                             <i class="material-icons text-white opacity-10 me-2">calendar_month</i>
                             <h6 class="text-white mb-0">Danh sách Kế hoạch</h6>
+                        </div>
+                        <div class="col-4 text-end">
+                            <a href="<?= site_url('BOD/planning'); ?>" class="btn bg-gradient-light mb-0">
+                                <i class="material-icons opacity-10">arrow_back</i>
+                                Quay lại
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -23,14 +29,15 @@
                                 <th>STT</th>
                                 <th>Tên kế hoạch</th>
                                 <th class="text-center">Số lượng</th>
-                                <th class="text-center">Ngày kết thúc</th>
+                                <th class="text-center">Hạn giao(theo kế hoạch)</th>
                                 <th class="text-center">Trạng thái</th>
                                 <th class="text-center">Chức năng</th>
+                                <th class="text-center">Điều chỉnh</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($planning)): ?>
-                                <?php $i = 1; foreach ($planning as $plan): ?>
+                            <?php if (!empty($data)): ?>
+                                <?php $i = 1; foreach ($data as $plan): ?>
                                     <tr>
                                         <td><?= $i++; ?></td>
                                         <td>
@@ -50,13 +57,25 @@
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
                                                 <button type="button" class="btn btn-sm btn-outline-primary view-plan" data-plan="<?= htmlspecialchars(json_encode($plan), ENT_QUOTES); ?>">Xem</button>
-                                                <a href="<?= site_url('leader/ChangePlanning/' . ($plan->id_plan ?? '')); ?>" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                                                <?php if (empty($plan->pl_status) || $plan->pl_status == 0): ?>
+                                                    <a href="<?= site_url('BOD/approvePlan/' . ($plan->id_plan ?? '')); ?>" class="btn btn-sm btn-success" onclick="return confirm('Bạn có chắc muốn phê duyệt kế hoạch này?');">Duyệt</a>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                               <!--
+                                                <a href="<?= site_url('BOD/createPlan?plan_id=' . ($plan->id_plan ?? '')); ?>" 
+                                                      class="btn btn-sm btn-outline-secondary">Sửa</a>
+                                                            -->
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-plan" data-id="<?= $plan->id_plan; ?>">Xóa</button>
                                             </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="6" class="text-center py-4">Chưa có kế hoạch nào</td></tr>
+                                <tr><td colspan="7" class="text-center py-4">Chưa có kế hoạch nào</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -89,7 +108,7 @@
                                         <tr><th style="width:180px">ID</th><td id="pd-id">-</td></tr>
                                         <tr><th>Tên kế hoạch</th><td id="pd-name">-</td></tr>
                                         <tr><th>Số lượng mục tiêu</th><td id="pd-qty">-</td></tr>
-                                        <tr><th>Ngày kết thúc</th><td id="pd-end">-</td></tr>
+                                        <tr><th>ngày kết thúc</th><td id="pd-end">-</td></tr>
                                         <tr><th>Ngày bắt đầu</th><td id="pd-start">-</td></tr>
                                         <tr><th>Dây chuyền (lines)</th><td id="pd-machine">-</td></tr>
                                         <tr><th>Số ca đề xuất</th><td id="pd-shifts">-</td></tr>
@@ -111,6 +130,7 @@
             document.addEventListener('DOMContentLoaded', function() {
                 function fmtDate(d) {
                     if (!d) return '-';
+                    // Accept 'YYYY-MM-DD' or ISO strings
                     try {
                         var dt = new Date(d);
                         if (isNaN(dt.getTime())) return d;
@@ -128,12 +148,13 @@
                         var plan = null;
                         try { plan = JSON.parse(raw); } catch (e) { console && console.warn && console.warn('Invalid plan JSON', e); return; }
 
+                        // Fill modal fields
                         document.getElementById('pd-id').textContent = plan.id_plan || plan.id || '-';
                         document.getElementById('pd-name').textContent = plan.plan_name || plan.project_name || '-';
                         document.getElementById('pd-qty').textContent = (plan.qty_target !== undefined && plan.qty_target !== null) ? Number(plan.qty_target).toLocaleString() : '-';
                         document.getElementById('pd-end').textContent = fmtDate(plan.end_date || plan.delivery_date || '');
                         document.getElementById('pd-start').textContent = fmtDate(plan.start_date || '');
-
+                        // lines may be array, JSON string, or plain string
                         var linesVal = '-';
                         try {
                             if (Array.isArray(plan.lines)) {
@@ -157,6 +178,7 @@
                         document.getElementById('pd-status').textContent = status;
                         document.getElementById('pd-note').textContent = plan.note ? plan.note : '-';
 
+                        // Materials: if array, list names; if string, show snippet
                         var mats = '-';
                         if (plan.materials) {
                             try {
@@ -176,14 +198,37 @@
                         if (pmContainer) pmContainer.textContent = mats;
                         else document.getElementById('pd-materials').textContent = mats;
 
+                        // show modal (Bootstrap 5)
                         var modalEl = document.getElementById('planDetailModal');
                         if (window.bootstrap && window.bootstrap.Modal) {
                             var m = new bootstrap.Modal(modalEl);
                             m.show();
                         } else {
+                            // fallback: toggle visible
                             modalEl.classList.add('show');
                             modalEl.style.display = 'block';
                         }
+                    });
+                });
+
+                // Delete handling for .delete-plan buttons: confirmation then POST
+                document.querySelectorAll('.delete-plan').forEach(function(db) {
+                    db.addEventListener('click', function() {
+                        var id = db.getAttribute('data-id');
+                        if (!id) return;
+                        if (!confirm('Bạn có chắc muốn xóa kế hoạch ID ' + id + ' ? Đây là thao tác không thể hoàn tác.')) return;
+
+                        // create a simple POST form and submit
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '<?= site_url('BOD/deletePlan'); ?>';
+                        var inp = document.createElement('input');
+                        inp.type = 'hidden';
+                        inp.name = 'id_plan';
+                        inp.value = id;
+                        form.appendChild(inp);
+                        document.body.appendChild(form);
+                        form.submit();
                     });
                 });
             });

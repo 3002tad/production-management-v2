@@ -54,6 +54,17 @@ $route['default_controller'] = 'login';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = false;
 
+// UC9 - Leader Module Routes
+$route['leader/planning'] = 'UC09/Planning/planning';
+$route['leader/planning/(:any)'] = 'UC09/Planning/$1';
+// Mapping cho hành động sửa (ChangePlanning) — ánh xạ URL dạng /leader/ChangePlanning/ID
+$route['leader/ChangePlanning'] = 'UC09/Planning/ChangePlanning';
+$route['leader/ChangePlanning/(:any)'] = 'UC09/Planning/ChangePlanning/$1';
+
+// Map legacy/form action endpoints to UC09 Planning controller
+$route['Leader/updatePlan'] = 'UC09/Planning/updatePlan';
+$route['leader/updatePlan'] = 'UC09/Planning/updatePlan';
+
 $route['search'] = 'petugas/cari_member';
 
 // =====================================================
@@ -64,9 +75,24 @@ $route['search'] = 'petugas/cari_member';
 // - BOD/product/*   => bod/Product controller
 // - BOD/project/*   => BOD::project* methods (giữ nguyên)
 
+// UC08 (planning) moved to separate controller in controllers/UC08/UC8_planning.php
+// Map BOD/* planning routes to the new controller to avoid 404
+$route['BOD/planning'] = 'UC08/UC8_planning/planning';
+$route['BOD/planning/(:any)'] = 'UC08/UC8_planning/$1';
+$route['BOD/createPlan'] = 'UC08/UC8_planning/createPlan';
+$route['BOD/storePlan'] = 'UC08/UC8_planning/storePlan';
+$route['BOD/updatePlan'] = 'UC08/UC8_planning/updatePlan';
+$route['BOD/deletePlan'] = 'UC08/UC8_planning/deletePlan';
+$route['BOD/approvePlan'] = 'UC08/UC8_planning/approvePlan';
+$route['BOD/approvePlan/(:num)'] = 'UC08/UC8_planning/approvePlan/$1';
+$route['BOD/plans'] = 'UC08/UC8_planning/plans';
+$route['BOD/report'] = 'UC08/UC8_planning/report';
+$route['BOD/getProductBom'] = 'UC08/UC8_planning/getProductBom';
+
 // =====================================================
 // QC Module Routes
 // =====================================================
 $route['qc/sessions/(:num)'] = 'qc/sessions/$1';  // View session detail
 $route['qc/sessions'] = 'qc/session_list';         // List all sessions
 $route['qc/reports'] = 'qc/reports';               // QC Reports
+

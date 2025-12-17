@@ -18,6 +18,7 @@ class BOD extends CI_Controller
         $this->load->model('OrderModel');
         $this->load->model('CustomerModel');
         $this->load->model('ProductModel');
+        $this->load->model('PlanModel');
         $this->load->library('session');
         
         if (!$this->session->userdata('user_id')) {
@@ -64,6 +65,31 @@ class BOD extends CI_Controller
             'navlink' => 'beranda',
         ];
         $this->load->view('bod/vbackend', $data);
+    }
+
+    /**
+     * AJAX endpoint: trả về BOM (materials array) cho một product id
+     * GET param: id (id_product) hoặc URI segment 3
+     * Response: JSON { success: bool, materials: [...] }
+     */
+    public function getProductBom()
+    {
+        $this->load->model('ProductModel');
+        $id = $this->input->get('id') ?: $this->uri->segment(3);
+        if (empty($id)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Missing product id']);
+            return;
+        }
+
+        $product = $this->ProductModel->getProductById($id);
+        $materials = [];
+        if ($product && isset($product->bom_data) && isset($product->bom_data['materials'])) {
+            $materials = $product->bom_data['materials'];
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'materials' => $materials], JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -810,6 +836,7 @@ class BOD extends CI_Controller
         }
     }
 
+<<<<<<< HEAD
     /**
      * Performs a soft delete (cancel) for an order.
      * Updates pr_status to 4 ('Hủy') and optionally stores a reason.
@@ -850,6 +877,22 @@ class BOD extends CI_Controller
         if (!$this->input->is_ajax_request()) {
             show_404();
         }
+=======
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+}
+>>>>>>> origin/Q.Hung
 
         $id_project = $this->input->post('id_project', TRUE);
         if (!$id_project) {
