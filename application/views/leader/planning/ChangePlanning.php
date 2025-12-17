@@ -135,7 +135,11 @@
 								<div class="card mb-2">
 									<div class="card-body p-2">
 										<label class="form-label">Ghi chú</label>
-										<textarea name="note" class="form-control" rows="3"><?= isset($plan) ? htmlspecialchars($plan->note ?? '', ENT_QUOTES) : ''; ?></textarea>
+										<textarea name="note" class="form-control" rows="3"><?=
+											(isset($incident_description) && $incident_description !== '')
+												? htmlspecialchars($incident_description, ENT_QUOTES)
+												: (isset($plan) ? htmlspecialchars($plan->note ?? '', ENT_QUOTES) : '');
+										?></textarea>
 									</div>
 								</div>
 							</div>

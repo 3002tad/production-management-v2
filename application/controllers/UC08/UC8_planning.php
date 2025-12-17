@@ -389,7 +389,7 @@ class UC8_planning extends CI_Controller
         foreach ($machines as $m) {
             $mid = htmlspecialchars($m->id_machine ?? ($m->id ?? ''), ENT_QUOTES);
             $cap = htmlspecialchars($m->capacity ?? 0, ENT_QUOTES);
-            $label = htmlspecialchars(($m->label ?? ($m->machine_name ?? ('Máy ' . ($m->id_machine ?? $m->id ?? '')))) . ' (công suất: ' . ($m->capacity ?? 0) . ')', ENT_QUOTES);
+            $label = htmlspecialchars('Công suất: ' . ($m->capacity ?? 0), ENT_QUOTES);
             $machine_options_html .= "<option value=\"{$mid}\" data-capacity=\"{$cap}\">{$label}</option>\n";
         }
 

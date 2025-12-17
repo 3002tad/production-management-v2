@@ -294,12 +294,67 @@ class Planning extends CI_Controller
             $machine_options_html .= "<option value=\"{$mid}\" data-capacity=\"{$cap}\"{$selm}>{$label}</option>\n";
         }
 
-        // Data for view render (do not load or expose materials for leader edit)
+        // Try to load incident descriptions related to this plan (several possible schema layouts)
+        $incident_description = '';
+        try {
+            if ($this->db->table_exists('incident_reports')) {
+                // We will always try to get id_machine directly from incident_reports if present.
+                // Join to plan-shift tables to limit incidents to this plan when possible.
+                if ($this->db->table_exists('production_shifts')) {
+                    $q = $this->db->select('ir.incident_description, ir.id_machine, ir.line_id')
+                        ->from('incident_reports ir')
+                        ->join('production_shifts ps', 'ir.shift_id = ps.shift_id', 'inner')
+                        ->where('ps.id_plan', $id_plan)
+                        ->get();
+                } elseif ($this->db->table_exists('plan_shift')) {
+                    $q = $this->db->select('ir.incident_description, ir.id_machine, ir.line_id')
+                        ->from('incident_reports ir')
+                        ->join('plan_shift ps', 'ir.shift_id = ps.id_shift', 'inner')
+                        ->where('ps.id_plan', $id_plan)
+                        ->get();
+                } else {
+                    // If neither shift table exists, attempt a direct filter by id_plan column on incident_reports if present
+                    if ($this->db->field_exists('id_plan', 'incident_reports')) {
+                        $q = $this->db->select('incident_description, id_machine, line_id')
+                            ->from('incident_reports')
+                            ->where('id_plan', $id_plan)
+                            ->get();
+                    } else {
+                        $q = null;
+                    }
+                }
+
+                if (!empty($q) && $q->num_rows() > 0) {
+                    $rows = $q->result();
+                    $items = [];
+                    foreach ($rows as $r) {
+                        $desc = trim($r->incident_description ?? '');
+                        $mid = isset($r->id_machine) && $r->id_machine !== null && $r->id_machine !== '' ? $r->id_machine : null;
+                        $lid = isset($r->line_id) && $r->line_id !== null && $r->line_id !== '' ? $r->line_id : null;
+                        if ($mid && $lid) {
+                            $items[] = 'Máy ' . $mid . ' (Line ' . $lid . '): ' . $desc;
+                        } elseif ($mid) {
+                            $items[] = 'Máy ' . $mid . ': ' . $desc;
+                        } elseif ($lid) {
+                            $items[] = 'Line ' . $lid . ': ' . $desc;
+                        } else {
+                            $items[] = $desc;
+                        }
+                    }
+                    $incident_description = implode("\n\n---\n\n", array_filter($items, function ($v) { return $v !== ''; }));
+                }
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Planning::ChangePlanning incident fetch error: ' . $e->getMessage());
+            $incident_description = '';
+        }
+
         $data = [
             'plan' => $plan,
             'order_options_html' => $order_options_html,
             'machine_options_html' => $machine_options_html,
             'selected_project_id' => isset($plan->id_project) ? $plan->id_project : null,
+            'incident_description' => $incident_description,
             'content' => 'leader/planning/ChangePlanning',
             'navlink' => 'planning',
         ];
