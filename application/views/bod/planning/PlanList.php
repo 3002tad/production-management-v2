@@ -30,6 +30,7 @@
                                 <th>Tên kế hoạch</th>
                                 <th class="text-center">Số lượng</th>
                                 <th class="text-center">Hạn giao(theo kế hoạch)</th>
+                                <th class="text-center">Đơn hàng</th>
                                 <th class="text-center">Trạng thái</th>
                                 <th class="text-center">Chức năng</th>
                                 <th class="text-center">Điều chỉnh</th>
@@ -46,11 +47,16 @@
                                         </td>
                                         <td class="text-center"><span class="text-sm font-weight-bold"><?= number_format($plan->qty_target ?? 0); ?></span></td>
                                         <td class="text-center"><span class="text-xs"><?= !empty($plan->end_date) ? date('d/m/Y', strtotime($plan->end_date)) : '-'; ?></span></td>
+                                        <td class="text-center text-sm"><?= $plan->project_name ?? $plan->project_id ?? '-'; ?></td>
                                         <td class="text-center text-sm">
                                             <?php if (isset($plan->pl_status) && $plan->pl_status == 1): ?>
                                                 <span class="badge badge-sm bg-gradient-success">Đã duyệt</span>
                                             <?php else: ?>
                                                 <span class="badge badge-sm bg-gradient-warning">Chờ duyệt</span>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($plan->needs_review)): ?>
+                                                <span class="badge badge-sm bg-gradient-danger ms-1">Cần rà soát</span>
                                             <?php endif; ?>
                                         </td>
 
@@ -75,7 +81,7 @@
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="7" class="text-center py-4">Chưa có kế hoạch nào</td></tr>
+                                <tr><td colspan="8" class="text-center py-4">Chưa có kế hoạch nào</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -174,6 +180,9 @@
                         var status = '-';
                         if (plan.pl_status !== undefined && plan.pl_status !== null) {
                             status = (plan.pl_status == 1) ? 'Đã duyệt' : 'Chờ duyệt';
+                        }
+                        if (plan.needs_review && (plan.needs_review == 1 || plan.needs_review === true)) {
+                            status += ' (Cần rà soát)';
                         }
                         document.getElementById('pd-status').textContent = status;
                         document.getElementById('pd-note').textContent = plan.note ? plan.note : '-';

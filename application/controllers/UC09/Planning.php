@@ -181,9 +181,10 @@ class Planning extends CI_Controller
                 $qty = htmlspecialchars($p->qty_request ?? $p->suggested_target ?? 0, ENT_QUOTES);
                 $delivery = htmlspecialchars($p->delivery_date ?? $p->end_date ?? '', ENT_QUOTES);
                 $product_id = htmlspecialchars($p->id_product ?? '', ENT_QUOTES);
+                $created = isset($p->created_at) ? htmlspecialchars(substr($p->created_at,0,10), ENT_QUOTES) : '';
                 $label = htmlspecialchars($p->project_name ?? $p->id_project ?? '', ENT_QUOTES);
                 $sel = (isset($plan->id_project) && $plan->id_project == ($p->id_project ?? '')) ? ' selected' : '';
-                $order_options_html .= "<option value=\"{$val}\" data-qty=\"{$qty}\" data-delivery=\"{$delivery}\" data-product-id=\"{$product_id}\"{$sel}>{$label}</option>\n";
+                $order_options_html .= "<option value=\"{$val}\" data-qty=\"{$qty}\" data-delivery=\"{$delivery}\" data-product-id=\"{$product_id}\"" . (!empty($created) ? " data-created=\"{$created}\"" : "") . "{$sel}>{$label}</option>\n";
             }
         }
 
@@ -290,7 +291,7 @@ class Planning extends CI_Controller
             $mid = htmlspecialchars($m->id_machine ?? ($m->id ?? ''), ENT_QUOTES);
             $cap = htmlspecialchars($m->capacity ?? 0, ENT_QUOTES);
             $label = htmlspecialchars(($m->label ?? ($m->machine_name ?? ('Máy ' . ($m->id_machine ?? $m->id ?? '')))) . ' (công suất: ' . ($m->capacity ?? 0) . ')', ENT_QUOTES);
-            $selm = (isset($plan->machine_id) && $plan->machine_id == ($m->id_machine ?? $m->code ?? '')) ? ' selected' : '';
+            $selm = (isset($plan->machine_id) && (string)$plan->machine_id === (string)($m->id_machine ?? $m->code ?? '')) ? ' selected' : '';
             $machine_options_html .= "<option value=\"{$mid}\" data-capacity=\"{$cap}\"{$selm}>{$label}</option>\n";
         }
 
@@ -407,10 +408,20 @@ class Planning extends CI_Controller
             } catch (Exception $e) { $delivery_date = null; }
 
             if (!empty($delivery_date)) {
-                if (!empty($start_date) && strtotime($start_date) > strtotime($delivery_date)) {
-                    $this->session->set_flashdata('error', 'Ngày bắt đầu không được trễ hơn hạn giao của đơn hàng');
+                if (!empty($start_date) && strtotime($start_date) >= strtotime($delivery_date)) {
+                    $this->session->set_flashdata('error', 'Ngày bắt đầu không được trùng hoặc trễ hơn hạn giao của đơn hàng');
                     redirect(site_url('leader/ChangePlanning/' . $id_plan));
                     return;
+                }
+                $created_date = $order->created_at ?? null;
+                if (!empty($start_date) && !empty($created_date) && strtotime($start_date) < strtotime(substr($created_date,0,10))) {
+                    $this->session->set_flashdata('error', 'Ngày bắt đầu không được trước ngày tạo đơn hàng');
+                    redirect(site_url('leader/ChangePlanning/' . $id_plan));
+                    return;
+                }
+
+                if (empty($finish_date)) {
+                    $finish_date = date('Y-m-d', strtotime($delivery_date . ' -1 day'));
                 }
                 if (!empty($finish_date) && strtotime($finish_date) >= strtotime($delivery_date)) {
                     $this->session->set_flashdata('error', 'Ngày kết thúc phải trước hạn giao của đơn hàng');

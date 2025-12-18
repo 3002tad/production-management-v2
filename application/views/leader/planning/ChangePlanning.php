@@ -15,7 +15,7 @@
 					<div class="row px-3">
 						<div class="col-8 d-flex align-items-center">
 							<i class="material-icons text-white opacity-10 me-2">playlist_add</i>
-							<h6 class="text-white mb-0">Điều chỉnh hoạch sản xuất</h6>
+							<h6 class="text-white mb-0">Điều chỉnh kế hoạch sản xuất</h6>
 						</div>
 						<div class="col-4 text-end">
 							<a href="<?= site_url('leader/planning'); ?>" class="btn bg-gradient-light mb-0">Quay lại</a>
@@ -211,12 +211,20 @@ document.addEventListener('DOMContentLoaded', function() {
 			// if end date filled and finish/start empty, set reasonable defaults
 			if (endDateInput && endDateInput.value) {
 				if (startDateInput && !startDateInput.value) {
-					// default start to today (or earlier) but not after end
-					const today = new Date().toISOString().slice(0,10);
-					startDateInput.value = today <= endDateInput.value ? today : endDateInput.value;
+					// prefer using order creation date if available and before end date
+					const created = (opt && opt.dataset && opt.dataset.created) ? opt.dataset.created : null;
+					if (created && (new Date(created) < new Date(endDateInput.value))) {
+						startDateInput.value = created;
+					} else {
+						const today = new Date().toISOString().slice(0,10);
+						startDateInput.value = today < endDateInput.value ? today : endDateInput.value;
+					}
 				}
 				if (finishDateInput && !finishDateInput.value) {
-					finishDateInput.value = endDateInput.value;
+					// default finish to one day before end_date
+					const ed = new Date(endDateInput.value);
+					ed.setDate(ed.getDate() - 1);
+					finishDateInput.value = ed.toISOString().slice(0,10);
 				}
 			}
 					// no BOM fetch: ChangePlanning does not auto-apply materials
@@ -230,6 +238,51 @@ document.addEventListener('DOMContentLoaded', function() {
 				for (let i=0;i<projectSelect.options.length;i++) {
 					if (projectSelect.options[i].value == id) { projectSelect.selectedIndex = i; projectSelect.dispatchEvent(new Event('change')); break; }
 				}
+			})();
+			// select saved machine (client-side): prefer machine_id, fallback to matching lines label
+			(function(){
+				const existingMachineId = '<?= htmlspecialchars($plan->machine_id ?? '', ENT_QUOTES); ?>';
+				const existingLines = <?= isset($plan->lines) ? json_encode($plan->lines) : 'null'; ?>;
+				setTimeout(function(){
+					try {
+						if (existingMachineId && machineSelect) {
+							for (let j=0;j<machineSelect.options.length;j++) {
+								if (machineSelect.options[j].value == existingMachineId) { machineSelect.selectedIndex = j; machineSelect.dispatchEvent(new Event('change')); break; }
+							}
+						} else if (existingLines && machineSelect) {
+							let labelToMatch = null;
+							if (Array.isArray(existingLines) && existingLines.length>0) labelToMatch = existingLines[0];
+							else if (typeof existingLines === 'string') { try { const parsed = JSON.parse(existingLines); if (Array.isArray(parsed) && parsed.length>0) labelToMatch = parsed[0]; else labelToMatch = existingLines; } catch(e){ labelToMatch = existingLines; } }
+							if (labelToMatch) {
+								for (let j=0;j<machineSelect.options.length;j++) {
+									const txt = (machineSelect.options[j].textContent || machineSelect.options[j].innerText || '').trim();
+									if (txt.indexOf(labelToMatch) !== -1) { machineSelect.selectedIndex = j; machineSelect.dispatchEvent(new Event('change')); break; }
+						// else continue; we'll try capacity match after loop
+								}
+							}
+						}
+					} catch(e){ console && console.warn && console.warn('Select saved machine failed', e); }
+				},50);
+				// Fallback attempt: if still no machine selected, try matching by capacity number in existingLines
+				setTimeout(function(){
+					try {
+						if (machineSelect && (machineSelect.options[machineSelect.selectedIndex] || {}).value === '' && existingLines) {
+							let labelToMatch = null;
+							if (Array.isArray(existingLines) && existingLines.length>0) labelToMatch = existingLines[0];
+							else if (typeof existingLines === 'string') {
+								try { const parsed = JSON.parse(existingLines); if (Array.isArray(parsed) && parsed.length>0) labelToMatch = parsed[0]; else labelToMatch = existingLines; } catch(e){ labelToMatch = existingLines; }
+							}
+							const capMatch = (labelToMatch || '').match(/(\d+(?:\.\d+)?)/);
+							if (capMatch && capMatch[1]) {
+								const want = parseFloat(capMatch[1]);
+								for (let k=0;k<machineSelect.options.length;k++) {
+									const cap = parseFloat(machineSelect.options[k].dataset.capacity || 0);
+									if (!isNaN(cap) && Math.abs(cap - want) < 0.01) { machineSelect.selectedIndex = k; machineSelect.dispatchEvent(new Event('change')); break; }
+								}
+							}
+						}
+					} catch(e) { console && console.warn && console.warn('Capacity fallback failed', e); }
+				}, 120);
 			})();
 			<?php endif; ?>
 	}

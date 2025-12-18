@@ -95,12 +95,12 @@
                                     $label = $filter_labels[$k] ?? $k;
                                     $value = $v;
                                     if ($k === 'product_id') {
-                                        $prod = array_filter($products ?? [], fn($i)=>$i->id_product == $v);
-                                        $value = $prod ? htmlspecialchars(array_values($prod)[0]->product_name) : $v;
+                                        $prodArr = array_filter($products ?? [], function($i) use ($v) { return $i->id_product == $v; });
+                                        $value = $prodArr ? htmlspecialchars(array_values($prodArr)[0]->product_name) : $v;
                                     }
                                     if ($k === 'customer_id') {
-                                        $cust = array_filter($customers ?? [], fn($i)=>$i->id_cust == $v);
-                                        $value = $cust ? htmlspecialchars(array_values($cust)[0]->cust_name) : $v;
+                                        $custArr = array_filter($customers ?? [], function($i) use ($v) { return $i->id_cust == $v; });
+                                        $value = $custArr ? htmlspecialchars(array_values($custArr)[0]->cust_name) : $v;
                                     }
                                     if ($k === 'status') $value = $status_map[$v] ?? $v;
                                     $params = $current_query;
@@ -182,11 +182,29 @@
 
                                         <!-- Trạng thái duyệt -->
                                         <td class="align-middle text-center text-sm">
-                                            <?php if ($order->pr_status == 1): ?>
-                                                <span class="badge badge-sm bg-gradient-success">Đã duyệt</span>
-                                            <?php else: ?>
-                                                <span class="badge badge-sm bg-gradient-warning">Chờ duyệt</span>
-                                            <?php endif; ?>
+                                            <?php
+                                                $status = intval($order->pr_status);
+                                                switch ($status) {
+                                                    case 0:
+                                                        echo '<span class="badge badge-sm bg-gradient-warning">Chờ duyệt</span>';
+                                                        break;
+                                                    case 1:
+                                                        echo '<span class="badge badge-sm bg-gradient-success">Đã duyệt</span>';
+                                                        break;
+                                                    case 2:
+                                                        echo '<span class="badge badge-sm bg-gradient-info">Đang sản xuất</span>';
+                                                        break;
+                                                    case 3:
+                                                        echo '<span class="badge badge-sm bg-gradient-dark">Hoàn thành</span>';
+                                                        break;
+                                                    case 4:
+                                                        echo '<span class="badge badge-sm bg-gradient-danger">Hủy</span>';
+                                                        break;
+                                                    default:
+                                                        echo '<span class="badge badge-sm bg-gradient-secondary">Chờ duyệt</span>';
+                                                        break;
+                                                }
+                                            ?>
                                         </td>
 
                                         <!-- Warning flag (Cảnh báo công suất, NVL, tồn kho) -->

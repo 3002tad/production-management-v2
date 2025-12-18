@@ -493,6 +493,28 @@ class PlanModel extends CI_Model
                 ]);
             }
 
+            // --- Đồng bộ nhẹ với đơn hàng liên quan: nếu kế hoạch được phê duyệt thì đặt trạng thái đơn sang 'Đang sản xuất' (2)
+            if (!empty($plan->id_project)) {
+                $proj = $this->db->get_where('project', ['id_project' => $plan->id_project])->row();
+                if ($proj && intval($proj->pr_status) !== 2) {
+                    $this->db->where('id_project', $plan->id_project)->update('project', ['pr_status' => 2]);
+                    // Audit cho hành động đồng bộ này nếu có bảng audit_log
+                    if ($this->db->table_exists('audit_log')) {
+                        $this->db->insert('audit_log', [
+                            'user_id' => $approver_id ?? $this->session->userdata('user_id'),
+                            'username' => $this->session->userdata('username'),
+                            'action' => 'link_plan_to_production',
+                            'module' => 'project',
+                            'record_id' => $plan->id_project,
+                            'old_value' => json_encode(['pr_status' => $proj->pr_status], JSON_UNESCAPED_UNICODE),
+                            'new_value' => json_encode(['pr_status' => 2], JSON_UNESCAPED_UNICODE),
+                            'ip_address' => $this->input->ip_address(),
+                            'user_agent' => $this->input->user_agent()
+                        ]);
+                    }
+                }
+            }
+
             $this->db->trans_complete();
             if ($this->db->trans_status() === false) {
                 throw new Exception('Lỗi khi phê duyệt kế hoạch');
@@ -558,6 +580,35 @@ class PlanModel extends CI_Model
 
             // Xóa bản ghi planning
             $this->db->where('id_plan', $id_plan)->delete('planning');
+
+            // After deletion: if this plan was linked to a project, and no other APPROVED plans remain,
+            // revert project.pr_status from 'Đang sản xuất' (2) back to 'Đã duyệt' (1).
+            if (!empty($plan->id_project)) {
+                // Count remaining approved plans for this project
+                $remaining_approved = $this->db->where('id_project', $plan->id_project)->where('pl_status', 1)->count_all_results('planning');
+                if ($remaining_approved === 0) {
+                    $proj = $this->db->get_where('project', ['id_project' => $plan->id_project])->row();
+                    if ($proj && intval($proj->pr_status) === 2) {
+                        // Revert status to 'Đã duyệt' (1)
+                        $this->db->where('id_project', $plan->id_project)->update('project', ['pr_status' => 1]);
+
+                        // Audit the status revert
+                        if ($this->db->table_exists('audit_log')) {
+                            $this->db->insert('audit_log', [
+                                'user_id' => $this->session->userdata('user_id'),
+                                'username' => $this->session->userdata('username'),
+                                'action' => 'revert_project_status_after_plan_delete',
+                                'module' => 'project',
+                                'record_id' => $plan->id_project,
+                                'old_value' => json_encode(['pr_status' => $proj->pr_status], JSON_UNESCAPED_UNICODE),
+                                'new_value' => json_encode(['pr_status' => 1], JSON_UNESCAPED_UNICODE),
+                                'ip_address' => $this->input->ip_address(),
+                                'user_agent' => $this->input->user_agent()
+                            ]);
+                        }
+                    }
+                }
+            }
 
             // Ghi audit
             if ($this->db->table_exists('audit_log')) {

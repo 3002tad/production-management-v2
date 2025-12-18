@@ -2,7 +2,7 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║  UC1: Customer Management - ADD FORM                                         ║
 ║  Material Design 3.0 với Poppins font & Material Icons Round                ║
-║  Validation: telp INT 8-15 digits, email max 25, address max 50             ║
+║  Validation: telp 8-15 chữ số, email tối đa 25 ký tự, address tối đa 50 ký tự ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 -->
 
@@ -67,7 +67,7 @@
                             </div>
                             <small class="text-muted" style="font-family: 'Poppins', sans-serif;">
                                 <i class="material-icons-round" style="font-size: 12px;">info</i>
-                                Tối đa 25 ký tự (theo database)
+                                Tối đa 25 ký tự
                             </small>
                         </div>
                     </div>
@@ -90,7 +90,7 @@
                             </div>
                                 <small class="text-muted" id="telpHint" style="font-family: 'Poppins', sans-serif;">
                                 <i class="material-icons-round" style="font-size: 12px;">info</i>
-                                Chỉ số, 8-15 chữ số (lưu dạng chuỗi số VARCHAR(20) trong DB)
+                                Chỉ gồm chữ số, 8-15 chữ số
                             </small>
                             <small class="text-danger" id="telpError" style="font-family: 'Poppins', sans-serif; display: none;">
                                 <i class="material-icons-round" style="font-size: 12px;">error</i>
@@ -113,7 +113,7 @@
                             </div>
                             <small class="text-muted" style="font-family: 'Poppins', sans-serif;">
                                 <i class="material-icons-round" style="font-size: 12px;">info</i>
-                                Tối đa 50 ký tự (theo database)
+                                Tối đa 50 ký tự
                             </small>
                         </div>
                     </div>
@@ -273,9 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validate email length
         if (email && email.length > 25) {
             e.preventDefault();
-            alert('Email không được vượt quá 25 ký tự (giới hạn database)!');
-            emailInput.focus();
-            return false;
+            alert('Email không được vượt quá 25 ký tự!');
         }
 
         return true;

@@ -258,13 +258,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             // if end date filled and finish/start empty, set reasonable defaults
             if (endDateInput && endDateInput.value) {
+                // prefer using order creation date if provided
+                const created = (opt && opt.dataset && opt.dataset.created) ? opt.dataset.created : null;
                 if (startDateInput && !startDateInput.value) {
-                    // default start to today (or earlier) but not after end
-                    const today = new Date().toISOString().slice(0,10);
-                    startDateInput.value = today <= endDateInput.value ? today : endDateInput.value;
+                    if (created) {
+                        // ensure created < endDate; else fallback to today
+                        const createdDate = created;
+                        if (new Date(createdDate) < new Date(endDateInput.value)) {
+                            startDateInput.value = createdDate;
+                        } else {
+                            const today = new Date().toISOString().slice(0,10);
+                            startDateInput.value = today < endDateInput.value ? today : endDateInput.value;
+                        }
+                    } else {
+                        const today = new Date().toISOString().slice(0,10);
+                        startDateInput.value = today < endDateInput.value ? today : endDateInput.value;
+                    }
                 }
                 if (finishDateInput && !finishDateInput.value) {
-                    finishDateInput.value = endDateInput.value;
+                    // default finish to one day before end_date
+                    const ed = new Date(endDateInput.value);
+                    ed.setDate(ed.getDate() - 1);
+                    finishDateInput.value = ed.toISOString().slice(0,10);
                 }
             }
             // when project changes, if option provides product id, fetch BOM and auto-select materials
@@ -291,6 +306,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let i=0;i<projectSelect.options.length;i++) {
                     if (projectSelect.options[i].value == id) { projectSelect.selectedIndex = i; projectSelect.dispatchEvent(new Event('change')); break; }
                 }
+
+                // Try to select machine when editing: prefer saved machine_id, then try to match lines label
+                const existingMachineId = '<?= htmlspecialchars($plan->machine_id ?? '', ENT_QUOTES); ?>';
+                const existingLines = <?= isset($plan->lines) ? json_encode($plan->lines) : 'null'; ?>;
+                setTimeout(function(){
+                    try {
+                        if (existingMachineId && machineSelect) {
+                            for (let j=0;j<machineSelect.options.length;j++) {
+                                if (machineSelect.options[j].value == existingMachineId) { machineSelect.selectedIndex = j; machineSelect.dispatchEvent(new Event('change')); break; }
+                            }
+                        } else if (existingLines && machineSelect) {
+                            // lines might be array or string
+                            let labelToMatch = null;
+                            if (Array.isArray(existingLines) && existingLines.length>0) labelToMatch = existingLines[0];
+                            else if (typeof existingLines === 'string') {
+                                try { const parsed = JSON.parse(existingLines); if (Array.isArray(parsed) && parsed.length>0) labelToMatch = parsed[0]; else labelToMatch = existingLines; } catch(e){ labelToMatch = existingLines; }
+                            }
+                            if (labelToMatch) {
+                                let matched = false;
+                                for (let j=0;j<machineSelect.options.length;j++) {
+                                    const txt = (machineSelect.options[j].textContent || machineSelect.options[j].innerText || '').trim();
+                                    if (txt.indexOf(labelToMatch) !== -1) { machineSelect.selectedIndex = j; machineSelect.dispatchEvent(new Event('change')); matched = true; break; }
+                                }
+                                if (!matched) {
+                                    // Try to extract capacity number from labelToMatch and match by data-capacity
+                                    const capMatch = (labelToMatch || '').match(/(\d+(?:\.\d+)?)/);
+                                    if (capMatch && capMatch[1]) {
+                                        const want = parseFloat(capMatch[1]);
+                                        for (let j=0;j<machineSelect.options.length;j++) {
+                                            const cap = parseFloat(machineSelect.options[j].dataset.capacity || 0);
+                                            if (!isNaN(cap) && Math.abs(cap - want) < 0.001) { machineSelect.selectedIndex = j; machineSelect.dispatchEvent(new Event('change')); matched = true; break; }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) { console && console.warn && console.warn('Select saved machine failed', e); }
+                }, 50);
             })();
             <?php endif; ?>
     }
@@ -350,32 +403,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // Expected format: [{id_material: 123, material_name: 'Cuộn mực', quantity: 0.5, unit: 'g'}, ...]
     function applyBomToMaterials(bomMaterials) {
         if (!Array.isArray(bomMaterials)) return;
-        // clear any previous BOM markers
+        // clear any previous BOM markers and previous missing rows
         document.querySelectorAll('tr.material-row').forEach(function(r){
             delete r.dataset.bomPerUnit;
             delete r.dataset.required;
             const cb = r.querySelector('input.mat-select');
             if (cb) { cb.checked = false; r.classList.remove('table-active'); }
         });
+        document.querySelectorAll('tr.material-missing-row').forEach(function(r){ r.remove(); });
 
         const orderQty = getOrderQty();
 
         bomMaterials.forEach(function(mat){
             const id = mat.id_material || mat.id || mat.material_id || mat.materialId || null;
-            const per = parseFloat(mat.quantity || mat.qty || mat.amount || 0) || 0;
-            if (!id) return; // skip materials without an id (cannot auto-select)
+            const per = parseFloat(mat.quantity || mat.qty || mat.amount || mat.quantity_per_unit || 0) || 0;
 
-            const row = document.querySelector('tr.material-row[data-id="' + id + '"]');
-            if (!row) return;
-            // mark per-unit requirement on row (do not store absolute required amount)
-            // so that shortage is always computed dynamically as per * current orderQty
-            row.dataset.bomPerUnit = per;
-            const cb = row.querySelector('input.mat-select');
-            if (cb) { cb.checked = true; row.classList.add('table-active'); }
+            if (id) {
+                const row = document.querySelector('tr.material-row[data-id="' + id + '"]');
+                if (!row) {
+                    // material has an id but not present in the materials table: treat as missing
+                    createMissingRow(mat, per, orderQty);
+                    return;
+                }
+                // mark per-unit requirement on row
+                row.dataset.bomPerUnit = per;
+                const cb = row.querySelector('input.mat-select');
+                if (cb) { cb.checked = true; row.classList.add('table-active'); }
+                return;
+            }
+
+            // No id provided in BOM => material not in material table. Create missing warning row.
+            createMissingRow(mat, per, orderQty);
         });
 
         // recalc shortages display
         updateShortages();
+    }
+
+    function createMissingRow(mat, per, orderQty) {
+        try {
+            const tbody = document.querySelector('table.table tbody');
+            if (!tbody) return;
+            const name = mat.material_name || mat.name || ('Mã: ' + (mat.id_material || mat.id || '-'));
+            // Compute required quantity: prefer per-unit * orderQty when per is provided
+            const requiredQty = per && orderQty ? (per * orderQty) : orderQty;
+
+            const tr = document.createElement('tr');
+            tr.className = 'material-missing-row table-danger text-white';
+            tr.setAttribute('data-missing', '1');
+            tr.setAttribute('data-name', name);
+            tr.setAttribute('data-required', requiredQty);
+            tr.innerHTML = '\n                <td class="align-middle text-center">&nbsp;</td>\n                <td>-</td>\n                <td>' + name + ' <small class="text-white" style="opacity:0.9">(Chưa có trong kho)</small></td>\n                <td class="text-end stock-cell">0</td>\n                <td class="text-end shortage-cell">' + formatNumber(requiredQty) + '</td>\n            ';
+            // append at end of materials table body
+            tbody.appendChild(tr);
+        } catch (e) {
+            console && console.warn && console.warn('Failed to create missing material row', e);
+        }
+    }
+
+    function formatNumber(n) {
+        if (n === null || n === undefined) return '-';
+        if (Number.isInteger(n)) return n.toLocaleString('en-US');
+        return parseFloat(n).toFixed(2);
     }
 
     // Update shortage column: shortage = stock - orderQty
@@ -405,10 +494,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!cell) return;
 
             if (checkbox && checkbox.checked) {
-                // Theo yêu cầu: không nhân BOM.quantity với qty_target ở phần kiểm tra tự động.
-                // Luôn coi `qty_target` (orderQty) là lượng cần cho mỗi material (requiredQty).
-                // (Nếu sau này muốn hỗ trợ BOM per-unit, xử lý phân rã/nhân sẽ thực hiện ở bước lập phân bổ rõ ràng.)
-                const requiredQty = orderQty;
+                // If BOM per-unit exists on row, prefer per * orderQty, otherwise use orderQty
+                const per = parseFloat(row.dataset.bomPerUnit || 0) || 0;
+                const requiredQty = per && orderQty ? (per * orderQty) : orderQty;
 
                 const shortage = Math.max(0, requiredQty - stock);
                 const display = Number.isInteger(shortage) ? shortage.toLocaleString('en-US') : shortage.toFixed(2);
@@ -417,6 +505,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 cell.textContent = '-';
             }
         });
+
+        // Handle missing material rows (auto-warning rows): treat their stock as 0 and show required quantity
+        document.querySelectorAll('tr.material-missing-row').forEach(function(row) {
+            const cell = row.querySelector('.shortage-cell');
+            if (!cell) return;
+            const required = parseFloat(row.dataset.required || 0) || 0;
+            cell.textContent = Number.isInteger(required) ? required.toLocaleString('en-US') : required.toFixed(2);
+        });
+
         // After updating visible shortage cells, update the textarea with selected materials
         updateMaterialsTextarea();
     }
@@ -432,11 +529,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!cb || !cb.checked) return;
             const stock = parseFloat(row.dataset.stock || 0) || 0;
             const name = row.dataset.name || (row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').textContent.trim() : '');
-            // Theo yêu cầu: chỉ dùng `qty_target` làm required quantity cho mục kiểm tra tự động.
-            const requiredQty = orderQty;
+            // If BOM per-unit exists on row, prefer per * orderQty for required calculation
+            const per = parseFloat(row.dataset.bomPerUnit || 0) || 0;
+            const requiredQty = per && orderQty ? (per * orderQty) : orderQty;
             const shortage = Math.max(0, requiredQty - stock);
             const display = Number.isInteger(shortage) ? shortage.toLocaleString('en-US') : shortage.toFixed(2);
             lines.push(name + ' — Yêu cầu: ' + (Number.isInteger(requiredQty) ? requiredQty.toLocaleString('en-US') : requiredQty.toFixed(2)) + ' — Thiếu: ' + display);
+        });
+
+        // Include missing NVL rows (always include them in the textarea so planners see what is not in stock)
+        document.querySelectorAll('tr.material-missing-row').forEach(function(row) {
+            const name = row.dataset.name || (row.querySelector('td:nth-child(3)') ? row.querySelector('td:nth-child(3)').textContent.trim() : '');
+            const required = parseFloat(row.dataset.required || 0) || 0;
+            const displayReq = Number.isInteger(required) ? required.toLocaleString('en-US') : required.toFixed(2);
+            lines.push(name + ' — Yêu cầu: ' + displayReq + ' — Thiếu: ' + displayReq + ' (Chưa có trong kho)');
         });
 
         const ta = document.getElementById('materials');
@@ -528,10 +634,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Ngày kết thúc phải trước hạn giao');
                     return false;
                 }
+                // Ensure finish is at least 1 day before end date
+                if (finishVal && endVal) {
+                    const ed = new Date(endVal);
+                    const f = new Date(finishVal);
+                    ed.setDate(ed.getDate() - 1);
+                    if (f > ed) {
+                        alert('Ngày kết thúc phải trước hạn giao ít nhất 1 ngày');
+                        return false;
+                    }
+                }
             }
             if (startVal && finishVal && isAfter(startVal, finishVal)) {
                 alert('Ngày bắt đầu không được sau ngày kết thúc');
                 return false;
+            }
+            // Ensure start is not before order creation date (if provided)
+            const selOpt = projectSelect ? projectSelect.options[projectSelect.selectedIndex] : null;
+            if (selOpt && selOpt.dataset && selOpt.dataset.created && startVal) {
+                const createdDate = new Date(selOpt.dataset.created);
+                if (new Date(startVal) < createdDate) {
+                    alert('Ngày bắt đầu không được trước ngày nhận đơn hàng');
+                    return false;
+                }
             }
 
             // Kiểm tra số ca: nếu người dùng nhập tay số ca nhỏ hơn số ca hệ thống đề xuất => báo lỗi

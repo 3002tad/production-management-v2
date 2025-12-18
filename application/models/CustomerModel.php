@@ -9,13 +9,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * 
  * Pattern: Follow OrderModel structure for consistency
  * Cấu trúc bảng (tóm tắt):
- *   - id_cust: INT AUTO_INCREMENT (ID khách hàng)
- *   - cust_name: VARCHAR(50) - Tên khách hàng
- *   - address: VARCHAR(50) - Địa chỉ, tối đa 50 ký tự
- *   - telp: VARCHAR(20) - Số điện thoại (đã chuyển sang VARCHAR để hỗ trợ mã vùng)
- *   - email: VARCHAR(255) - Email liên hệ
- *   - is_active: TINYINT(1) DEFAULT 1 - Trạng thái hoạt động
- *   - notes: TEXT - Ghi chú
+ *   - id_cust: ID khách hàng, tự tăng (bắt đầu từ 1001)
+ *   - cust_name: Tên khách hàng (tối đa 50 ký tự)
+ *   - address: Địa chỉ (tối đa 50 ký tự)
+ *   - telp: Số điện thoại (hỗ trợ mã vùng; 8-15 chữ số)
+ *   - email: Email liên hệ (tối đa 255 ký tự)
+ *   - is_active: Trạng thái hoạt động (0/1)
+ *   - notes: Ghi chú
  *   - created_at, updated_at, created_by - Thông tin audit
  * 
  * @author  Production Management System v2
@@ -102,7 +102,7 @@ class CustomerModel extends CI_Model
     /**
      * Tạo ID khách hàng tự động
      * Pattern giống OrderModel.generateProjectName()
-     * Format: AUTO INCREMENT từ 1001
+     * Format: tự tăng từ 1001
      * 
      * @return int
      */
@@ -141,7 +141,7 @@ class CustomerModel extends CI_Model
             $customer_data['created_by'] = $this->session->userdata('user_id');
             // created_at, updated_at tự động bởi DEFAULT CURRENT_TIMESTAMP
 
-            // Insert vào database
+            // Lưu thông tin khách hàng
             $this->db->insert('customer', $customer_data);
             
             $insert_id = $customer_data['id_cust'];
@@ -153,7 +153,7 @@ class CustomerModel extends CI_Model
             $this->db->trans_complete();
 
             if ($this->db->trans_status() === FALSE) {
-                throw new Exception('Lỗi khi lưu vào cơ sở dữ liệu');
+                throw new Exception('Lỗi khi lưu thông tin');
             }
 
             return [
@@ -254,7 +254,7 @@ class CustomerModel extends CI_Model
 
     /**
      * Xóa khách hàng
-     * Quy tắc: Không xóa được nếu đã có đơn hàng (FK constraint)
+     * Quy tắc: Không xóa nếu đã có đơn hàng liên quan
      * Pattern giống OrderModel.deleteOrder()
      * 
      * @param int $id_cust
@@ -265,7 +265,7 @@ class CustomerModel extends CI_Model
         $this->db->trans_start();
 
         try {
-            // Kiểm tra FK constraint với project table
+            // Kiểm tra tồn tại đơn hàng liên quan
             if ($this->hasOrders($id_cust)) {
                 throw new Exception(
                     'Không thể xóa khách hàng đã có đơn hàng. ' .
@@ -305,7 +305,7 @@ class CustomerModel extends CI_Model
 
     /**
      * Kiểm tra khách hàng có đơn hàng không
-     * FK constraint check - Pattern giống OrderModel check planning
+     * Kiểm tra tồn tại đơn hàng liên quan - Pattern giống OrderModel check planning
      * 
      * @param int $id_cust
      * @return bool
@@ -320,10 +320,10 @@ class CustomerModel extends CI_Model
      * Validate dữ liệu khách hàng
      * Pattern giống OrderModel.validateOrderData() - return array với message
      * 
-     * Database constraints:
-     *   - telp: INT(20) - Chỉ lưu SỐ, 8-15 chữ số
-     *   - email: VARCHAR(25) - Tối đa 25 ký tự
-     *   - address: VARCHAR(50) - Tối đa 50 ký tự
+     * Giới hạn dữ liệu:
+     *   - telp: Chỉ gồm chữ số, 8-15 chữ số
+     *   - email: Tối đa 25 ký tự
+     *   - address: Tối đa 50 ký tự
      * 
      * @param array $data
      * @param int|null $id_cust (Exclude khi check duplicate)
@@ -364,7 +364,7 @@ class CustomerModel extends CI_Model
         if (!preg_match('/^[0-9]{8,15}$/', $data['telp'])) {
             return [
                 'valid' => false,
-                'message' => 'Số điện thoại từ 8-15 chữ số (chỉ số, không dấu cách)'
+                'message' => 'Số điện thoại từ 8-15 chữ số (chỉ gồm chữ số, không dấu cách)'
             ];
         }
 
@@ -386,7 +386,7 @@ class CustomerModel extends CI_Model
         if (strlen($data['email']) > 25) {
             return [
                 'valid' => false,
-                'message' => 'Email tối đa 25 ký tự (giới hạn database)'
+                'message' => 'Email tối đa 25 ký tự'
             ];
         }
         
@@ -414,7 +414,7 @@ class CustomerModel extends CI_Model
         if (strlen($data['address']) > 50) {
             return [
                 'valid' => false,
-                'message' => 'Địa chỉ tối đa 50 ký tự (giới hạn database)'
+                'message' => 'Địa chỉ tối đa 50 ký tự'
             ];
         }
 

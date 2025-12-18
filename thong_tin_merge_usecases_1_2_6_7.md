@@ -16,10 +16,10 @@ Tài liệu tóm tắt hành vi hiện tại của mã (CRUD và logic liên qua
 - Hiện trạng (code):
   - `CustomerModel` cung cấp CRUD: `addCustomer()`, `updateCustomer()`, `deleteCustomer()`, `getAllCustomers()`, `searchCustomers()`.
   - Validation: `validateCustomerData()` ép `telp` phải là số (`/^[0-9]{8,15}$/`) và `email` tối đa 25 ký tự.
-  - `telp` hiện tại được mô tả là INT trong schema, nhưng có migration `db/migrations/cap1/usecase1/007_change_customer_telp_to_varchar.sql` chuyển `telp` sang `VARCHAR(20)`.
-  - Xóa bị cấm nếu khách hàng có đơn hàng (FK với `project`).
+  - `telp` trước đây là dạng số nguyên trong schema; có migration `db/migrations/cap1/usecase1/007_change_customer_telp_to_varchar.sql` chuyển `telp` sang dạng chuỗi (tối đa 20 ký tự).
+  - Xóa bị cấm nếu khách hàng có đơn hàng liên quan (không xóa khi có đơn hàng).
 - Lưu ý Merge (quan trọng):
-  - Nếu áp migration đổi `telp` sang `VARCHAR(20)` thì phải:
+  - Nếu áp migration đổi `telp` sang chuỗi tối đa 20 ký tự thì phải:
     - Kiểm tra `CustomerModel::validateCustomerData()` để cho phép số có leading zeros và độ dài tối đa mới (hiện regex không cho leading '+' hay dấu cách — cân nhắc cho phép '+' nếu cần quốc tế hoá).
     - Kiểm tra form frontend/JS để xử lý chuỗi điện thoại (no casting sang int).
     - Trước khi chạy migration trên production: backup DB và kiểm tra dữ liệu trùng/overflow (các số vượt giới hạn integer, mất leading 0, v.v.). Migration có ghi chú mẫu `UPDATE` — KHÔNG chạy tự động mà không review.

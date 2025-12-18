@@ -760,6 +760,76 @@ class BOD extends CI_Controller
                     $msg_type = 'success';
                 }
 
+                // Nếu có kế hoạch liên quan: thực hiện đồng bộ có điều kiện (phương án lai)
+                $has_plans = $this->db->where('id_project', $id_project)->count_all_results('planning') > 0;
+                if ($has_plans) {
+                    $this->load->model('PlanModel');
+                    $plans = $this->db->where('id_project', $id_project)->get('planning')->result();
+
+                    $auto_updated = 0;
+                    $needs_review_count = 0;
+
+                    foreach ($plans as $plan) {
+                        $plan_status = intval($plan->pl_status ?? 0);
+
+                        // Nếu là draft (pl_status == 0) -> auto cập nhật một số trường nhẹ (qty_target, end_date)
+                        if ($plan_status === 0) {
+                            $plan_updates = [];
+                            if (isset($saved_project->qty_request) && intval($plan->qty_target) !== intval($saved_project->qty_request)) {
+                                $plan_updates['qty_target'] = intval($saved_project->qty_request);
+                            }
+                            if (isset($saved_project->entry_date) && (($plan->end_date ?? null) != ($saved_project->entry_date ?? null))) {
+                                $plan_updates['end_date'] = $saved_project->entry_date;
+                                if ($this->db->field_exists('finish_date', 'planning')) {
+                                    $plan_updates['finish_date'] = $saved_project->entry_date;
+                                }
+                            }
+                            if (!empty($plan_updates)) {
+                                // Sử dụng PlanModel->updatePlan để tận dụng audit logging
+                                $this->PlanModel->updatePlan($plan->id_plan, $plan_updates);
+                                $auto_updated++;
+                            }
+
+                        // Nếu đã phê duyệt (pl_status == 1) -> không auto thay đổi, đánh dấu cần rà soát
+                        } elseif ($plan_status === 1) {
+                            $needs_review_count++;
+                            if ($this->db->field_exists('needs_review', 'planning')) {
+                                $this->db->where('id_plan', $plan->id_plan)->update('planning', ['needs_review' => 1]);
+                            } elseif ($this->db->table_exists('audit_log')) {
+                                $this->db->insert('audit_log', [
+                                    'user_id' => $this->session->userdata('user_id'),
+                                    'username' => $this->session->userdata('username'),
+                                    'action' => 'mark_plan_needs_review',
+                                    'module' => 'planning',
+                                    'record_id' => $plan->id_plan,
+                                    'old_value' => null,
+                                    'new_value' => json_encode(['needs_review' => 1], JSON_UNESCAPED_UNICODE),
+                                    'ip_address' => $this->input->ip_address(),
+                                    'user_agent' => $this->input->user_agent()
+                                ]);
+                            }
+                        }
+                    }
+
+                    // Gộp flash message thông báo cho người dùng
+                    $existing_warning = $this->session->flashdata('warning_js');
+                    $parts = [];
+                    if (!empty($auto_updated)) $parts[] = 'Đã tự động cập nhật ' . $auto_updated . ' kế hoạch (draft) tương ứng với thay đổi đơn. Vui lòng kiểm tra Kế hoạch.';
+                    if (!empty($needs_review_count)) $parts[] = 'Có ' . $needs_review_count . ' kế hoạch đã phê duyệt cần được rà soát do thay đổi đơn.';
+                    $plan_note = ['title' => 'Lưu ý về Kế hoạch liên quan', 'message' => implode(' ', $parts) ?: 'Đơn hàng này có Kế hoạch sản xuất liên quan. Vui lòng kiểm tra lại Kế hoạch nếu các thông số (hạn giao, số lượng, sản phẩm) đã thay đổi.'];
+                    if ($existing_warning) {
+                        $ew = json_decode($existing_warning, true);
+                        $ew['message'] = trim($ew['message'] . ' ' . $plan_note['message']);
+                        $this->session->set_flashdata('warning_js', json_encode($ew));
+                    } else {
+                        $this->session->set_flashdata('warning_js', json_encode($plan_note));
+                    }
+
+                    if (!empty($auto_updated)) {
+                        $this->session->set_flashdata('success_js', json_encode(['title' => 'Cập nhật tự động', 'message' => 'Một số kế hoạch draft đã được cập nhật tự động.']));
+                    }
+                }
+
                 redirect(site_url('BOD/project') . '?msg=' . $msg_type);
             } else {
                 throw new Exception($result['message']);
@@ -780,6 +850,15 @@ class BOD extends CI_Controller
         $msg_type = '';
 
         try {
+            // Không cho phép xóa vĩnh viễn nếu có kế hoạch sản xuất liên quan
+            $has_plans = $this->db->where('id_project', $id_project)->count_all_results('planning') > 0;
+            if ($has_plans) {
+                $this->session->set_flashdata('error_js', json_encode(['message' => 'Không thể xóa đơn hàng vì có Kế hoạch sản xuất liên quan. Hãy xóa hoặc hủy các kế hoạch trước.']));
+                $msg_type = 'error';
+                redirect(site_url('BOD/project') . '?msg=error');
+                return;
+            }
+
             $result = $this->OrderModel->deleteOrder($id_project);
             if (!$result['success']) {
                 // Now $result['message'] will contain the detailed DB error message
@@ -857,6 +936,19 @@ class BOD extends CI_Controller
 
             if ($result['success']) {
                 $this->session->set_flashdata('success_js', json_encode(['title' => 'Hủy đơn hàng thành công!', 'message' => 'Đơn hàng đã được đánh dấu là HỦY.']));
+                // Nếu có kế hoạch liên quan, thêm cảnh báo để người dùng xử lý kế hoạch
+                $has_plans = $this->db->where('id_project', $id_project)->count_all_results('planning') > 0;
+                if ($has_plans) {
+                    $existing_warning = $this->session->flashdata('warning_js');
+                    $plan_note = ['title' => 'Lưu ý: Đơn hàng có kế hoạch liên quan', 'message' => 'Đơn hàng này có Kế hoạch sản xuất đã lập. Sau khi hủy đơn vui lòng xem xét hủy/xóa các kế hoạch liên quan.'];
+                    if ($existing_warning) {
+                        $ew = json_decode($existing_warning, true);
+                        $ew['message'] = trim($ew['message'] . ' ' . $plan_note['message']);
+                        $this->session->set_flashdata('warning_js', json_encode($ew));
+                    } else {
+                        $this->session->set_flashdata('warning_js', json_encode($plan_note));
+                    }
+                }
                 $msg_type = 'success';
             } else {
                 throw new Exception($result['message'] ?? 'Không thể hủy đơn hàng.');

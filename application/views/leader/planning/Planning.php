@@ -24,6 +24,7 @@
                                 <th>Tên kế hoạch</th>
                                 <th class="text-center">Số lượng</th>
                                 <th class="text-center">Ngày kết thúc</th>
+                                <th class="text-center">Đơn hàng</th>
                                 <th class="text-center">Trạng thái</th>
                                 <th class="text-center">Chức năng</th>
                             </tr>
@@ -39,6 +40,7 @@
                                         </td>
                                         <td class="text-center"><span class="text-sm font-weight-bold"><?= number_format($plan->qty_target ?? 0); ?></span></td>
                                         <td class="text-center"><span class="text-xs"><?= !empty($plan->end_date) ? date('d/m/Y', strtotime($plan->end_date)) : '-'; ?></span></td>
+                                        <td class="text-center text-sm"><?= $plan->project->project_name ?? $plan->project_name ?? $plan->id_project ?? '-'; ?></td>
                                         <td class="text-center text-sm">
                                             <?php if (isset($plan->pl_status) && $plan->pl_status == 1): ?>
                                                 <span class="badge badge-sm bg-gradient-success">Đã duyệt</span>
@@ -56,7 +58,7 @@
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="6" class="text-center py-4">Chưa có kế hoạch nào</td></tr>
+                                <tr><td colspan="7" class="text-center py-4">Chưa có kế hoạch nào</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

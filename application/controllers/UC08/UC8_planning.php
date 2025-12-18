@@ -106,14 +106,19 @@ class UC8_planning extends CI_Controller
             return;
         }
 
-        $product = $this->ProductModel->getProductById($id);
+        // Use the method that returns BOM items decoded and enriched with stock
+        $product = $this->ProductModel->getProductByIdWithBom($id);
         $materials = [];
         if ($product && isset($product->bom_data) && isset($product->bom_data['materials'])) {
             $materials = $product->bom_data['materials'];
         }
 
         header('Content-Type: application/json');
-        echo json_encode(['success' => true, 'materials' => $materials], JSON_UNESCAPED_UNICODE);
+        if (empty($materials)) {
+            echo json_encode(['success' => false, 'message' => 'No BOM found for product ' . $id, 'materials' => []], JSON_UNESCAPED_UNICODE);
+        } else {
+            echo json_encode(['success' => true, 'materials' => $materials], JSON_UNESCAPED_UNICODE);
+        }
     }
 
 
@@ -382,15 +387,27 @@ class UC8_planning extends CI_Controller
             $product_id = htmlspecialchars($o->id_product ?? '', ENT_QUOTES);
             $label = htmlspecialchars($o->opt_label ?? (($o->project_name ?? '') . ' — ' . ($o->product_name ?? '')), ENT_QUOTES);
             $sel = !empty($o->opt_selected) ? ' selected' : '';
-            $order_options_html .= "<option value=\"{$val}\" data-qty=\"{$qty}\" data-stock=\"{$stock}\" data-delivery=\"{$delivery}\" data-product-id=\"{$product_id}\"{$sel}>{$label}</option>\n";
+            // include created_at for start date default (if available)
+            $created = isset($o->created_at) ? htmlspecialchars(substr($o->created_at,0,10), ENT_QUOTES) : '';
+            $order_options_html .= "<option value=\"{$val}\" data-qty=\"{$qty}\" data-stock=\"{$stock}\" data-delivery=\"{$delivery}\" data-product-id=\"{$product_id}\"" . (!empty($created) ? " data-created=\"{$created}\"" : "") . "{$sel}>{$label}</option>\n";
         }
 
         $machine_options_html = '';
         foreach ($machines as $m) {
             $mid = htmlspecialchars($m->id_machine ?? ($m->id ?? ''), ENT_QUOTES);
             $cap = htmlspecialchars($m->capacity ?? 0, ENT_QUOTES);
-            $label = htmlspecialchars('Công suất: ' . ($m->capacity ?? 0), ENT_QUOTES);
-            $machine_options_html .= "<option value=\"{$mid}\" data-capacity=\"{$cap}\">{$label}</option>\n";
+            // friendly label: prefer machine name or derive 'Dây chuyền N' from code when available
+            $mname = isset($m->machine_name) ? $m->machine_name : (isset($m->name) ? $m->name : null);
+            $mcode = isset($m->code) ? $m->code : (isset($m->mc_code) ? $m->mc_code : null);
+            $label_val = $mname ?? ('Máy ' . ($mid ?? ''));
+            if (!empty($mcode) && preg_match('/^QC[^0-9]*(\\d+)/i', $mcode, $matches)) {
+                $num = intval($matches[1]);
+                $label_val = 'Dây chuyền ' . ($num > 0 ? $num : $matches[1]);
+            }
+            $label = htmlspecialchars($label_val . ' (công suất: ' . ($m->capacity ?? 0) . ')', ENT_QUOTES);
+            // mark selected machine when editing existing plan
+            $selm = (isset($plan->machine_id) && (string)$plan->machine_id === (string)($m->id_machine ?? $m->id ?? '')) ? ' selected' : '';
+            $machine_options_html .= "<option value=\"{$mid}\" data-capacity=\"{$cap}\"{$selm}>{$label}</option>\n";
         }
 
         // expose option HTML to view
@@ -460,14 +477,29 @@ class UC8_planning extends CI_Controller
             } catch (Exception $e) { $delivery_date = null; }
 
             if (!empty($delivery_date)) {
-                if (!empty($start_date) && strtotime($start_date) > strtotime($delivery_date)) {
+                // server-side: ensure start date is not after or equal to delivery date
+                if (!empty($start_date) && strtotime($start_date) >= strtotime($delivery_date)) {
                     $this->session->set_flashdata('error_js', json_encode([
-                        'message' => 'Ngày bắt đầu không được trễ hơn hạn giao của đơn hàng'
+                        'message' => 'Ngày bắt đầu không được trùng hoặc trễ hơn hạn giao của đơn hàng'
                     ]));
                     redirect(site_url('BOD/createPlan?msg=error'));
                     return;
                 }
-                // plan finish_date must be strictly before order delivery
+
+                // if start_date provided, ensure it's not before order created_at (if available)
+                $created_date = $order->created_at ?? null;
+                if (!empty($start_date) && !empty($created_date) && strtotime($start_date) < strtotime(substr($created_date,0,10))) {
+                    $this->session->set_flashdata('error_js', json_encode([
+                        'message' => 'Ngày bắt đầu không được trước ngày tạo đơn hàng'
+                    ]));
+                    redirect(site_url('BOD/createPlan?msg=error'));
+                    return;
+                }
+
+                // plan finish_date must be strictly before order delivery; if finish missing, default to delivery - 1 day
+                if (empty($finish_date)) {
+                    $finish_date = date('Y-m-d', strtotime($delivery_date . ' -1 day'));
+                }
                 if (!empty($finish_date) && strtotime($finish_date) >= strtotime($delivery_date)) {
                     $this->session->set_flashdata('error_js', json_encode([
                         'message' => 'Ngày kết thúc phải trước hạn giao của đơn hàng'
@@ -624,10 +656,20 @@ class UC8_planning extends CI_Controller
             } catch (Exception $e) { $delivery_date = null; }
 
             if (!empty($delivery_date)) {
-                if (!empty($start_date) && strtotime($start_date) > strtotime($delivery_date)) {
-                    $this->session->set_flashdata('error_js', json_encode(['message' => 'Ngày bắt đầu không được trễ hơn hạn giao của đơn hàng']));
+                if (!empty($start_date) && strtotime($start_date) >= strtotime($delivery_date)) {
+                    $this->session->set_flashdata('error_js', json_encode(['message' => 'Ngày bắt đầu không được trùng hoặc trễ hơn hạn giao của đơn hàng']));
                     redirect(site_url('BOD/createPlan?plan_id=' . $id_plan . '&msg=error'));
                     return;
+                }
+                $created_date = $order->created_at ?? null;
+                if (!empty($start_date) && !empty($created_date) && strtotime($start_date) < strtotime(substr($created_date,0,10))) {
+                    $this->session->set_flashdata('error_js', json_encode(['message' => 'Ngày bắt đầu không được trước ngày tạo đơn hàng']));
+                    redirect(site_url('BOD/createPlan?plan_id=' . $id_plan . '&msg=error'));
+                    return;
+                }
+
+                if (empty($finish_date)) {
+                    $finish_date = date('Y-m-d', strtotime($delivery_date . ' -1 day'));
                 }
                 if (!empty($finish_date) && strtotime($finish_date) >= strtotime($delivery_date)) {
                     $this->session->set_flashdata('error_js', json_encode(['message' => 'Ngày kết thúc phải trước hạn giao của đơn hàng']));
@@ -657,8 +699,128 @@ class UC8_planning extends CI_Controller
                 'suggested_shifts' => $suggested_shifts,
             ];
 
+            // Fetch old plan data to detect changes
+            $old_plan = $this->PlanModel->getPlanById($id_plan);
+
             $result = $this->PlanModel->updatePlan($id_plan, $plan_data);
             if ($result['success']) {
+                // --- Propagate qty_target change back to project safely ---
+                try {
+                    // Only if the plan is linked to a project, and qty_target changed
+                    if (!empty($old_plan->id_project) && isset($plan_data['qty_target']) && intval($old_plan->qty_target) !== intval($plan_data['qty_target'])) {
+                        $this->load->model('OrderModel');
+                        $project = $this->PlanModel->getOrderDetails($old_plan->id_project);
+                        if ($project) {
+                            // If production already started, do NOT change project; mark plan needs review and audit
+                            $has_finished = $this->db->where('id_project', $project->id_project)->count_all_results('finished_report') > 0;
+                            if ($has_finished) {
+                                // mark needs_review
+                                if ($this->db->field_exists('needs_review', 'planning')) {
+                                    $this->db->where('id_plan', $id_plan)->update('planning', ['needs_review' => 1]);
+                                }
+                                if ($this->db->table_exists('audit_log')) {
+                                    $this->db->insert('audit_log', [
+                                        'user_id' => $this->session->userdata('user_id'),
+                                        'username' => $this->session->userdata('username'),
+                                        'action' => 'mark_plan_needs_review',
+                                        'module' => 'planning',
+                                        'record_id' => $id_plan,
+                                        'old_value' => null,
+                                        'new_value' => json_encode(['reason' => 'project already has production reports, cannot change project qty from plan'], JSON_UNESCAPED_UNICODE),
+                                        'ip_address' => $this->input->ip_address(),
+                                        'user_agent' => $this->input->user_agent()
+                                    ]);
+                                }
+
+                                $this->session->set_flashdata('warning_js', json_encode(['title' => 'Cần rà soát', 'message' => 'Không thể tự động cập nhật Số lượng đơn vì đơn đã có sản xuất. Kế hoạch đã được đánh dấu cần rà soát.']));
+
+                            } else {
+                                // Check capacity feasibility before updating project
+                                $capacity_check = $this->OrderModel->checkCapacity($project->id_product, intval($plan_data['qty_target']), $project->entry_date, $project->id_project);
+                                if (!$capacity_check['feasible']) {
+                                    // Do not update project; mark plan needs review and log
+                                    if ($this->db->field_exists('needs_review', 'planning')) {
+                                        $this->db->where('id_plan', $id_plan)->update('planning', ['needs_review' => 1]);
+                                    }
+                                    if ($this->db->table_exists('audit_log')) {
+                                        $this->db->insert('audit_log', [
+                                            'user_id' => $this->session->userdata('user_id'),
+                                            'username' => $this->session->userdata('username'),
+                                            'action' => 'mark_plan_needs_review',
+                                            'module' => 'planning',
+                                            'record_id' => $id_plan,
+                                            'old_value' => null,
+                                            'new_value' => json_encode(['reason' => 'capacity check failed: ' . ($capacity_check['message'] ?? '')], JSON_UNESCAPED_UNICODE),
+                                            'ip_address' => $this->input->ip_address(),
+                                            'user_agent' => $this->input->user_agent()
+                                        ]);
+                                    }
+                                    $this->session->set_flashdata('warning_js', json_encode(['title' => 'Không thể cập nhật Đơn', 'message' => 'Số lượng trong Kế hoạch yêu cầu rà soát về năng lực/công suất. Kế hoạch đã được đánh dấu cần rà soát.']));
+                                } else {
+                                    // Update project.qty_request and update capacity warning fields
+                                    $update_proj = ['qty_request' => intval($plan_data['qty_target'])];
+                                    // Merge capacity_check warnings into project if available
+                                    if (isset($capacity_check['warning_flag'])) $update_proj['warning_flag'] = $capacity_check['warning_flag'];
+                                    if (isset($capacity_check['warning_type'])) $update_proj['warning_type'] = $capacity_check['warning_type'];
+                                    if (isset($capacity_check['warning_details'])) $update_proj['warning_details'] = $capacity_check['warning_details'];
+
+                                    $this->db->where('id_project', $project->id_project)->update('project', $update_proj);
+
+                                    $affected = $this->db->affected_rows();
+                                    if ($affected > 0) {
+                                        // Log the change
+                                        if ($this->db->table_exists('audit_log')) {
+                                            $this->db->insert('audit_log', [
+                                                'user_id' => $this->session->userdata('user_id'),
+                                                'username' => $this->session->userdata('username'),
+                                                'action' => 'update_project_from_plan',
+                                                'module' => 'project',
+                                                'record_id' => $project->id_project,
+                                                'old_value' => json_encode(['qty_request' => $project->qty_request], JSON_UNESCAPED_UNICODE),
+                                                'new_value' => json_encode(['qty_request' => $plan_data['qty_target']], JSON_UNESCAPED_UNICODE),
+                                                'ip_address' => $this->input->ip_address(),
+                                                'user_agent' => $this->input->user_agent()
+                                            ]);
+                                        }
+
+                                        // Refresh project's derived warnings so UI reflects the new analysis
+                                        if (method_exists($this->OrderModel, 'refreshProjectWarnings')) {
+                                            $this->OrderModel->refreshProjectWarnings($project->id_project);
+                                        }
+
+                                        $this->session->set_flashdata('success_js', json_encode(['title' => 'Cập nhật Đơn', 'message' => 'Số lượng đơn đã được cập nhật theo Kế hoạch.']));
+
+                                    } else {
+                                        // No rows affected - record and mark plan for manual review
+                                        log_message('warning', 'UC8::updatePlan - project update affected 0 rows for project ' . ($project->id_project ?? ''));
+                                        if ($this->db->field_exists('needs_review', 'planning')) {
+                                            $this->db->where('id_plan', $id_plan)->update('planning', ['needs_review' => 1]);
+                                        }
+                                        if ($this->db->table_exists('audit_log')) {
+                                            $this->db->insert('audit_log', [
+                                                'user_id' => $this->session->userdata('user_id'),
+                                                'username' => $this->session->userdata('username'),
+                                                'action' => 'mark_plan_needs_review',
+                                                'module' => 'planning',
+                                                'record_id' => $id_plan,
+                                                'old_value' => json_encode(['attempted_update' => $update_proj], JSON_UNESCAPED_UNICODE),
+                                                'new_value' => json_encode(['reason' => 'update affected 0 rows, possible DB constraint or identical value'], JSON_UNESCAPED_UNICODE),
+                                                'ip_address' => $this->input->ip_address(),
+                                                'user_agent' => $this->input->user_agent()
+                                            ]);
+                                        }
+                                        $this->session->set_flashdata('warning_js', json_encode(['title' => 'Không thể cập nhật Đơn', 'message' => 'Cập nhật Đơn không thành công — Kế hoạch đã được đánh dấu cần rà soát và ghi nhận trong nhật ký.']));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    // Never fail the whole update if project sync fails; log and warn
+                    log_message('error', 'UC8::updatePlan - failed to sync plan qty to project: ' . $e->getMessage());
+                    $this->session->set_flashdata('warning_js', json_encode(['message' => 'Đã cập nhật Kế hoạch nhưng không thể đồng bộ Số lượng sang Đơn hàng (lỗi nội bộ).']));
+                }
+
                 // If caller requested auto-approve (button now always sets auto_approve=1), try to approve
                 $auto_approve = $this->input->post('auto_approve') ? 1 : 0;
                 if ($auto_approve && $id_plan) {
@@ -741,7 +903,12 @@ class UC8_planning extends CI_Controller
         // Use a subquery to join only the latest planning record per project
         $sql = "
             SELECT p.*, pl.id_plan, pl.pl_status, pl.qty_target,
-                   prod.product_name, prod.diameter, c.cust_name
+                   prod.product_name, prod.diameter, c.cust_name,
+                   CASE WHEN (COALESCE(pl.needs_review,0) = 1) THEN 1
+                        WHEN EXISTS (
+                            SELECT 1 FROM audit_log al WHERE al.module = 'planning' AND al.action = 'mark_plan_needs_review' AND al.record_id = pl.id_plan
+                        ) THEN 1
+                        ELSE 0 END AS plan_needs_review
             FROM project p
             LEFT JOIN (
                 SELECT id_project, MAX(id_plan) AS id_plan
@@ -772,7 +939,16 @@ class UC8_planning extends CI_Controller
     public function plans()
     {
         $sql = "
-            SELECT pl.*, p.project_name
+            SELECT pl.*, p.project_name,
+                CASE
+                    WHEN (COALESCE(pl.needs_review,0) = 1)
+                        THEN 1
+                    WHEN EXISTS (
+                        SELECT 1 FROM audit_log al
+                        WHERE al.module = 'planning' AND al.action = 'mark_plan_needs_review' AND al.record_id = pl.id_plan
+                    ) THEN 1
+                    ELSE 0
+                END AS needs_review
             FROM planning pl
             LEFT JOIN project p ON pl.id_project = p.id_project
             ORDER BY pl.end_date ASC, pl.id_plan DESC
