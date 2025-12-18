@@ -21,6 +21,26 @@
                         <p class="text-sm mb-0"><?= $shift->shift_code ?></p>
                     </div>
                     <div>
+                        <?php if ($shift->shift_status == 1): ?>
+                            <!-- Chưa bắt đầu - Show Start button -->
+                            <a href="<?= site_url('leader/start_shift/' . $shift->shift_id) ?>" 
+                               class="btn btn-sm btn-success me-2"
+                               onclick="return confirm('Xác nhận bắt đầu ca làm việc?')">
+                                <i class="material-icons text-sm">play_arrow</i> Bắt đầu ca
+                            </a>
+                        <?php elseif ($shift->shift_status == 2 && $shift->is_closed != 1): ?>
+                            <!-- Đang chạy và chưa chốt - Show End button -->
+                            <a href="<?= site_url('leader/end_shift/' . $shift->shift_id) ?>" 
+                               class="btn btn-sm btn-warning me-2">
+                                <i class="material-icons text-sm">stop</i> Kết thúc & Chốt ca
+                            </a>
+                        <?php elseif ($shift->is_closed == 1): ?>
+                            <!-- Đã chốt - Show view closure button -->
+                            <button class="btn btn-sm btn-info me-2" disabled>
+                                <i class="material-icons text-sm">check_circle</i> Đã chốt ca
+                            </button>
+                        <?php endif; ?>
+                        
                         <a href="<?= site_url('leader/shift/edit/' . $shift->shift_id) ?>" class="btn btn-sm btn-outline-dark">
                             <i class="material-icons text-sm">edit</i> Chỉnh sửa
                         </a>
@@ -110,6 +130,12 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab" aria-controls="staff" aria-selected="false">
                                 <i class="material-icons me-2">people</i>Nhân Sự
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="production-tab" data-bs-toggle="tab" data-bs-target="#production" type="button" role="tab" aria-controls="production" aria-selected="false">
+                                <i class="material-icons me-2">assessment</i>Sản lượng
+                                <span class="badge bg-success ms-2" id="productionRecordCount">0</span>
                             </button>
                         </li>
                     </ul>
@@ -209,6 +235,69 @@
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        <!-- Production Tab - Display simulated production data -->
+                        <div class="tab-pane fade" id="production" role="tabpanel" aria-labelledby="production-tab">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="mb-1">Dữ liệu sản lượng sản xuất</h6>
+                                    <p class="text-sm text-secondary mb-0">
+                                        <span class="status-indicator" id="simulatorStatusIndicator"></span>
+                                        <span id="simulatorStatusText">Đang kiểm tra trạng thái simulator...</span>
+                                    </p>
+                                </div>
+                                <div>
+                                    <a href="<?= site_url('simulator/settings'); ?>" class="btn btn-sm btn-outline-dark me-2" target="_blank">
+                                        <i class="material-icons text-sm">settings</i> Cài đặt
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="loadProductionData()" id="refreshProductionBtn">
+                                        <i class="material-icons text-sm">refresh</i> Làm mới
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Production Summary Cards -->
+                            <div class="row mb-4" id="productionSummaryCards">
+                                <div class="col-12 text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="text-sm text-secondary mt-2">Đang tải dữ liệu sản lượng...</p>
+                                </div>
+                            </div>
+
+                            <!-- Production Records Table -->
+                            <div class="card">
+                                <div class="card-header pb-0">
+                                    <h6>Chi tiết bản ghi sản lượng</h6>
+                                </div>
+                                <div class="card-body px-0 pt-0 pb-2">
+                                    <div class="table-responsive p-0">
+                                        <table class="table align-items-center mb-0" id="productionRecordsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thời gian</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Máy</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nhân viên</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Thành phẩm</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Phế phẩm</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Mục tiêu</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Hiệu suất</th>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Downtime</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="productionRecordsBody">
+                                                <tr>
+                                                    <td colspan="8" class="text-center py-4">
+                                                        <p class="text-sm text-secondary mb-0">Chưa có dữ liệu</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -793,4 +882,287 @@ function openBreakdownModal(assignmentId, machineCode) {
     window.openBreakdownModal = openBreakdownModal;
     
 }); // End document.ready
+
+// ============================================
+// Production Simulator Auto-Polling
+// ============================================
+let simulatorInterval = null;
+let simulatorEnabled = false;
+let simulatorIntervalSeconds = 300; // Default 5 minutes
+
+// Check simulator status
+function checkSimulatorStatus() {
+    const url = '<?= site_url('simulator/status'); ?>';
+    console.log('Checking simulator status at:', url);
+    
+    $.ajax({
+        url: url,
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                simulatorEnabled = data.enabled;
+                simulatorIntervalSeconds = data.interval || 300;
+                
+                const indicator = document.getElementById('simulatorStatusIndicator');
+                const statusText = document.getElementById('simulatorStatusText');
+                
+                if (simulatorEnabled) {
+                    indicator.style.cssText = 'width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; background-color: #4CAF50; animation: pulse 2s infinite;';
+                    statusText.innerHTML = '<strong class="text-success">Simulator đang BẬT</strong> - Tự động ghi nhận sau mỗi ' + (simulatorIntervalSeconds / 60) + ' phút';
+                    startSimulatorPolling();
+                } else {
+                    indicator.style.cssText = 'width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; background-color: #9E9E9E;';
+                    statusText.innerHTML = '<span class="text-secondary">Simulator đang TẮT</span> - <a href="<?= site_url('simulator/settings'); ?>" target="_blank">Bật tại đây</a>';
+                    stopSimulatorPolling();
+                }
+            } else {
+                // Migration not run or error
+                const indicator = document.getElementById('simulatorStatusIndicator');
+                const statusText = document.getElementById('simulatorStatusText');
+                indicator.style.cssText = 'width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; background-color: #FFC107;';
+                statusText.innerHTML = '<span class="text-warning">Migration chưa chạy</span> - <a href="<?= site_url('simulator/settings'); ?>" target="_blank">Xem hướng dẫn</a>';
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error checking simulator status:', error);
+            console.error('Status:', xhr.status);
+            console.error('Response Text (first 500 chars):', xhr.responseText.substring(0, 500));
+            
+            const indicator = document.getElementById('simulatorStatusIndicator');
+            const statusText = document.getElementById('simulatorStatusText');
+            if (indicator && statusText) {
+                indicator.style.cssText = 'width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; background-color: #F44336;';
+                if (xhr.status === 404) {
+                    statusText.innerHTML = '<span class="text-danger">Endpoint không tìm thấy (404)</span>';
+                } else {
+                    statusText.innerHTML = '<span class="text-danger">Lỗi kết nối (' + xhr.status + ')</span>';
+                }
+            }
+        }
+    });
+}
+
+// Start auto-polling
+function startSimulatorPolling() {
+    if (simulatorInterval) {
+        clearInterval(simulatorInterval);
+    }
+    
+    // Run once immediately
+    runSimulator();
+    
+    // Then run every interval
+    simulatorInterval = setInterval(runSimulator, simulatorIntervalSeconds * 1000);
+    
+    console.log('Simulator polling started: every ' + simulatorIntervalSeconds + ' seconds');
+}
+
+// Stop auto-polling
+function stopSimulatorPolling() {
+    if (simulatorInterval) {
+        clearInterval(simulatorInterval);
+        simulatorInterval = null;
+        console.log('Simulator polling stopped');
+    }
+}
+
+// Run simulator
+function runSimulator() {
+    console.log('Running simulator at ' + new Date().toLocaleTimeString());
+    
+    fetch('<?= site_url('simulator/run'); ?>', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Simulator run successful:', data);
+            // Auto-refresh production data if on production tab
+            const productionTab = document.getElementById('production-tab');
+            if (productionTab && productionTab.classList.contains('active')) {
+                loadProductionData();
+            }
+            // Update badge count
+            updateProductionBadge();
+        } else {
+            console.log('Simulator not enabled or no data:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error running simulator:', error);
+    });
+}
+
+// Load production data for this shift
+function loadProductionData() {
+    const shiftId = <?= $shift->shift_id ?>;
+    const refreshBtn = document.getElementById('refreshProductionBtn');
+    
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang tải...';
+    }
+    
+    $.ajax({
+        url: '<?= site_url('simulator/records/'); ?>' + shiftId,
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                displayProductionSummary(data.summary);
+                displayProductionRecords(data.records);
+                updateProductionBadge(data.count);
+            } else {
+                document.getElementById('productionSummaryCards').innerHTML = 
+                    '<div class="alert alert-info">Chưa có dữ liệu sản lượng</div>';
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading production data:', error);
+            console.log('XHR Response:', xhr.responseText.substring(0, 200));
+            document.getElementById('productionSummaryCards').innerHTML = 
+                '<div class="alert alert-danger">Lỗi tải dữ liệu. Vui lòng refresh trang.</div>';
+        },
+        complete: function() {
+            if (refreshBtn) {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="material-icons text-sm">refresh</i> Làm mới';
+            }
+        }
+    });
+}
+
+// Display production summary cards
+function displayProductionSummary(summary) {
+    const container = document.getElementById('productionSummaryCards');
+    
+    if (!summary || summary.length === 0) {
+        container.innerHTML = '<div class="col-12"><div class="alert alert-info">Chưa có dữ liệu sản lượng</div></div>';
+        return;
+    }
+    
+    let html = '';
+    summary.forEach(item => {
+        const efficiencyColor = item.avg_efficiency >= 90 ? 'success' : (item.avg_efficiency >= 70 ? 'warning' : 'danger');
+        const defectColor = item.avg_defect_rate <= 3 ? 'success' : (item.avg_defect_rate <= 5 ? 'warning' : 'danger');
+        
+        html += `
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="mb-2">${item.machine_code}</h6>
+                        <p class="text-xs text-secondary mb-3">${item.machine_name}</p>
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="text-xs mb-1">Thành phẩm</p>
+                                <h5 class="text-success mb-0">${item.total_good || 0}</h5>
+                            </div>
+                            <div class="col-6">
+                                <p class="text-xs mb-1">Phế phẩm</p>
+                                <h5 class="text-danger mb-0">${item.total_defect || 0}</h5>
+                            </div>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-${efficiencyColor}">Hiệu suất: ${parseFloat(item.avg_efficiency || 0).toFixed(1)}%</small>
+                            <small class="text-${defectColor}">Tỷ lệ lỗi: ${parseFloat(item.avg_defect_rate || 0).toFixed(1)}%</small>
+                        </div>
+                        ${item.total_downtime > 0 ? `<small class="text-warning d-block mt-1">Downtime: ${item.total_downtime} phút</small>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Display production records table
+function displayProductionRecords(records) {
+    const tbody = document.getElementById('productionRecordsBody');
+    
+    if (!records || records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><p class="text-sm text-secondary mb-0">Chưa có bản ghi sản lượng</p></td></tr>';
+        return;
+    }
+    
+    let html = '';
+    records.forEach(record => {
+        const efficiencyClass = record.efficiency_rate >= 90 ? 'text-success' : (record.efficiency_rate >= 70 ? 'text-warning' : 'text-danger');
+        const defectClass = record.defect_rate <= 3 ? 'text-success' : (record.defect_rate <= 5 ? 'text-warning' : 'text-danger');
+        
+        html += `
+            <tr>
+                <td class="text-xs">${new Date(record.timestamp).toLocaleString('vi-VN')}</td>
+                <td class="text-xs"><strong>${record.machine_code}</strong><br><small class="text-secondary">${record.machine_name}</small></td>
+                <td class="text-xs">${record.staff_name || '<span class="text-secondary">N/A</span>'}</td>
+                <td class="text-center text-xs"><span class="badge bg-success">${record.good_count}</span></td>
+                <td class="text-center text-xs"><span class="badge bg-danger">${record.defect_count}</span></td>
+                <td class="text-center text-xs"><span class="badge bg-secondary">${record.target_count}</span></td>
+                <td class="text-center text-xs ${efficiencyClass}"><strong>${parseFloat(record.efficiency_rate).toFixed(1)}%</strong></td>
+                <td class="text-center text-xs">
+                    ${record.downtime_minutes > 0 ? 
+                        `<span class="badge bg-warning">${record.downtime_minutes}m</span><br><small class="text-secondary">${record.downtime_reason || ''}</small>` : 
+                        '<span class="text-secondary">-</span>'}
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+// Update production badge count
+function updateProductionBadge(count) {
+    const badge = document.getElementById('productionRecordCount');
+    if (badge) {
+        if (count !== undefined) {
+            badge.textContent = count;
+        } else {
+            // Fetch count
+            const shiftId = <?= $shift->shift_id ?>;
+            fetch('<?= site_url('simulator/records/'); ?>' + shiftId, {
+                method: 'GET',
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    badge.textContent = data.count || 0;
+                }
+            });
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check simulator status immediately
+    checkSimulatorStatus();
+    
+    // Load production data if on production tab
+    const productionTab = document.getElementById('production-tab');
+    if (productionTab) {
+        productionTab.addEventListener('shown.bs.tab', function() {
+            loadProductionData();
+        });
+    }
+    
+    // Re-check simulator status every minute
+    setInterval(checkSimulatorStatus, 60000);
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    stopSimulatorPolling();
+});
+
+// Make function globally accessible
+window.loadProductionData = loadProductionData;
 </script>

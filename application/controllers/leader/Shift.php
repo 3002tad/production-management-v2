@@ -268,9 +268,9 @@ class Shift extends CI_Controller
         // Map machine type to appropriate roles
         $roles = [];
         if ($machine_type === 'quality_control') {
-            $roles = ['qc'];
+            $roles = ['qc_staff']; // Changed from 'qc' to match database role_name
         } else {
-            $roles = ['worker'];
+            $roles = ['worker', 'production_staff']; // Support both worker and production_staff
         }
         
         try {

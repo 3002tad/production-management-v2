@@ -54,6 +54,15 @@ $route['default_controller'] = 'login';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = false;
 
+// Production Simulator Routes - MUST BE FIRST (before any catch-all routes)
+$route['simulator/records/(:num)'] = 'Simulator/get_shift_records/$1';
+$route['simulator/status'] = 'Simulator/status';
+$route['simulator/run'] = 'Simulator/run';
+$route['simulator/toggle'] = 'Simulator/toggle';
+$route['simulator/update'] = 'Simulator/update_settings';
+$route['simulator/(:any)'] = 'Simulator/$1';
+$route['simulator'] = 'Simulator/settings';
+
 $route['search'] = 'petugas/cari_member';
 
 // User Management Routes (UC6 Integration)
@@ -71,18 +80,24 @@ $route['qc/sessions'] = 'qc/session_list';         // List all sessions
 $route['qc/reports'] = 'qc/reports';               // QC Reports
 
 // Leader Module Routes - All controllers in leader/ subfolder
+// Shift Closure Routes (must be BEFORE shift routes)
+$route['leader/start_shift/(:num)'] = 'leader/Leader/start_shift/$1';
+$route['leader/end_shift/(:num)'] = 'leader/Leader/end_shift/$1';
+$route['leader/save_closure'] = 'leader/Leader/save_closure';
+$route['leader/closure_detail/(:num)'] = 'leader/Leader/closure_detail/$1';
+
 // Shift Management Routes (specific routes before catch-all)
 $route['leader/shift/detail/(:num)'] = 'leader/shift/detail/$1';
 $route['leader/shift/(:any)'] = 'leader/shift/$1';
 $route['leader/shift'] = 'leader/shift/index';
 
 // Machine Management Routes (specific routes before catch-all)
-$route['leader/machine/(:any)'] = 'leader/machine/$1';
-$route['leader/machine'] = 'leader/machine/index';
+$route['leader/machine/(:any)'] = 'leader/Machine/$1';
+$route['leader/machine'] = 'leader/Machine/index';
 
-// Leader dashboard and functions
-$route['leader/(:any)'] = 'leader/leader/$1';
-$route['leader'] = 'leader/leader/index';
+// Leader dashboard and functions - This is catch-all, must be LAST
+$route['leader/(:any)'] = 'leader/Leader/$1';
+$route['leader'] = 'leader/Leader/index';
 
 // Incident Reports Routes (UC15 - BCSC)
 $route['uc15_qlns/uc15_bcsc'] = 'UC15_BCSC/UC15_BCSC/index';

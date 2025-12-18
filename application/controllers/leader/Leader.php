@@ -872,4 +872,193 @@ class Leader extends CI_Controller
         $this->session->unset_userdata('user_id');
         redirect('login/');
     }
+    
+    // ================================================================================
+    // SHIFT CLOSURE METHODS - Migration 017
+    // ================================================================================
+    
+    /**
+     * Bắt đầu ca làm việc
+     */
+    public function start_shift($shift_id)
+    {
+        try {
+            $this->load->model('leader/ShiftClosureModel', 'shiftClosure');
+            
+            // Check if shift exists and not already started
+            $shift = $this->db->where('shift_id', $shift_id)->get('production_shifts')->row();
+            
+            if (!$shift) {
+                $this->session->set_flashdata('error', 'Không tìm thấy ca làm việc');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            if ($shift->shift_status == 2) {
+                $this->session->set_flashdata('warning', 'Ca này đã được bắt đầu');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            if ($shift->shift_status == 3 || $shift->is_closed == 1) {
+                $this->session->set_flashdata('error', 'Ca này đã hoàn thành hoặc đóng');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            // Update status to Running
+            $user_id = $this->session->userdata('user_id');
+            $result = $this->shiftClosure->updateShiftStatus($shift_id, 2, $user_id);
+            
+            if ($result) {
+                $this->session->set_flashdata('success', 'Đã bắt đầu ca làm việc');
+            } else {
+                $this->session->set_flashdata('error', 'Lỗi khi bắt đầu ca');
+            }
+            
+        } catch (Exception $e) {
+            log_message('error', 'Leader::start_shift() - Error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Lỗi hệ thống: ' . $e->getMessage());
+        }
+        
+        redirect('leader/shift/detail/' . $shift_id);
+    }
+    
+    /**
+     * Kết thúc ca và hiển thị form chốt ca
+     */
+    public function end_shift($shift_id)
+    {
+        try {
+            $this->load->model('leader/ShiftClosureModel', 'shiftClosure');
+            
+            // Check if shift exists and is running
+            $shift = $this->db->where('shift_id', $shift_id)->get('production_shifts')->row();
+            
+            if (!$shift) {
+                $this->session->set_flashdata('error', 'Không tìm thấy ca làm việc');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            if ($shift->shift_status != 2) {
+                $this->session->set_flashdata('error', 'Ca phải ở trạng thái "Đang chạy" để kết thúc');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            if ($shift->is_closed == 1) {
+                $this->session->set_flashdata('error', 'Ca này đã được chốt');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            // Get aggregated data for closure form
+            $closure_data = $this->shiftClosure->aggregateShiftData($shift_id);
+            
+            if (!$closure_data) {
+                $this->session->set_flashdata('error', 'Không thể tổng hợp dữ liệu ca');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            // Get defect reasons for dropdown
+            $defect_reasons = $this->shiftClosure->getDefectReasons();
+            
+            $data = [
+                'title' => 'Chốt ca: ' . $shift->shift_name,
+                'shift' => $closure_data['shift'],
+                'machines' => $closure_data['machines'],
+                'totals' => $closure_data['totals'],
+                'warnings' => $closure_data['warnings'],
+                'has_warnings' => $closure_data['has_warnings'],
+                'thresholds' => $closure_data['thresholds'],
+                'defect_reasons' => $defect_reasons,
+                'content' => 'leader/shift/closure_form',
+                'navlink' => 'shift'
+            ];
+            
+            $this->load->view('leader/vbackend', $data);
+            
+        } catch (Exception $e) {
+            log_message('error', 'Leader::end_shift() - Error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Lỗi hệ thống: ' . $e->getMessage());
+            redirect('leader/shift/detail/' . $shift_id);
+        }
+    }
+    
+    /**
+     * Lưu phiếu chốt ca (AJAX)
+     */
+    public function save_closure()
+    {
+        if (!$this->input->is_ajax_request()) {
+            show_404();
+            return;
+        }
+        
+        try {
+            $this->load->model('leader/ShiftClosureModel', 'shiftClosure');
+            
+            $shift_id = $this->input->post('shift_id');
+            $notes = $this->input->post('notes');
+            $confirmed_data = $this->input->post('confirmed_data');
+            $user_id = $this->session->userdata('user_id');
+            
+            // Decode confirmed data from JSON
+            if (is_string($confirmed_data)) {
+                $confirmed_data = json_decode($confirmed_data, true);
+            }
+            
+            // Create closure
+            $result = $this->shiftClosure->createClosure($shift_id, $user_id, $confirmed_data, $notes);
+            
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode($result));
+                
+        } catch (Exception $e) {
+            log_message('error', 'Leader::save_closure() - Error: ' . $e->getMessage());
+            
+            $this->output
+                ->set_content_type('application/json')
+                ->set_status_header(500)
+                ->set_output(json_encode([
+                    'success' => false,
+                    'message' => 'Lỗi hệ thống: ' . $e->getMessage()
+                ]));
+        }
+    }
+    
+    /**
+     * Xem chi tiết phiếu chốt ca
+     */
+    public function closure_detail($closure_id)
+    {
+        try {
+            $this->load->model('leader/ShiftClosureModel', 'shiftClosure');
+            
+            $closure = $this->shiftClosure->getClosureDetails($closure_id);
+            
+            if (!$closure) {
+                $this->session->set_flashdata('error', 'Không tìm thấy phiếu chốt ca');
+                redirect('leader/');
+                return;
+            }
+            
+            $data = [
+                'title' => 'Chi tiết phiếu chốt ca: ' . $closure->closure_code,
+                'closure' => $closure,
+                'content' => 'leader/shift/closure_detail',
+                'navlink' => 'shift'
+            ];
+            
+            $this->load->view('leader/vbackend', $data);
+            
+        } catch (Exception $e) {
+            log_message('error', 'Leader::closure_detail() - Error: ' . $e->getMessage());
+            $this->session->set_flashdata('error', 'Lỗi hệ thống: ' . $e->getMessage());
+            redirect('leader/');
+        }
+    }
 }
