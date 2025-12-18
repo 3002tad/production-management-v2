@@ -352,9 +352,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var msgType = urlParams.get('msg'); // Get msg value
     
     // SessionStorage backup - tránh hiển thị lại khi refresh
-    var toastShown = sessionStorage.getItem('toast_shown_addproject');
-    
-    if (msgType && !toastShown) {
+    // Show toast whenever ?msg param is present (no persistent blocking), then remove the query param
+    if (msgType) {
         <?php if ($this->session->flashdata('success_js')): ?>
             // SUCCESS - Only if msg=success
             if (msgType === 'success') {
@@ -373,9 +372,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 duration: 3000 // 3 giây
             });
             
-            // Đánh dấu đã hiển thị
-            sessionStorage.setItem('toast_shown_addproject', 'true');
-            
             // Xóa parameter khỏi URL
             window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -390,8 +386,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     details: warningData.details || [],
                     duration: 5000
                 });
-                
-                sessionStorage.setItem('toast_shown_addproject', 'true');
                 window.history.replaceState({}, document.title, window.location.pathname);
         <?php endif; ?>
 
@@ -405,17 +399,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     message: errorData.message,
                     duration: 6000
                 });
-                
-                sessionStorage.setItem('toast_shown_addproject', 'true');
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         <?php endif; ?>
     }
     
-    // Xóa flag khi navigate sang trang khác
-    window.addEventListener('beforeunload', function() {
-        sessionStorage.removeItem('toast_shown_addproject');
-    });
+
 
     // ========================================
     // CUSTOMER NOTES MANAGEMENT
