@@ -24,6 +24,21 @@
     <!-- Create Shift Form -->
     <div class="row">
         <div class="col-md-10 offset-md-1">
+            <?php if (!empty($plan_info)): ?>
+            <!-- Plan Info Card -->
+            <div class="card mb-3 bg-gradient-info">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="material-icons text-white me-2">assignment</i>
+                        <div class="text-white">
+                            <h6 class="text-white mb-0">Kế hoạch: <?= $plan_info->plan_name ?></h6>
+                            <small class="text-white opacity-8">Tạo ca làm việc cho kế hoạch này</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="card">
                 <div class="card-header pb-0">
                     <div class="d-flex align-items-center">
@@ -33,6 +48,10 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="<?= site_url('leader/shift/store'); ?>" id="createShiftForm">
+                        <?php if (!empty($id_plan)): ?>
+                        <input type="hidden" name="id_plan" value="<?= $id_plan ?>">
+                        <?php endif; ?>
+                        
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="input-group input-group-static mb-4">

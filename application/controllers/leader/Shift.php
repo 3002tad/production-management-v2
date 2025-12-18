@@ -535,9 +535,19 @@ class Shift extends CI_Controller
         $this->db->order_by('z.zone_code, pl.line_code');
         $lines = $this->db->get()->result();
 
+        // Get id_plan from URL if provided
+        $id_plan = $this->input->get('id_plan');
+        $plan_info = null;
+        
+        if ($id_plan) {
+            $plan_info = $this->db->get_where('planning', ['id_plan' => $id_plan])->row();
+        }
+
         $data = [
             'zones' => $zones,
             'lines' => $lines,
+            'id_plan' => $id_plan,
+            'plan_info' => $plan_info,
             'content' => 'leader/shift/create',
             'navlink' => 'shift'
         ];
@@ -558,17 +568,29 @@ class Shift extends CI_Controller
             'end_time' => $this->input->post('end_time'),
             'target_quantity' => $this->input->post('target_quantity'),
             'notes' => $this->input->post('notes'),
-            'created_by_user_id' => $this->session->userdata('user_id')
+            'created_by' => $this->session->userdata('user_id')
         ];
+
+        // Add id_plan if provided
+        $id_plan = $this->input->post('id_plan');
+        if (!empty($id_plan)) {
+            $shift_data['id_plan'] = $id_plan;
+        }
 
         $result = $this->shiftModel->createShift($shift_data);
 
         if ($result) {
             $this->session->set_flashdata('success', 'Tạo ca làm việc thành công');
-            redirect('leader/shift/detail/' . $result);
+            
+            // Redirect back to plan detail if id_plan exists, otherwise to shift detail
+            if (!empty($id_plan)) {
+                redirect('leader/shift?id_plan=' . $id_plan);
+            } else {
+                redirect('leader/shift/detail/' . $result);
+            }
         } else {
             $this->session->set_flashdata('error', 'Tạo ca thất bại');
-            redirect('leader/shift/create');
+            redirect('leader/shift/create' . (!empty($id_plan) ? '?id_plan=' . $id_plan : ''));
         }
     }
 
