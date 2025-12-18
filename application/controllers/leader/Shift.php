@@ -61,23 +61,29 @@ class Shift extends CI_Controller
             planning.plan_name, 
             planning.pl_status,
             planning.qty_target,
-            planning.end_date,
-            COUNT(DISTINCT plan_shift.id_shift) as suggested_shift_count,
-            COUNT(DISTINCT ps.shift_id) as actual_shift_count,
-            SUM(CASE WHEN ps.shift_status = 3 THEN 1 ELSE 0 END) as completed_shift_count
+            planning.end_date
         ');
         $this->db->from('planning');
-        $this->db->join('plan_shift', 'plan_shift.id_plan = planning.id_plan', 'left');
-        $this->db->join('production_shifts ps', 'ps.id_plan = planning.id_plan', 'left');
 
         if (!empty($filters['id_plan'])) {
             $this->db->where('planning.id_plan', $filters['id_plan']);
         }
         
-        $this->db->group_by('planning.id_plan');
         $this->db->order_by('planning.pl_status', 'ASC'); // Active plans first
         $this->db->order_by('planning.end_date', 'ASC');
         $plans = $this->db->get()->result();
+        
+        // Calculate shift counts for each plan
+        foreach ($plans as $plan) {
+            // Count suggested shifts from plan_shift
+            $plan->suggested_shift_count = $this->db->where('id_plan', $plan->id_plan)->count_all_results('plan_shift');
+            
+            // Count actual shifts
+            $plan->actual_shift_count = $this->db->where('id_plan', $plan->id_plan)->count_all_results('production_shifts');
+            
+            // Count completed shifts (status = 3)
+            $plan->completed_shift_count = $this->db->where('id_plan', $plan->id_plan)->where('shift_status', 3)->count_all_results('production_shifts');
+        }
 
         // Get shifts for each plan
         foreach ($plans as $plan) {
