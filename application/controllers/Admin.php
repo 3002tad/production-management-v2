@@ -1193,8 +1193,232 @@ class Admin extends CI_Controller
     }
 
     // ========================================================================
-    // NOTE: UC6 User Management now handled by admin/UserController
-    // Routes configured in routes.php point directly to admin/UserController
+    // UC6 - QUẢN LÝ NGƯỜI DÙNG (User Account Management)
+    // ========================================================================
+
+    public function user()
+    {
+        $this->load->model('admin/UserManagementModel', 'userModel');
+        
+        $filters = [
+            'role' => $this->input->get('role'),
+            'status' => $this->input->get('status'),
+            'search' => $this->input->get('search')
+        ];
+
+        $data = [
+            'users' => $this->userModel->getAllUsers($filters),
+            'roles' => $this->userModel->getRoles(),
+            'statistics' => $this->userModel->getStatistics(),
+            'content' => 'admin/user/user_list',
+            'navlink' => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    public function addUser()
+    {
+        $this->load->model('admin/UserManagementModel', 'userModel');
+        $this->load->helper(array('form','url'));
+        $this->load->library('form_validation');
+
+        if ($this->input->method() === 'post') {
+            $this->form_validation->set_rules('username', 'Username', 'required|is_unique[user.username]');
+            $this->form_validation->set_rules('password', 'Password', 'required|min_length[6]');
+            $this->form_validation->set_rules('email', 'Email', 'valid_email');
+            $this->form_validation->set_rules('role_id', 'Role', 'required');
+
+            if ($this->form_validation->run() == FALSE) {
+                $data['error'] = validation_errors();
+                $data['staff_without_user'] = $this->userModel->getStaffWithoutUser();
+                $data['roles'] = $this->userModel->getRoles();
+                $data['content'] = 'admin/user/user_add';
+                $data['navlink'] = 'user';
+                $this->load->view('admin/vbackend', $data);
+                return;
+            }
+
+            $userData = [
+                'username' => $this->input->post('username'),
+                'password' => password_hash($this->input->post('password'), PASSWORD_DEFAULT),
+                'email' => $this->input->post('email'),
+                'role_id' => $this->input->post('role_id'),
+                'staff_id' => $this->input->post('staff_id') ?: null
+            ];
+
+            $result = $this->userModel->createUser($userData, $this->session->userdata('user_id'));
+
+            if ($result['success']) {
+                $this->session->set_flashdata('success', $result['message']);
+                redirect('Admin/user');
+            } else {
+                $this->session->set_flashdata('error', $result['message']);
+                redirect('Admin/addUser');
+            }
+        }
+
+        $data = [
+            'staff_without_user' => $this->userModel->getStaffWithoutUser(),
+            'roles' => $this->userModel->getRoles(),
+            'content' => 'admin/user/user_add',
+            'navlink' => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    public function updateUser()
+    {
+        $this->load->model('admin/UserManagementModel', 'userModel');
+        $this->load->helper(array('form','url'));
+        $this->load->library('form_validation');
+        
+        $id = $this->uri->segment(3);
+        $user = $this->userModel->getUserById($id);
+        
+        if (!$user) {
+            show_error('User not found', 404);
+        }
+
+        if ($this->input->method() === 'post') {
+            $this->form_validation->set_rules('username', 'Username', 'required');
+            $this->form_validation->set_rules('email', 'Email', 'valid_email');
+            $this->form_validation->set_rules('role_id', 'Role', 'required');
+
+            if ($this->form_validation->run() == FALSE) {
+                $data['error'] = validation_errors();
+                $data['user'] = $user;
+                $data['staff_without_user'] = $this->userModel->getStaffWithoutUser();
+                $data['roles'] = $this->userModel->getRoles();
+                $data['content'] = 'admin/user/user_edit';
+                $data['navlink'] = 'user';
+                $this->load->view('admin/vbackend', $data);
+                return;
+            }
+
+            $userData = [
+                'username' => $this->input->post('username'),
+                'email' => $this->input->post('email'),
+                'role_id' => $this->input->post('role_id'),
+                'staff_id' => $this->input->post('staff_id') ?: null
+            ];
+
+            if ($this->input->post('password')) {
+                $userData['password'] = password_hash($this->input->post('password'), PASSWORD_DEFAULT);
+            }
+
+            $result = $this->userModel->updateUser($id, $userData, $this->session->userdata('user_id'));
+
+            if ($result['success']) {
+                $this->session->set_flashdata('success', $result['message']);
+                redirect('Admin/user');
+            } else {
+                $this->session->set_flashdata('error', $result['message']);
+                redirect('Admin/updateUser/' . $id);
+            }
+        }
+
+        $data = [
+            'user' => $user,
+            'staff_without_user' => $this->userModel->getStaffWithoutUser(),
+            'roles' => $this->userModel->getRoles(),
+            'content' => 'admin/user/user_edit',
+            'navlink' => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    public function deleteUser()
+    {
+        $this->load->model('admin/UserManagementModel', 'userModel');
+        
+        $id = $this->uri->segment(3);
+        $result = $this->userModel->deleteUser($id, $this->session->userdata('user_id'));
+
+        if ($result['success']) {
+            $this->session->set_flashdata('success', $result['message']);
+        } else {
+            $this->session->set_flashdata('error', $result['message']);
+        }
+
+        redirect('Admin/user');
+    }
+
+    public function toggleUserStatus()
+    {
+        $this->load->model('admin/UserManagementModel', 'userModel');
+        
+        $id = $this->uri->segment(3);
+        $result = $this->userModel->toggleUserStatus($id, $this->session->userdata('user_id'));
+
+        $response = [
+            'success' => (bool) ($result['success'] ?? false),
+            'message' => $result['message'] ?? ''
+        ];
+
+        if ($this->input->is_ajax_request()) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode($response));
+            return;
+        }
+
+        if ($response['success']) {
+            $this->session->set_flashdata('success', $response['message']);
+        } else {
+            $this->session->set_flashdata('error', $response['message']);
+        }
+
+        redirect('admin/user');
+    }
+
+    public function userDetail($id)
+    {
+        $this->load->model('admin/UserManagementModel', 'userModel');
+
+        $user = $this->userModel->getUserById($id);
+        if (!$user) {
+            show_error('User not found', 404);
+        }
+
+        $data = [
+            'user' => $user,
+            'content' => 'admin/user/user_detail',
+            'navlink' => 'user',
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    public function userResetPassword($id)
+    {
+        $this->load->model('admin/UserManagementModel', 'userModel');
+
+        $result = $this->userModel->resetPassword($id, $this->session->userdata('user_id'));
+
+        $response = [
+            'success' => (bool) ($result['success'] ?? false),
+            'message' => $result['message'] ?? '',
+        ];
+
+        if ($this->input->is_ajax_request()) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode($response));
+            return;
+        }
+
+        if ($response['success']) {
+            $this->session->set_flashdata('success', $response['message']);
+        } else {
+            $this->session->set_flashdata('error', $response['message']);
+        }
+
+        redirect('admin/user');
+    }
+
     // ========================================================================
     // Helper Methods
     // ========================================================================

@@ -69,15 +69,25 @@ $route['simulator'] = 'Simulator/settings';
 
 // =====================================================
 // User Management Routes (UC6 - Core & Security)
-// Routes to admin/User controller (subfolder)
+// Map friendly URLs used in views to Admin controller methods
 // =====================================================
-$route['admin/user/toggle_status/(:num)'] = 'admin/User/toggle_status/$1';
-$route['admin/user/delete/(:num)'] = 'admin/User/delete/$1';
-$route['admin/user/update/(:num)'] = 'admin/User/update/$1';
-$route['admin/user/edit/(:num)'] = 'admin/User/edit/$1';
-$route['admin/user/create'] = 'admin/User/create';
-$route['admin/user/add'] = 'admin/User/add';
-$route['admin/user'] = 'admin/User/index';
+// Danh sách user
+$route['admin/user'] = 'Admin/user';
+
+// Thêm user
+$route['admin/user_add'] = 'Admin/addUser';
+$route['admin/user_add_process'] = 'Admin/addUser';
+
+// Chỉnh sửa user
+$route['admin/user_edit/(:num)'] = 'Admin/updateUser/$1';
+$route['admin/user_edit_process'] = 'Admin/updateUser';
+
+// Chi tiết user
+$route['admin/user_detail/(:num)'] = 'Admin/userDetail/$1';
+
+// Hành động AJAX: reset mật khẩu & khóa/mở khóa
+$route['admin/user_reset_password/(:num)'] = 'Admin/userResetPassword/$1';
+$route['admin/user_lock/(:num)'] = 'Admin/toggleUserStatus/$1';
 
 // =====================================================
 // BOD Module Routes (UC1, UC2, UC7, UC8)
