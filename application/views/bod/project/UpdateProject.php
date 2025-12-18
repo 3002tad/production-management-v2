@@ -253,6 +253,8 @@ document.addEventListener('DOMContentLoaded', function() {
     (function() {
         var urlParams = new URLSearchParams(window.location.search);
         var msgType = urlParams.get('msg');
+        // Define toastShown default to avoid ReferenceError from other scripts
+        var toastShown = sessionStorage.getItem('toast_shown') || sessionStorage.getItem('toast_shown_' + window.location.pathname) || null;
 
         // Minimal fallback showToast if global function not available
         if (typeof showToast !== 'function') {
@@ -269,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
-        if (msgType && !toastShown) {
+        if (msgType) {
             <?php if ($this->session->flashdata('success_js')): ?>
                 if (msgType === 'success') {
                     const successData = <?= $this->session->flashdata('success_js'); ?>;
