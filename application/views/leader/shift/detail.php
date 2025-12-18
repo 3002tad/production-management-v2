@@ -103,31 +103,53 @@
                 <div class="card-header pb-0">
                     <ul class="nav nav-tabs" id="shiftTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab" aria-controls="staff" aria-selected="true">
-                                <i class="material-icons me-2">people</i>Nhân Sự
+                            <button class="nav-link active" id="machine-tab" data-bs-toggle="tab" data-bs-target="#machine" type="button" role="tab" aria-controls="machine" aria-selected="true">
+                                <i class="material-icons me-2">precision_manufacturing</i>Máy/Dây Chuyền
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="machine-tab" data-bs-toggle="tab" data-bs-target="#machine" type="button" role="tab" aria-controls="machine" aria-selected="false">
-                                <i class="material-icons me-2">precision_manufacturing</i>Máy/Dây Chuyền
+                            <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab" aria-controls="staff" aria-selected="false">
+                                <i class="material-icons me-2">people</i>Nhân Sự
                             </button>
                         </li>
                     </ul>
                 </div>
                 <div class="card-body">
                     <div class="tab-content" id="shiftTabsContent">
-                        <!-- Staff Tab -->
-                        <div class="tab-pane fade show active" id="staff" role="tabpanel" aria-labelledby="staff-tab">
+                        <!-- Machine Tab - NEW LOGIC: Show machines by line with staff assignments -->
+                        <div class="tab-pane fade show active" id="machine" role="tabpanel" aria-labelledby="machine-tab">
+                            <div class="alert alert-info">
+                                <i class="material-icons">info</i>
+                                <strong>Lưu ý:</strong> Máy đã được gán cố định vào dây chuyền <strong><?= $shift->line_code ?></strong>. 
+                                Chỉ cần phân công nhân sự vào từng máy.
+                            </div>
+
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6>Danh Sách Nhân Sự</h6>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#batchAssignModal">
-                                        <i class="material-icons">group_add</i> Phân công hàng loạt
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal">
-                                        <i class="material-icons">person_add</i> Thêm nhân sự
-                                    </button>
+                                <h6>Máy móc của dây chuyền <?= $shift->line_name ?> (<?= $shift->line_code ?>)</h6>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadMachinesByLine()">
+                                    <i class="material-icons">refresh</i> Tải lại
+                                </button>
+                            </div>
+                            
+                            <!-- Machine Cards with Staff Assignments -->
+                            <div class="row" id="machineCardsContainer">
+                                <!-- Machines will be loaded here via AJAX -->
+                                <div class="col-12 text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Staff Tab (View Only) -->
+                        <div class="tab-pane fade" id="staff" role="tabpanel" aria-labelledby="staff-tab">
+                            <div class="alert alert-info">
+                                <i class="material-icons">info</i>
+                                <strong>Lưu ý:</strong> Danh sách nhân sự được gán từ các máy trong tab "Máy/Dây Chuyền". Đây chỉ là chế độ xem tổng quan.
+                            </div>
+                            <div class="mb-3">
+                                <h6>Danh Sách Nhân Sự Đã Gán</h6>
                             </div>
                             
                             <div class="table-responsive">
@@ -135,18 +157,17 @@
                                     <thead>
                                         <tr>
                                             <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nhân viên</th>
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Vai trò trong ca</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Vai trò</th>
                                             <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Chức vụ</th>
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ghi chú</th>
-                                            <th class="text-secondary opacity-7"></th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Máy được gán</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if (empty($assigned_staff)): ?>
                                             <tr>
-                                                <td colspan="5" class="text-center py-4">
+                                                <td colspan="4" class="text-center py-4">
                                                     <i class="material-icons text-secondary" style="font-size: 48px;">person_off</i>
-                                                    <p class="text-sm text-secondary mb-0">Chưa phân công nhân sự</p>
+                                                    <p class="text-sm text-secondary mb-0">Chưa có nhân sự được gán vào máy</p>
                                                 </td>
                                             </tr>
                                         <?php else: ?>
@@ -181,13 +202,7 @@
                                                         <p class="text-xs font-weight-bold mb-0"><?= $staff->department ?> - <?= $staff->position ?></p>
                                                     </td>
                                                     <td>
-                                                        <p class="text-xs text-secondary mb-0"><?= $staff->notes ?? '-' ?></p>
-                                                    </td>
-                                                    <td class="align-middle">
-                                                        <button type="button" class="btn btn-link text-danger text-gradient px-3 mb-0" 
-                                                                onclick="removeStaff(<?= $staff->assignment_id ?>)">
-                                                            <i class="material-icons text-sm me-2">delete</i>Xóa
-                                                        </button>
+                                                        <p class="text-xs text-secondary mb-0"><?= $staff->machine_code ?? 'N/A' ?></p>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -197,84 +212,30 @@
                             </div>
                         </div>
 
-                        <!-- Machine Tab -->
+                        <!-- Machine Tab - NEW LOGIC: Show machines by line with staff assignments -->
                         <div class="tab-pane fade" id="machine" role="tabpanel" aria-labelledby="machine-tab">
+                            <div class="alert alert-info">
+                                <i class="material-icons">info</i>
+                                <strong>Lưu ý:</strong> Máy đã được gán cố định vào dây chuyền <strong><?= $shift->line_code ?></strong>. 
+                                Chỉ cần phân công nhân sự vào từng máy.
+                            </div>
+
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6>Danh Sách Máy/Dây Chuyền</h6>
-                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMachineModal">
-                                    <i class="material-icons">add</i> Gán máy
+                                <h6>Máy móc của dây chuyền <?= $shift->line_name ?> (<?= $shift->line_code ?>)</h6>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadMachinesByLine()">
+                                    <i class="material-icons">refresh</i> Tải lại
                                 </button>
                             </div>
                             
-                            <div class="table-responsive mb-4">
-                                <table class="table align-items-center mb-0" id="machineTable">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Máy</th>
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Loại</th>
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Thời gian gán</th>
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Trạng thái</th>
-                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Ghi chú</th>
-                                            <th class="text-secondary opacity-7"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (empty($assigned_machines)): ?>
-                                            <tr>
-                                                <td colspan="6" class="text-center py-4">
-                                                    <i class="material-icons text-secondary" style="font-size: 48px;">category</i>
-                                                    <p class="text-sm text-secondary mb-0">Chưa gán máy</p>
-                                                </td>
-                                            </tr>
-                                        <?php else: ?>
-                                            <?php foreach ($assigned_machines as $machine): ?>
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex px-2 py-1">
-                                                            <div class="d-flex flex-column justify-content-center">
-                                                                <h6 class="mb-0 text-sm"><?= $machine->machine_code ?></h6>
-                                                                <p class="text-xs text-secondary mb-0"><?= $machine->machine_name ?></p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <p class="text-xs font-weight-bold mb-0"><?= $machine->machine_type ?></p>
-                                                    </td>
-                                                    <td>
-                                                        <p class="text-xs text-secondary mb-0">
-                                                            <?= date('d/m/Y H:i', strtotime($machine->start_at)) ?>
-                                                        </p>
-                                                    </td>
-                                                    <td>
-                                                        <?php
-                                                        $machine_status_badge = 'bg-gradient-success';
-                                                        $machine_status_text = 'Đang chạy';
-                                                        if ($machine->assignment_status == 'completed') {
-                                                            $machine_status_badge = 'bg-gradient-secondary';
-                                                            $machine_status_text = 'Hoàn thành';
-                                                        } elseif ($machine->assignment_status == 'breakdown') {
-                                                            $machine_status_badge = 'bg-gradient-danger';
-                                                            $machine_status_text = 'Hỏng';
-                                                        }
-                                                        ?>
-                                                        <span class="badge badge-sm <?= $machine_status_badge ?>"><?= $machine_status_text ?></span>
-                                                    </td>
-                                                    <td>
-                                                        <p class="text-xs text-secondary mb-0"><?= $machine->notes ?? '-' ?></p>
-                                                    </td>
-                                                    <td class="align-middle">
-                                                        <?php if ($machine->assignment_status == 'breakdown'): ?>
-                                                            <button type="button" class="btn btn-link text-warning text-gradient px-3 mb-0" 
-                                                                    onclick="openBreakdownModal(<?= $machine->machine_assignment_id ?>, '<?= $machine->machine_code ?>')">
-                                                                <i class="material-icons text-sm me-2">build</i>Xử lý
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
+                            <!-- Machine Cards with Staff Assignments -->
+                            <div class="row" id="machineCardsContainer">
+                                <!-- Machines will be loaded here via AJAX -->
+                                <div class="col-12 text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="text-sm text-secondary mt-2">Đang tải danh sách máy...</p>
+                                </div>
                             </div>
 
                             <!-- Breakdown History -->
@@ -406,31 +367,45 @@
     </div>
 </div>
 
-<!-- Add Machine Modal -->
-<div class="modal fade" id="addMachineModal" tabindex="-1" aria-labelledby="addMachineModalLabel" aria-hidden="true">
+<!-- Assign Staff to Machine Modal -->
+<div class="modal fade" id="assignStaffToMachineModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addMachineModalLabel">Gán Máy Vào Ca</h5>
+                <h5 class="modal-title" id="assignStaffModalTitle">Phân công nhân sự vào máy</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="addMachineForm" method="POST" action="<?= site_url('leader/shift/assign_machine'); ?>">
+            <form method="POST" action="<?= site_url('leader/shift/assign_staff_to_machine'); ?>">
                 <div class="modal-body">
                     <input type="hidden" name="shift_id" value="<?= $shift->shift_id ?>">
+                    <input type="hidden" name="machine_id" id="assignMachineId">
+                    
                     <div class="mb-3">
-                        <label class="form-label">Chọn máy</label>
-                        <select name="machine_id" class="form-control" required id="machineSelect">
-                            <option value="">-- Chọn --</option>
+                        <label class="form-label">Máy</label>
+                        <input type="text" id="assignMachineName" class="form-control" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Loại máy</label>
+                        <input type="text" id="assignMachineType" class="form-control" readonly>
+                        <small class="text-muted" id="assignRoleHint"></small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Chọn nhân viên</label>
+                        <select name="staff_id" class="form-control" required id="assignStaffSelect">
+                            <option value="">-- Đang tải --</option>
                         </select>
                     </div>
+                    
                     <div class="mb-3">
-                        <label class="form-label">Ghi chú</label>
+                        <label class="form-label">Ghi chú (tùy chọn)</label>
                         <textarea name="notes" class="form-control" rows="2"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn btn-primary">Gán</button>
+                    <button type="submit" class="btn btn-primary">Phân công</button>
                 </div>
             </form>
         </div>
@@ -473,7 +448,154 @@
 </div>
 
 <script>
-// Wait for document ready
+// ==================== GLOBAL FUNCTIONS ====================
+
+// NEW: Load machines by line on page load
+function loadMachinesByLine() {
+    const lineId = <?= $shift->line_id ?>;
+    const shiftId = <?= $shift->shift_id ?>;
+    
+    $.ajax({
+        url: '<?= site_url('leader/shift/get_machines_by_line'); ?>',
+        method: 'POST',
+        data: { line_id: lineId, shift_id: shiftId },
+        dataType: 'json',
+        success: function(response) {
+            console.log('Machines Response:', response);
+            if (response.success && response.data && response.data.length > 0) {
+                displayMachineCards(response.data);
+            } else {
+                $('#machineCardsContainer').html(`
+                    <div class="col-12 text-center py-4">
+                        <i class="material-icons text-secondary" style="font-size: 48px;">precision_manufacturing</i>
+                        <p class="text-sm text-secondary mb-0">Không có máy nào thuộc dây chuyền này</p>
+                    </div>
+                `);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Load Machines Error:', error);
+            $('#machineCardsContainer').html(`
+                <div class="col-12 text-center py-4">
+                    <div class="alert alert-danger">Lỗi tải danh sách máy: ${error}</div>
+                </div>
+            `);
+        }
+    });
+}
+
+// Display machine cards with assigned staff
+function displayMachineCards(machines) {
+    let html = '';
+    machines.forEach(function(machine) {
+        const machineType = machine.equipment_category || 'production';
+        const machineTypeText = machineType === 'quality_control' ? 'Kiểm định chất lượng (QC)' : 'Sản xuất';
+        const badgeClass = machineType === 'quality_control' ? 'bg-warning' : 'bg-info';
+        
+        let staffList = '';
+        if (machine.assigned_staff && machine.assigned_staff.length > 0) {
+            machine.assigned_staff.forEach(function(staff) {
+                staffList += `
+                    <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
+                        <div>
+                            <p class="text-sm mb-0">${staff.full_name || staff.username}</p>
+                            <small class="text-muted">${staff.role_name || 'N/A'} - ${staff.department || 'N/A'}</small>
+                        </div>
+                        <form method="POST" action="<?= site_url('leader/shift/remove_staff_from_machine'); ?>" style="display:inline;">
+                            <input type="hidden" name="shift_id" value="<?= $shift->shift_id ?>">
+                            <input type="hidden" name="assignment_id" value="${staff.id}">
+                            <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('Xóa phân công này?')">
+                                <i class="material-icons text-sm">delete</i>
+                            </button>
+                        </form>
+                    </div>
+                `;
+            });
+        } else {
+            staffList = '<p class="text-sm text-muted mb-0"><em>Chưa có nhân sự</em></p>';
+        }
+        
+        html += `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header pb-0">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="mb-0">${machine.machine_code}</h6>
+                                <p class="text-xs text-secondary mb-0">${machine.machine_name}</p>
+                            </div>
+                            <span class="badge ${badgeClass}">${machineTypeText}</span>
+                        </div>
+                        <p class="text-xs text-secondary mt-2 mb-0">Loại: ${machine.machine_type}</p>
+                    </div>
+                    <div class="card-body pt-2">
+                        <h6 class="text-xs text-uppercase text-secondary mb-2">Nhân sự đã gán:</h6>
+                        ${staffList}
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100 mt-3" 
+                                onclick="openAssignStaffModal(${machine.id}, '${machine.machine_code}', '${machine.machine_name}', '${machineType}', '${machineTypeText}')">
+                            <i class="material-icons text-sm">person_add</i> Thêm nhân sự
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    $('#machineCardsContainer').html(html);
+}
+
+// Open assign staff modal
+function openAssignStaffModal(machineId, machineCode, machineName, machineType, machineTypeText) {
+    console.log('Opening assign modal with:', { machineId, machineCode, machineName, machineType, machineTypeText });
+    
+    $('#assignMachineId').val(machineId);
+    $('#assignMachineName').val(machineCode + ' - ' + machineName);
+    $('#assignMachineType').val(machineTypeText);
+    
+    // Set role hint
+    if (machineType === 'quality_control') {
+        $('#assignRoleHint').html('<i class="material-icons text-sm">info</i> Chỉ hiển thị nhân viên QC');
+    } else {
+        $('#assignRoleHint').html('<i class="material-icons text-sm">info</i> Chỉ hiển thị công nhân (Worker)');
+    }
+    
+    // Load staff by role
+    console.log('Loading staff for machine_type:', machineType);
+    $.ajax({
+        url: '<?= site_url('leader/shift/get_staff_by_role'); ?>',
+        method: 'POST',
+        data: { machine_type: machineType },
+        dataType: 'json',
+        beforeSend: function() {
+            $('#assignStaffSelect').html('<option value="">Đang tải...</option>');
+        },
+        success: function(response) {
+            console.log('Staff by Role Response:', response);
+            if (response.success && response.data && response.data.length > 0) {
+                let options = '<option value="">-- Chọn nhân viên --</option>';
+                response.data.forEach(function(staff) {
+                    options += `<option value="${staff.user_id}">${staff.full_name || staff.username} (${staff.role_name})</option>`;
+                });
+                $('#assignStaffSelect').html(options);
+                console.log('Loaded', response.data.length, 'staff members');
+            } else {
+                $('#assignStaffSelect').html('<option value="">Không có nhân viên phù hợp</option>');
+                console.warn('No staff found. Response:', response);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Load Staff AJAX Error:', { status, error, xhr });
+            console.error('Response Text:', xhr.responseText);
+            $('#assignStaffSelect').html('<option value="">Lỗi tải danh sách</option>');
+        }
+    });
+    
+    // Show modal using Bootstrap 5 API
+    const modal = new bootstrap.Modal(document.getElementById('assignStaffToMachineModal'));
+    modal.show();
+}
+
+// ==================== DOCUMENT READY ====================
 document.addEventListener('DOMContentLoaded', function() {
     // Ensure jQuery is loaded
     if (typeof jQuery === 'undefined') {
@@ -483,6 +605,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     console.log('jQuery version:', jQuery.fn.jquery);
+    
+    // Load machines immediately on page load (Machine tab is default active)
+    loadMachinesByLine();
+    
+    // Also load machines when Machine tab is clicked
+    $('button[data-bs-target="#machine"]').on('shown.bs.tab', function (e) {
+        loadMachinesByLine();
+    });
     
     // Load available staff when modal opens
     $('#addStaffModal').on('show.bs.modal', function () {
@@ -592,7 +722,7 @@ function removeBatchStaffRow(button) {
     button.closest('.batch-staff-row').remove();
 }
 
-// Load available machines when modal opens
+// OLD: Load available machines when modal opens (keep for backward compatibility)
 $('#addMachineModal').on('show.bs.modal', function () {
     $.ajax({
         url: '<?= site_url('leader/shift/get_available_machines'); ?>',

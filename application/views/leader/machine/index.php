@@ -128,6 +128,12 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="backup-machines-tab" data-bs-toggle="tab" data-bs-target="#backup-machines" type="button">
+                    <i class="material-icons me-1" style="vertical-align: middle;">shield</i>
+                    Máy Dự Phòng
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="zones-tab" data-bs-toggle="tab" data-bs-target="#zones" type="button">
                     <i class="material-icons me-1" style="vertical-align: middle;">domain</i>
                     Quản lý Khu vực
@@ -285,6 +291,31 @@
                                     <h6 class="mb-1">
                                         <i class="material-icons text-sm" style="vertical-align: middle; color: <?= $zone_color ?>;">settings_input_component</i>
                                         <strong><?= $line['line_name'] ?></strong>
+                                        <?php if (isset($line['is_primary']) && $line['is_primary'] == 1): ?>
+                                            <i class="material-icons text-sm text-warning ms-1" style="vertical-align: middle;" title="Dây chuyền chính - không thể xóa">lock</i>
+                                        <?php endif; ?>
+                                        <?php 
+                                        $line_type_badge = '';
+                                        $line_type_color = '';
+                                        if (isset($line['line_type'])) {
+                                            switch($line['line_type']) {
+                                                case 'production_raw':
+                                                    $line_type_badge = 'Sản xuất thô';
+                                                    $line_type_color = 'bg-info';
+                                                    break;
+                                                case 'assembly_qc':
+                                                    $line_type_badge = 'Lắp ráp & QC';
+                                                    $line_type_color = 'bg-success';
+                                                    break;
+                                                case 'virtual':
+                                                    $line_type_badge = 'Line ảo';
+                                                    $line_type_color = 'bg-secondary';
+                                                    break;
+                                            }
+                                        }
+                                        if ($line_type_badge): ?>
+                                            <span class="badge badge-sm <?= $line_type_color ?> ms-2"><?= $line_type_badge ?></span>
+                                        <?php endif; ?>
                                     </h6>
                                     <p class="text-xs text-secondary mb-0">Mã: <?= $line['line_code'] ?></p>
                                 </div>
@@ -306,7 +337,15 @@
                                                         <i class="material-icons opacity-10" style="color: white; font-size: 20px;">precision_manufacturing</i>
                                                     </div>
                                                     <div>
-                                                        <h6 class="mb-0"><?= $machine->code ?></h6>
+                                                        <h6 class="mb-0">
+                                                            <?= $machine->code ?>
+                                                            <?php if (isset($machine->machine_role) && $machine->machine_role == 'backup'): ?>
+                                                                <span class="badge badge-sm bg-warning ms-1" title="Máy dự phòng">
+                                                                    <i class="material-icons text-xs" style="vertical-align: middle; font-size: 12px;">shield</i>
+                                                                    Backup
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </h6>
                                                         <p class="text-sm text-secondary mb-0"><?= $machine->name ?></p>
                                                     </div>
                                                 </div>
@@ -356,6 +395,123 @@
         </div>
             </div>
             <!-- End Machines Tab -->
+
+            <!-- Backup Machines Tab -->
+            <div class="tab-pane fade" id="backup-machines" role="tabpanel">
+                <div class="card">
+                    <div class="card-header pb-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="material-icons text-sm text-warning" style="vertical-align: middle;">shield</i>
+                                    Máy Dự Phòng (Backup Machines)
+                                </h6>
+                                <p class="text-sm text-secondary mb-0">Danh sách máy dự phòng sẵn sàng thay thế khi máy chính gặp sự cố</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <?php
+                        $backup_machines = [];
+                        $backup_count_active = 0;
+                        $backup_count_total = 0;
+                        
+                        foreach ($machines_grouped as $zone) {
+                            foreach ($zone['lines'] as $line) {
+                                foreach ($line['machines'] as $machine) {
+                                    if (isset($machine->machine_role) && $machine->machine_role == 'backup') {
+                                        $backup_machines[] = $machine;
+                                        $backup_count_total++;
+                                        if ($machine->status == 'active') {
+                                            $backup_count_active++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        ?>
+                        
+                        <div class="alert alert-info mb-4">
+                            <i class="material-icons text-sm">info</i>
+                            <strong>Thống kê:</strong> 
+                            <span class="badge bg-success ms-2"><?= $backup_count_active ?> máy sẵn sàng</span>
+                            <span class="badge bg-secondary ms-2"><?= $backup_count_total ?> tổng máy dự phòng</span>
+                        </div>
+
+                        <?php if (empty($backup_machines)): ?>
+                        <div class="text-center py-5">
+                            <i class="material-icons" style="font-size: 64px; color: #ccc;">shield</i>
+                            <p class="text-secondary mt-3">Chưa có máy dự phòng nào được đăng ký</p>
+                            <a href="<?= site_url('leader/machine/create'); ?>" class="btn btn-warning mt-2">
+                                <i class="material-icons text-sm">add</i>&nbsp;&nbsp;Thêm Máy Dự Phòng
+                            </a>
+                        </div>
+                        <?php else: ?>
+                        <div class="row">
+                            <?php foreach ($backup_machines as $machine): ?>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card machine-card h-100 hover-shadow" style="border-left: 3px solid <?= $status_colors[$machine->status] ?? '#ccc' ?>; background-color: #fffbf0;">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div class="d-flex">
+                                                <div class="icon icon-shape icon-sm shadow text-center me-2 d-flex align-items-center justify-content-center" style="background: linear-gradient(195deg, #FF9800 0%, #FFA726 100%);">
+                                                    <i class="material-icons opacity-10" style="color: white; font-size: 20px;">shield</i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">
+                                                        <?= $machine->code ?>
+                                                        <span class="badge badge-sm bg-warning ms-1">BACKUP</span>
+                                                    </h6>
+                                                    <p class="text-sm text-secondary mb-0"><?= $machine->name ?></p>
+                                                    <p class="text-xs text-secondary mb-0">
+                                                        <i class="material-icons text-xs" style="vertical-align: middle;">settings_input_component</i>
+                                                        <?= $machine->line_name ?>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span class="badge badge-sm" style="background-color: <?= $status_colors[$machine->status] ?? '#ccc' ?>;">
+                                                <?= $status_labels[$machine->status] ?? 'N/A' ?>
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="row mt-2">
+                                            <div class="col-6">
+                                                <p class="text-xs text-secondary mb-0">Công suất</p>
+                                                <p class="text-sm font-weight-bold mb-0">
+                                                    <?= !empty($machine->capacity) ? number_format($machine->capacity, 0) . ' pc/h' : 'N/A' ?>
+                                                </p>
+                                            </div>
+                                            <div class="col-6">
+                                                <p class="text-xs text-secondary mb-0">Loại</p>
+                                                <p class="text-sm font-weight-bold mb-0"><?= ucfirst($machine->stage_type ?? 'N/A') ?></p>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between mt-3 pt-2" style="border-top: 1px solid #f0f0f0;">
+                                            <div>
+                                                <a href="<?= site_url('leader/machine/detail/' . $machine->id); ?>" class="btn btn-link text-primary text-gradient px-2 mb-0">
+                                                    <i class="material-icons text-sm">visibility</i> CHI TIẾT
+                                                </a>
+                                            </div>
+                                            <div>
+                                                <a href="<?= site_url('leader/machine/edit/' . $machine->id); ?>" class="btn btn-link text-warning px-2 mb-0" title="Chỉnh sửa">
+                                                    <i class="material-icons text-sm">edit</i>
+                                                </a>
+                                                <button onclick="deleteMachine(<?= $machine->id ?>, '<?= $machine->code ?>')" class="btn btn-link text-danger px-2 mb-0" title="Xóa máy">
+                                                    <i class="material-icons text-sm">delete</i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <!-- End Backup Machines Tab -->
 
             <!-- Zones Tab -->
             <div class="tab-pane fade" id="zones" role="tabpanel">

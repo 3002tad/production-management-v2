@@ -41,39 +41,104 @@ class Shift extends CI_Controller
     }
 
     /**
-     * Dashboard Ca làm việc
+     * Dashboard Ca làm việc - Grouped by Plan
      */
     public function index()
     {
-        // Get filters
+        // Get filters (NO default date filter)
         $filters = [
             'line_id' => $this->input->get('line_id'),
-            'shift_date' => $this->input->get('shift_date') ?: date('Y-m-d'),
+            'shift_date' => $this->input->get('shift_date'), // No default
             'date_from' => $this->input->get('date_from'),
             'date_to' => $this->input->get('date_to'),
             'shift_status' => $this->input->get('shift_status'),
-            'staff_status' => $this->input->get('staff_status')
+            'id_plan' => $this->input->get('id_plan')
         ];
 
-        $shifts = $this->shiftModel->getShifts($filters);
+        // Get production plans with shift counts
+        $this->db->select('
+            planning.id_plan, 
+            planning.plan_name, 
+            planning.pl_status,
+            planning.qty_target,
+            planning.end_date,
+            COUNT(DISTINCT plan_shift.id_shift) as suggested_shift_count,
+            COUNT(DISTINCT ps.shift_id) as actual_shift_count,
+            SUM(CASE WHEN ps.shift_status = 3 THEN 1 ELSE 0 END) as completed_shift_count
+        ');
+        $this->db->from('planning');
+        $this->db->join('plan_shift', 'plan_shift.id_plan = planning.id_plan', 'left');
+        $this->db->join('production_shifts ps', 'ps.id_plan = planning.id_plan', 'left');
 
-        // Get lines with zone info for filter dropdown
+        if (!empty($filters['id_plan'])) {
+            $this->db->where('planning.id_plan', $filters['id_plan']);
+        }
+        
+        $this->db->group_by('planning.id_plan');
+        $this->db->order_by('planning.pl_status', 'ASC'); // Active plans first
+        $this->db->order_by('planning.end_date', 'ASC');
+        $plans = $this->db->get()->result();
+
+        // Get shifts for each plan
+        foreach ($plans as $plan) {
+            $this->db->select('production_shifts.*, 
+                pl.line_code, pl.line_name,
+                z.zone_code, z.zone_name,
+                COUNT(DISTINCT sms.staff_id) as assigned_staff_count');
+            $this->db->from('production_shifts');
+            $this->db->join('production_lines pl', 'production_shifts.line_id = pl.id', 'left');
+            $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+            $this->db->join('shift_machine_staff sms', 'sms.shift_id = production_shifts.shift_id AND sms.status = 1', 'left');
+            $this->db->where('production_shifts.id_plan', $plan->id_plan);
+            
+            // Apply filters
+            if (!empty($filters['line_id'])) {
+                $this->db->where('production_shifts.line_id', $filters['line_id']);
+            }
+            if (!empty($filters['shift_date'])) {
+                $this->db->where('production_shifts.shift_date', $filters['shift_date']);
+            }
+            if (!empty($filters['date_from'])) {
+                $this->db->where('production_shifts.shift_date >=', $filters['date_from']);
+            }
+            if (!empty($filters['date_to'])) {
+                $this->db->where('production_shifts.shift_date <=', $filters['date_to']);
+            }
+            if (isset($filters['shift_status']) && $filters['shift_status'] !== '') {
+                $this->db->where('production_shifts.shift_status', $filters['shift_status']);
+            }
+            
+            $this->db->group_by('production_shifts.shift_id');
+            $this->db->order_by('production_shifts.shift_date', 'ASC');
+            $this->db->order_by('production_shifts.start_time', 'ASC');
+            $plan->shifts = $this->db->get()->result();
+        } // End foreach plans
+
+        // Get lines for filter dropdown
         $this->db->select('pl.id, pl.line_code, pl.line_name, z.zone_name');
         $this->db->from('production_lines pl');
         $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
         $this->db->order_by('z.zone_code, pl.line_code');
         $lines = $this->db->get()->result();
 
+        // Get all planning for filter dropdown
+        $this->db->select('id_plan, plan_name');
+        $this->db->from('planning');
+        $this->db->order_by('pl_status', 'ASC');
+        $this->db->order_by('plan_name', 'ASC');
+        $all_plans = $this->db->get()->result();
+
         $data = [
-            'shifts' => $shifts,
+            'plans' => $plans,
             'lines' => $lines,
+            'all_plans' => $all_plans,
             'filters' => $filters,
             'content' => 'leader/shift/dashboard',
             'navlink' => 'shift'
         ];
 
         $this->load->view('leader/VBackend', $data);
-    }
+    } // End index()
 
     /**
      * Chi tiết 1 ca - Tab Nhân sự & Tab Máy
@@ -95,11 +160,8 @@ class Shift extends CI_Controller
         // Tab active
         $active_tab = $this->input->get('tab') ?: 'staff';
 
-        // Get assigned staff
+        // Get assigned staff (from shift_machine_staff - staff assigned to machines)
         $assigned_staff = $this->shiftModel->getAssignedStaff($shift_id);
-
-        // Get assigned machines
-        $assigned_machines = $this->shiftModel->getAssignedMachines($shift_id);
 
         // Get breakdown logs
         $breakdown_logs = $this->shiftModel->getBreakdownLogs($shift_id);
@@ -107,7 +169,6 @@ class Shift extends CI_Controller
         $data = [
             'shift' => $shift,
             'assigned_staff' => $assigned_staff,
-            'assigned_machines' => $assigned_machines,
             'breakdown_logs' => $breakdown_logs,
             'active_tab' => $active_tab,
             'content' => 'leader/shift/detail',
@@ -153,6 +214,73 @@ class Shift extends CI_Controller
                 'shift_date' => $shift->shift_date,
                 'start_time' => $shift->start_time,
                 'end_time' => $shift->end_time
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * API: Lấy danh sách máy theo dây chuyền (cho logic mới)
+     */
+    public function get_machines_by_line()
+    {
+        header('Content-Type: application/json');
+        
+        $line_id = $this->input->post('line_id');
+        $shift_id = $this->input->post('shift_id');
+        
+        if (!$line_id) {
+            echo json_encode(['success' => false, 'message' => 'line_id is required']);
+            return;
+        }
+        
+        try {
+            if ($shift_id) {
+                // Get machines with assigned staff
+                $machines = $this->shiftModel->getMachinesWithStaff($shift_id, $line_id);
+            } else {
+                // Just get machines
+                $machines = $this->shiftModel->getMachinesByLine($line_id);
+            }
+            
+            echo json_encode([
+                'success' => true, 
+                'data' => $machines ?: [], 
+                'count' => count($machines),
+                'line_id' => $line_id
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * API: Lấy nhân viên theo role (worker/qc)
+     */
+    public function get_staff_by_role()
+    {
+        header('Content-Type: application/json');
+        
+        $role = $this->input->post('role'); // 'worker' or 'qc'
+        $machine_type = $this->input->post('machine_type'); // 'production' or 'quality_control'
+        
+        // Map machine type to appropriate roles
+        $roles = [];
+        if ($machine_type === 'quality_control') {
+            $roles = ['qc'];
+        } else {
+            $roles = ['worker'];
+        }
+        
+        try {
+            $staff = $this->shiftModel->getStaffByRole($roles);
+            
+            echo json_encode([
+                'success' => true, 
+                'data' => $staff ?: [], 
+                'count' => count($staff),
+                'roles_filter' => $roles
             ]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -296,6 +424,60 @@ class Shift extends CI_Controller
             $this->session->set_flashdata('success', 'Gán máy thành công');
         } else {
             $this->session->set_flashdata('error', 'Gán máy thất bại');
+        }
+
+        redirect('leader/shift/detail/' . $shift_id . '?tab=machine');
+    }
+
+    /**
+     * NEW: Gán nhân sự vào máy cụ thể
+     */
+    public function assign_staff_to_machine()
+    {
+        $shift_id = $this->input->post('shift_id');
+        $machine_id = $this->input->post('machine_id');
+        $staff_id = $this->input->post('staff_id');
+        $notes = $this->input->post('notes');
+
+        if (!$shift_id || !$machine_id || !$staff_id) {
+            $this->session->set_flashdata('error', 'Thiếu thông tin phân công');
+            redirect('leader/shift/detail/' . $shift_id . '?tab=machine');
+            return;
+        }
+
+        $assigned_by = $this->session->userdata('user_id');
+
+        $result = $this->shiftModel->assignStaffToMachine($shift_id, $machine_id, $staff_id, $assigned_by, $notes);
+
+        if ($result) {
+            $this->session->set_flashdata('success', 'Phân công nhân sự vào máy thành công');
+        } else {
+            $this->session->set_flashdata('error', 'Nhân sự đã được gán vào máy này');
+        }
+
+        redirect('leader/shift/detail/' . $shift_id . '?tab=machine');
+    }
+
+    /**
+     * NEW: Xóa phân công nhân sự khỏi máy
+     */
+    public function remove_staff_from_machine()
+    {
+        $assignment_id = $this->input->post('assignment_id');
+        $shift_id = $this->input->post('shift_id');
+
+        if (!$assignment_id) {
+            $this->session->set_flashdata('error', 'Thiếu thông tin');
+            redirect('leader/shift/detail/' . $shift_id . '?tab=machine');
+            return;
+        }
+
+        $result = $this->shiftModel->removeStaffFromMachine($assignment_id);
+
+        if ($result) {
+            $this->session->set_flashdata('success', 'Đã xóa phân công');
+        } else {
+            $this->session->set_flashdata('error', 'Xóa thất bại');
         }
 
         redirect('leader/shift/detail/' . $shift_id . '?tab=machine');

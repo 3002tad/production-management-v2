@@ -65,6 +65,8 @@ class MachineModel extends CI_Model
             m.*,
             pl.line_code,
             pl.line_name,
+            pl.line_type,
+            pl.is_primary,
             pl.zone_id,
             z.zone_code,
             z.zone_name,
@@ -100,6 +102,8 @@ class MachineModel extends CI_Model
                     'line_id' => $machine->line_id,
                     'line_code' => $machine->line_code,
                     'line_name' => $machine->line_name ?: 'Chưa phân dây chuyền',
+                    'line_type' => $machine->line_type ?? null,
+                    'is_primary' => $machine->is_primary ?? 0,
                     'machines' => []
                 ];
             }

@@ -79,6 +79,26 @@
                                 </div>
                             </div>
                             
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="input-group input-group-outline mb-3 is-filled">
+                                        <label class="form-label">Vai trò máy</label>
+                                        <select class="form-control" name="machine_role">
+                                            <option value="primary" <?= (isset($machine->machine_role) && $machine->machine_role == 'primary') || !isset($machine->machine_role) ? 'selected' : '' ?>>Máy chính (Primary)</option>
+                                            <option value="backup" <?= isset($machine->machine_role) && $machine->machine_role == 'backup' ? 'selected' : '' ?>>Máy dự phòng (Backup)</option>
+                                        </select>
+                                        <small class="form-text text-muted">Máy chính: sử dụng thường xuyên. Máy dự phòng: thay thế khi máy chính gặp sự cố.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="input-group input-group-outline mb-3 is-filled">
+                                        <label class="form-label">Vị trí đặt máy</label>
+                                        <input type="text" class="form-control" name="location" value="<?= $machine->location ?>" maxlength="100" 
+                                               placeholder="VD: Khu A - Line 1">
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Status Change Reason -->
                             <div class="row" id="statusReasonRow" style="display: none;">
                                 <div class="col-12">
@@ -93,9 +113,8 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="input-group input-group-outline mb-3 is-filled">
-                                        <label class="form-label">Vị trí đặt máy</label>
-                                        <input type="text" class="form-control" name="location" value="<?= $machine->location ?>" maxlength="100" 
-                                               placeholder="VD: Khu A - Line 1">
+                                        <label class="form-label">Dây chuyền</label>
+                                        <input type="text" class="form-control" value="<?= $machine->line_name ?>" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-3">

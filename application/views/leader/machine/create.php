@@ -85,6 +85,16 @@
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="input-group input-group-static mb-4">
+                                        <label>Vai trò máy</label>
+                                        <select class="form-control" name="machine_role">
+                                            <option value="primary" selected>Máy chính (Primary)</option>
+                                            <option value="backup">Máy dự phòng (Backup)</option>
+                                        </select>
+                                        <small class="form-text text-muted">Máy chính: sử dụng thường xuyên. Máy dự phòng: thay thế khi máy chính gặp sự cố.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="input-group input-group-static mb-4">
                                         <label>Dây chuyền *</label>
                                         <select class="form-control" name="line_id" required>
                                             <option value="">-- Chọn dây chuyền --</option>

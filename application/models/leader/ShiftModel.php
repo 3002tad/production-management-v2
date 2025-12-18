@@ -7,6 +7,7 @@ class ShiftModel extends CI_Model
     protected $table_staff_assignments = 'shift_staff_assignments';
     protected $table_machine_assignments = 'shift_machine_assignments';
     protected $table_breakdown_logs = 'machine_breakdown_logs';
+    protected $table_machine_staff = 'shift_machine_staff'; // NEW: Phân công nhân sự vào máy
 
     public function __construct()
     {
@@ -105,16 +106,24 @@ class ShiftModel extends CI_Model
      */
     public function getAssignedStaff($shift_id)
     {
-        $this->db->select('shift_staff_assignments.*, 
-            CONCAT("NV", LPAD(staff.id_staff, 4, "0")) as staff_code, 
-            staff.staff_name as full_name, 
+        // NEW: Get staff from shift_machine_staff (staff assigned to machines)
+        $this->db->select('sms.id, sms.shift_id, sms.machine_id, sms.staff_id,
+            user.username,
+            COALESCE(CONCAT("NV", LPAD(staff.id_staff, 4, "0")), user.username) as staff_code, 
+            COALESCE(staff.staff_name, user.full_name, user.username) as full_name, 
             staff.department, 
-            staff.position');
-        $this->db->from($this->table_staff_assignments);
-        $this->db->join('staff', 'staff.id_staff = shift_staff_assignments.staff_id');
-        $this->db->where('shift_staff_assignments.shift_id', $shift_id);
-        $this->db->where('shift_staff_assignments.status', 1);
-        $this->db->order_by('shift_staff_assignments.role_in_shift', 'ASC');
+            staff.position,
+            roles.role_name as role_in_shift,
+            machines.code as machine_code,
+            machines.name as machine_name');
+        $this->db->from('shift_machine_staff sms');
+        $this->db->join('user', 'user.user_id = sms.staff_id', 'inner');
+        $this->db->join('staff', 'staff.id_staff = user.staff_id', 'left');
+        $this->db->join('roles', 'roles.role_id = user.role_id', 'left');
+        $this->db->join('machines', 'machines.id = sms.machine_id', 'left');
+        $this->db->where('sms.shift_id', $shift_id);
+        $this->db->where('sms.status', 1);
+        $this->db->order_by('machines.code', 'ASC');
         return $this->db->get()->result();
     }
 
@@ -242,15 +251,12 @@ class ShiftModel extends CI_Model
     /**
      * Lấy danh sách máy đã gán cho ca
      */
+    // DEPRECATED: Use getMachinesWithStaff() instead
+    // Machines are now permanently assigned to lines, not to shifts
     public function getAssignedMachines($shift_id)
     {
-        $this->db->select('shift_machine_assignments.*, 
-            machines.code as machine_code, machines.name as machine_name, machines.stage_type as machine_type, machines.status as machine_status');
-        $this->db->from($this->table_machine_assignments);
-        $this->db->join('machines', 'machines.id = shift_machine_assignments.machine_id');
-        $this->db->where('shift_machine_assignments.shift_id', $shift_id);
-        $this->db->order_by('shift_machine_assignments.start_at', 'DESC');
-        return $this->db->get()->result();
+        // Return empty array - machines are now fetched via getMachinesWithStaff()
+        return [];
     }
 
     /**
@@ -377,6 +383,113 @@ class ShiftModel extends CI_Model
         $this->db->join('user u', 'u.user_id = machine_breakdown_logs.handled_by', 'left');
         $this->db->where('machine_breakdown_logs.shift_id', $shift_id);
         $this->db->order_by('machine_breakdown_logs.breakdown_time', 'DESC');
+        return $this->db->get()->result();
+    }
+
+    // ==================== NEW: MACHINE-STAFF ASSIGNMENT ====================
+
+    /**
+     * Lấy tất cả máy theo dây chuyền (cho logic mới)
+     */
+    public function getMachinesByLine($line_id)
+    {
+        $this->db->select('machines.*, 
+            machines.code as machine_code, 
+            machines.name as machine_name, 
+            machines.stage_type as machine_type,
+            COALESCE(machines.equipment_category, "production") as equipment_category');
+        $this->db->from('machines');
+        $this->db->where('machines.line_id', $line_id);
+        $this->db->where('machines.status', 'active');
+        $this->db->order_by('machines.code', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Lấy danh sách nhân sự đã gán vào máy cụ thể trong ca
+     */
+    public function getStaffByMachine($shift_id, $machine_id)
+    {
+        $this->db->select('shift_machine_staff.*, 
+            user.username, user.email, 
+            staff.staff_name as full_name, 
+            staff.department, staff.position,
+            roles.role_name');
+        $this->db->from($this->table_machine_staff);
+        $this->db->join('user', 'user.user_id = shift_machine_staff.staff_id');
+        $this->db->join('staff', 'staff.id_staff = shift_machine_staff.staff_id', 'left');
+        $this->db->join('roles', 'roles.role_id = user.role_id', 'left');
+        $this->db->where('shift_machine_staff.shift_id', $shift_id);
+        $this->db->where('shift_machine_staff.machine_id', $machine_id);
+        $this->db->where('shift_machine_staff.status', 1);
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Lấy tất cả máy của ca với danh sách nhân sự đã gán
+     */
+    public function getMachinesWithStaff($shift_id, $line_id)
+    {
+        $machines = $this->getMachinesByLine($line_id);
+        
+        foreach ($machines as &$machine) {
+            $machine->assigned_staff = $this->getStaffByMachine($shift_id, $machine->id);
+        }
+        
+        return $machines;
+    }
+
+    /**
+     * Phân công nhân sự vào máy cụ thể
+     */
+    public function assignStaffToMachine($shift_id, $machine_id, $staff_id, $assigned_by, $notes = null)
+    {
+        // Check if already assigned
+        $exists = $this->db->where([
+            'shift_id' => $shift_id,
+            'machine_id' => $machine_id,
+            'staff_id' => $staff_id,
+            'status' => 1
+        ])->get($this->table_machine_staff)->row();
+
+        if ($exists) {
+            return false; // Already assigned
+        }
+
+        $data = [
+            'shift_id' => $shift_id,
+            'machine_id' => $machine_id,
+            'staff_id' => $staff_id,
+            'assigned_by' => $assigned_by,
+            'notes' => $notes
+        ];
+
+        return $this->db->insert($this->table_machine_staff, $data);
+    }
+
+    /**
+     * Xóa phân công nhân sự khỏi máy
+     */
+    public function removeStaffFromMachine($assignment_id)
+    {
+        $this->db->where('id', $assignment_id);
+        return $this->db->update($this->table_machine_staff, ['status' => 0]);
+    }
+
+    /**
+     * Lấy nhân viên theo role (worker, qc, technical)
+     */
+    public function getStaffByRole($role_names = ['worker', 'qc'])
+    {
+        $this->db->select('user.user_id, user.username, user.email, 
+            staff.id_staff, staff.staff_name as full_name, 
+            staff.department, staff.position,
+            roles.role_name');
+        $this->db->from('user');
+        $this->db->join('staff', 'staff.id_staff = user.user_id', 'left');
+        $this->db->join('roles', 'roles.role_id = user.role_id');
+        $this->db->where_in('roles.role_name', $role_names);
+        $this->db->order_by('staff.staff_name', 'ASC');
         return $this->db->get()->result();
     }
 }

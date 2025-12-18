@@ -13,15 +13,39 @@
 <div class="container-fluid py-4">
     <!-- Statistics Cards -->
     <div class="row mb-4">
+        <?php 
+        $total_plans = count($plans);
+        $total_shifts = array_sum(array_map(function($p) { return count($p->shifts); }, $plans));
+        $total_completed = array_sum(array_map(function($p) { return $p->completed_shift_count; }, $plans));
+        $total_running = 0;
+        foreach ($plans as $p) {
+            foreach ($p->shifts as $s) {
+                if ($s->shift_status == 2) $total_running++;
+            }
+        }
+        ?>
         <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
             <div class="card">
                 <div class="card-header p-3 pt-2">
                     <div class="icon icon-lg icon-shape bg-gradient-success shadow-success text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="material-icons opacity-10">assignment</i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Kế Hoạch</p>
+                        <h4 class="mb-0"><?= $total_plans ?></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-header p-3 pt-2">
+                    <div class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
                         <i class="material-icons opacity-10">schedule</i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Tổng Số Ca</p>
-                        <h4 class="mb-0"><?= count($shifts) ?></h4>
+                        <h4 class="mb-0"><?= $total_shifts ?></h4>
                     </div>
                 </div>
             </div>
@@ -34,24 +58,7 @@
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Đang Chạy</p>
-                        <h4 class="mb-0">
-                            <?= count(array_filter($shifts, function($s) { return $s->shift_status == 2; })) ?>
-                        </h4>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-            <div class="card">
-                <div class="card-header p-3 pt-2">
-                    <div class="icon icon-lg icon-shape bg-gradient-warning shadow-warning text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10">people</i>
-                    </div>
-                    <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Thiếu Nhân Sự</p>
-                        <h4 class="mb-0">
-                            <?= count(array_filter($shifts, function($s) { return $s->staff_status == 'insufficient'; })) ?>
-                        </h4>
+                        <h4 class="mb-0"><?= $total_running ?></h4>
                     </div>
                 </div>
             </div>
@@ -59,14 +66,12 @@
         <div class="col-xl-3 col-sm-6">
             <div class="card">
                 <div class="card-header p-3 pt-2">
-                    <div class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
+                    <div class="icon icon-lg icon-shape bg-gradient-success shadow-success text-center border-radius-xl mt-n4 position-absolute">
                         <i class="material-icons opacity-10">check_circle</i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Hoàn Thành</p>
-                        <h4 class="mb-0">
-                            <?= count(array_filter($shifts, function($s) { return $s->shift_status == 3; })) ?>
-                        </h4>
+                        <h4 class="mb-0"><?= $total_completed ?></h4>
                     </div>
                 </div>
             </div>
@@ -87,20 +92,29 @@
                 <div class="card-body">
                     <form method="GET" action="<?= site_url('leader/shift'); ?>" class="row g-3">
                         <div class="col-md-3">
+                            <label class="form-label">Kế hoạch</label>
+                            <select name="id_plan" class="form-control">
+                                <option value="">Tất cả</option>
+                                <?php foreach ($all_plans as $plan): ?>
+                                    <option value="<?= $plan->id_plan ?>" <?= ($filters['id_plan'] == $plan->id_plan) ? 'selected' : '' ?>>
+                                        <?= $plan->plan_name ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label">Dây chuyền</label>
                             <select name="line_id" class="form-control">
                                 <option value="">Tất cả</option>
                                 <?php foreach ($lines as $line): ?>
                                     <option value="<?= $line->id ?>" <?= ($filters['line_id'] == $line->id) ? 'selected' : '' ?>>
-                                        <?= $line->line_code ?> - <?= $line->line_name ?>                                        <?php if (!empty($line->zone_name)): ?>
+                                        <?= $line->line_code ?> - <?= $line->line_name ?>
+                                        <?php if (!empty($line->zone_name)): ?>
                                             (<?= $line->zone_name ?>)
-                                        <?php endif; ?>                                    </option>
+                                        <?php endif; ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Ngày</label>
-                            <input type="date" name="shift_date" class="form-control" value="<?= $filters['shift_date'] ?>">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Từ ngày</label>
@@ -110,14 +124,13 @@
                             <label class="form-label">Đến ngày</label>
                             <input type="date" name="date_to" class="form-control" value="<?= $filters['date_to'] ?>">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Trạng thái ca</label>
+                        <div class="col-md-1">
+                            <label class="form-label">Trạng thái</label>
                             <select name="shift_status" class="form-control">
                                 <option value="">Tất cả</option>
                                 <option value="1" <?= ($filters['shift_status'] == '1') ? 'selected' : '' ?>>Chưa bắt đầu</option>
                                 <option value="2" <?= ($filters['shift_status'] == '2') ? 'selected' : '' ?>>Đang chạy</option>
                                 <option value="3" <?= ($filters['shift_status'] == '3') ? 'selected' : '' ?>>Hoàn thành</option>
-                                <option value="4" <?= ($filters['shift_status'] == '4') ? 'selected' : '' ?>>Tạm dừng</option>
                             </select>
                         </div>
                         <div class="col-md-1">
@@ -132,19 +145,68 @@
         </div>
     </div>
 
-    <!-- Shifts List as Cards -->
+    <!-- Plans & Shifts List (Grouped by Plan) -->
     <div class="row">
-        <?php if (empty($shifts)): ?>
+        <?php if (empty($plans)): ?>
             <div class="col-12">
                 <div class="card">
                     <div class="card-body text-center py-5">
-                        <i class="material-icons text-secondary" style="font-size: 64px;">event_busy</i>
-                        <p class="text-sm text-secondary mb-0 mt-3">Không có ca nào trong khoảng thời gian này</p>
+                        <i class="material-icons text-secondary" style="font-size: 64px;">assignment</i>
+                        <p class="text-sm text-secondary mb-0 mt-3">Chưa có kế hoạch sản xuất nào</p>
+                        <p class="text-xs text-muted mt-2">Vui lòng tạo kế hoạch trước khi phân ca</p>
                     </div>
                 </div>
             </div>
         <?php else: ?>
-            <?php foreach ($shifts as $shift): 
+            <?php foreach ($plans as $plan):
+                $plan_status_text = $plan->pl_status == 1 ? 'Đang hoạt động' : 'Đã kết thúc';
+                $plan_status_badge = $plan->pl_status == 1 ? 'bg-success' : 'bg-secondary';
+            ?>
+            <!-- Plan Container -->
+            <div class="col-12 mb-4">
+                <div class="card border-2 border-primary">
+                    <!-- Plan Header -->
+                    <div class="card-header bg-gradient-primary pb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="text-white mb-0">
+                                    <i class="material-icons text-lg me-2">assignment</i>
+                                    <?= htmlspecialchars($plan->plan_name) ?>
+                                </h5>
+                                <span class="badge <?= $plan_status_badge ?> mt-2"><?= $plan_status_text ?></span>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <div class="row">
+                                    <div class="col-4">
+                                        <p class="text-xs text-white mb-0">Ca gợi ý</p>
+                                        <h6 class="text-white mb-0"><?= $plan->suggested_shift_count ?? 0 ?></h6>
+                                    </div>
+                                    <div class="col-4">
+                                        <p class="text-xs text-white mb-0">Ca thực tế</p>
+                                        <h6 class="text-white mb-0"><?= $plan->actual_shift_count ?? 0 ?></h6>
+                                    </div>
+                                    <div class="col-4">
+                                        <p class="text-xs text-white mb-0">Hoàn thành</p>
+                                        <h6 class="text-white mb-0"><?= $plan->completed_shift_count ?? 0 ?></h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shifts List under this Plan -->
+                    <div class="card-body">
+                        <?php if (empty($plan->shifts)): ?>
+                            <div class="text-center py-4">
+                                <i class="material-icons text-secondary" style="font-size: 48px;">event_note</i>
+                                <p class="text-sm text-secondary mb-3 mt-2">Chưa có ca làm việc cho kế hoạch này</p>
+                                <a href="<?= site_url('leader/shift/create?id_plan=' . $plan->id_plan); ?>" class="btn btn-sm btn-primary">
+                                    <i class="material-icons text-sm">add</i> Tạo Ca Mới
+                                </a>
+                            </div>
+                        <?php else: ?>
+                            <div class="row">
+                                <?php foreach ($plan->shifts as $shift):
                 // Determine border color based on status
                 $border_color = 'border-secondary';
                 if ($shift->shift_status == 2) {
@@ -168,34 +230,8 @@
                     $status_badge_class = 'bg-gradient-warning';
                     $status_text = 'Tạm dừng';
                 }
-                
-                $staff_badge_class = 'bg-gradient-secondary';
-                $staff_text = 'Chưa phân';
-                if ($shift->staff_status == 'sufficient') {
-                    $staff_badge_class = 'bg-gradient-success';
-                    $staff_text = $shift->assigned_staff_count . ' Người';
-                } elseif ($shift->staff_status == 'insufficient') {
-                    $staff_badge_class = 'bg-gradient-warning';
-                    $staff_text = 'Thiếu NS';
-                } elseif ($shift->staff_status == 'conflict') {
-                    $staff_badge_class = 'bg-gradient-danger';
-                    $staff_text = 'Xung đột';
-                }
-                
-                $machine_badge_class = 'bg-gradient-secondary';
-                $machine_text = 'Chưa gán';
-                if ($shift->machine_status == 'assigned') {
-                    $machine_badge_class = 'bg-gradient-info';
-                    $machine_text = $shift->assigned_machine_count . ' Máy';
-                } elseif ($shift->machine_status == 'maintenance') {
-                    $machine_badge_class = 'bg-gradient-warning';
-                    $machine_text = 'Bảo trì';
-                } elseif ($shift->machine_status == 'down') {
-                    $machine_badge_class = 'bg-gradient-danger';
-                    $machine_text = 'Hỏng';
-                }
             ?>
-            <div class="col-xl-4 col-md-6 mb-4">
+            <div class="col-xl-4 col-md-6 mb-3">
                 <div class="card border-left-3 <?= $border_color ?> h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -243,11 +279,8 @@
                         </div>
                         
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="badge badge-sm <?= $staff_badge_class ?>">
-                                <i class="material-icons text-xs">people</i> <?= $staff_text ?>
-                            </span>
-                            <span class="badge badge-sm <?= $machine_badge_class ?>">
-                                <i class="material-icons text-xs">precision_manufacturing</i> <?= $machine_text ?>
+                            <span class="badge badge-sm bg-gradient-info">
+                                <i class="material-icons text-xs">people</i> <?= $shift->assigned_staff_count ?? 0 ?> Người
                             </span>
                         </div>
                         
@@ -268,7 +301,13 @@
                     </div>
                 </div>
             </div>
-            <?php endforeach; ?>
+            <?php endforeach; // End shifts loop ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; // End plans loop ?>
         <?php endif; ?>
     </div>
 </div>

@@ -164,12 +164,19 @@ class Machine extends CI_Controller
         }
 
         try {
+            // Validate machine_role
+            $machine_role = $this->input->post('machine_role', 'primary');
+            if (!in_array($machine_role, ['primary', 'backup'])) {
+                $machine_role = 'primary';
+            }
+            
             $machine_data = [
                 'code' => $this->input->post('code'),
                 'name' => $this->input->post('name'),
                 'capacity' => $this->input->post('capacity'),
                 'stage_type' => $this->input->post('stage_type'),
                 'status' => $this->input->post('status', 'active'),
+                'machine_role' => $machine_role,
                 'description' => $this->input->post('description'),
                 'line_id' => $this->input->post('line_id'),
                 'purchase_date' => $this->input->post('purchase_date'),
@@ -271,11 +278,18 @@ class Machine extends CI_Controller
         }
 
         try {
+            // Validate machine_role
+            $machine_role = $this->input->post('machine_role', 'primary');
+            if (!in_array($machine_role, ['primary', 'backup'])) {
+                $machine_role = 'primary';
+            }
+            
             $update_data = [
                 'name' => $this->input->post('name'),
                 'capacity' => $this->input->post('capacity'),
                 'stage_type' => $this->input->post('stage_type'),
                 'status' => $this->input->post('status'),
+                'machine_role' => $machine_role,
                 'description' => $this->input->post('description'),
                 'location' => $this->input->post('location'),
                 'purchase_date' => $this->input->post('purchase_date'),

@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `production_shifts` (
   `shift_code` varchar(50) NOT NULL COMMENT 'Mã ca: CA01, CA02...',
   `shift_name` varchar(100) NOT NULL COMMENT 'Tên ca: Ca sáng, Ca chiều...',
   `line_id` int(11) NOT NULL COMMENT 'ID dây chuyền',
-  `plan_id` int(11) DEFAULT NULL COMMENT 'ID kế hoạch sản xuất',
+  `id_plan` int(11) DEFAULT NULL COMMENT 'ID kế hoạch sản xuất',
   `shift_date` date NOT NULL COMMENT 'Ngày làm việc',
   `start_time` time NOT NULL COMMENT 'Giờ bắt đầu ca',
   `end_time` time NOT NULL COMMENT 'Giờ kết thúc ca',
@@ -47,7 +47,9 @@ CREATE TABLE IF NOT EXISTS `production_shifts` (
   UNIQUE KEY `unique_shift` (`line_id`, `shift_date`, `start_time`),
   KEY `idx_shift_date` (`shift_date`),
   KEY `idx_line_id` (`line_id`),
-  KEY `idx_shift_status` (`shift_status`)
+  KEY `idx_shift_status` (`shift_status`),
+  KEY `idx_id_plan` (`id_plan`),
+  CONSTRAINT `fk_production_shifts_planning` FOREIGN KEY (`id_plan`) REFERENCES `planning` (`id_plan`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng ca sản xuất';
 
 -- Bảng phân công nhân sự cho ca
