@@ -1193,66 +1193,8 @@ class Admin extends CI_Controller
     }
 
     // ========================================================================
-    // UC6 - QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN (Wrapper methods forward to admin/UserController)
-    // ========================================================================
-    
-    /**
-     * User Management - List all users
-     * Forwards to admin/UserController using redirect
-     */
-    public function user()
-    {
-        redirect('admin/UserController/index');
-    }
-
-    /**
-     * Add new user
-     */
-    public function user_add()
-    {
-        redirect('admin/UserController/add');
-    }
-
-    /**
-     * Create user (POST)
-     */
-    public function user_create()
-    {
-        redirect('admin/UserController/create');
-    }
-
-    /**
-     * Edit user
-     */
-    public function user_edit($user_id)
-    {
-        redirect('admin/UserController/edit/' . $user_id);
-    }
-
-    /**
-     * Update user (POST)
-     */
-    public function user_update($user_id)
-    {
-        redirect('admin/UserController/update/' . $user_id);
-    }
-
-    /**
-     * Delete user
-     */
-    public function user_delete($user_id)
-    {
-        redirect('admin/UserController/delete/' . $user_id);
-    }
-
-    /**
-     * Toggle user status
-     */
-    public function user_toggle_status($user_id)
-    {
-        redirect('admin/UserController/toggle_status/' . $user_id);
-    }
-
+    // NOTE: UC6 User Management now handled by admin/UserController
+    // Routes configured in routes.php point directly to admin/UserController
     // ========================================================================
     // Helper Methods
     // ========================================================================
