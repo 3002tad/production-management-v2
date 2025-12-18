@@ -1201,8 +1201,9 @@ class Admin extends CI_Controller
         $this->load->model('admin/UserManagementModel', 'userModel');
         
         $filters = [
-            'role' => $this->input->get('role'),
-            'status' => $this->input->get('status'),
+            // Khớp với tên field trong form filter & UserManagementModel
+            'role_id' => $this->input->get('role_id'),
+            'is_active' => $this->input->get('is_active'),
             'search' => $this->input->get('search')
         ];
 
@@ -1241,13 +1242,13 @@ class Admin extends CI_Controller
 
             $userData = [
                 'username' => $this->input->post('username'),
-                'password' => password_hash($this->input->post('password'), PASSWORD_DEFAULT),
-                'email' => $this->input->post('email'),
+                // Model UC6 đang dùng password dạng plain theo đặc tả
+                'password' => $this->input->post('password'),
                 'role_id' => $this->input->post('role_id'),
-                'staff_id' => $this->input->post('staff_id') ?: null
             ];
 
-            $result = $this->userModel->createUser($userData, $this->session->userdata('user_id'));
+            $staff_id = (int) $this->input->post('staff_id');
+            $result = $this->userModel->createUser($staff_id, $userData, $this->session->userdata('user_id'));
 
             if ($result['success']) {
                 $this->session->set_flashdata('success', $result['message']);

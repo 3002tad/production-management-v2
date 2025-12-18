@@ -125,6 +125,26 @@ class UserManagementModel extends CI_Model
         ");
         return $query->result();
     }
+    
+    /**
+     * Lấy danh sách roles đang hoạt động cho dropdown
+     *
+     * @return array
+     */
+    public function getRoles()
+    {
+        // Nếu bảng roles chưa tồn tại (chưa chạy migration RBAC) thì trả mảng rỗng
+        if (!$this->db->table_exists('roles')) {
+            return [];
+        }
+
+        $this->db->select('role_id, role_name, role_display_name, level, is_active');
+        $this->db->from('roles');
+        $this->db->where('is_active', 1);
+        $this->db->order_by('level', 'DESC');
+
+        return $this->db->get()->result();
+    }
 
     // ========================================================================
     // PHẦN: TẠO (CREATE)
