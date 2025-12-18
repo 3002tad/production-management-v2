@@ -236,16 +236,15 @@
         // Prefer structured JS flashdata if available
         <?php if($this->session->flashdata('success_js')): ?>
         if (msgType === 'success') {
-          let flashData = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
+          let successFlashData = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
           Swal.fire({
             icon: 'success',
-            title: flashData.title || 'Thành công!',
-            text: flashData.message,
+            title: successFlashData.title || 'Thành công!',
+            text: successFlashData.message,
             showConfirmButton: true,
             confirmButtonColor: '#17ad37',
             timer: 3000
           });
-          sessionStorage.setItem('toast_shown', 'true');
           window.history.replaceState({}, document.title, window.location.pathname);
         }
         <?php else: ?>
@@ -266,19 +265,18 @@
 
         <?php if($this->session->flashdata('error_js')): ?>
         if (msgType === 'error') {
-          let flashData = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
-          let errorMessage = flashData.message;
-          if (flashData.details && flashData.details.length > 0) {
-            errorMessage += '<br>' + flashData.details.join('<br>');
+          let errorFlashData = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
+          let errorMessage = errorFlashData.message;
+          if (errorFlashData.details && errorFlashData.details.length > 0) {
+            errorMessage += '<br>' + errorFlashData.details.join('<br>');
           }
           Swal.fire({
             icon: 'error',
-            title: flashData.title || 'Lỗi!',
+            title: errorFlashData.title || 'Lỗi!',
             html: errorMessage, // Use html to render <br> tags
             showConfirmButton: true,
             confirmButtonColor: '#dc3545'
           });
-          sessionStorage.setItem('toast_shown', 'true');
           window.history.replaceState({}, document.title, window.location.pathname);
         }
         <?php elseif($this->session->flashdata('error')): ?>
@@ -297,15 +295,14 @@
 
         <?php if($this->session->flashdata('warning_js')): ?>
         if (msgType === 'warning') {
-          let flashData = JSON.parse('<?= addslashes($this->session->flashdata('warning_js')) ?>');
+          let warningFlashData = JSON.parse('<?= addslashes($this->session->flashdata('warning_js')) ?>');
           Swal.fire({
             icon: 'warning',
-            title: flashData.title || 'Cảnh báo!',
-            text: flashData.message,
+            title: warningFlashData.title || 'Cảnh báo!',
+            text: warningFlashData.message,
             showConfirmButton: true,
             confirmButtonColor: '#ffc107'
           });
-          sessionStorage.setItem('toast_shown', 'true');
           window.history.replaceState({}, document.title, window.location.pathname);
         }
         <?php elseif($this->session->flashdata('error')): ?>
@@ -316,18 +313,17 @@
       // Nếu không có msg parameter nhưng có flashdata, hiển thị toast 1 lần
       if (!msgType && !toastShown) {
         <?php if($this->session->flashdata('success_js')): ?>
-          let flashData = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
+          let successFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
           Swal.fire({
             icon: 'success',
-            title: flashData.title || 'Thành công!',
-            text: flashData.message,
+            title: successFlashData2.title || 'Thành công!',
+            text: successFlashData2.message,
             showConfirmButton: true,
             confirmButtonText: 'OK',
             confirmButtonColor: '#17ad37',
             timer: 3000,
             timerProgressBar: true
           });
-          sessionStorage.setItem('toast_shown', 'true');
         <?php elseif($this->session->flashdata('success')): ?>
           Swal.fire({
             icon: 'success',
@@ -343,19 +339,18 @@
         <?php endif; ?>
 
         <?php if($this->session->flashdata('error_js')): ?>
-          let flashData = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
-          let errorMessage = flashData.message;
-          if (flashData.details && flashData.details.length > 0) {
-            errorMessage += '<br>' + flashData.details.join('<br>');
+          let errorFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
+          let errorMessage2 = errorFlashData2.message;
+          if (errorFlashData2.details && errorFlashData2.details.length > 0) {
+            errorMessage2 += '<br>' + errorFlashData2.details.join('<br>');
           }
           Swal.fire({
             icon: 'error',
-            title: flashData.title || 'Lỗi!',
-            html: errorMessage,
+            title: errorFlashData2.title || 'Lỗi!',
+            html: errorMessage2,
             showConfirmButton: true,
             confirmButtonColor: '#dc3545'
           });
-          sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true');
         <?php elseif($this->session->flashdata('error')): ?>
           Swal.fire({
             icon: 'error',
