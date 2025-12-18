@@ -11,7 +11,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * - Make APPROVE/REJECT decisions
  * - Upload evidence attachments
  * 
- * @author AI Pair Programmer
+ * @author Production Management System v2 Team
  * @date 2025-11-02
  */
 class Qc extends CI_Controller
@@ -577,7 +577,7 @@ class Qc extends CI_Controller
      * Make decision (APPROVE/REJECT)
      * POST /qc/sessions/{id}/decision
      * 
-     * Use Case 19 - Step 7-8: Decision workflow
+     * Use Case 19 - Bước 7-8: Luồng quyết định
      * Alternative Flow 6.1: Near threshold → increase sample
      * Alternative Flow 8.1: Reject → require reason + attachment
      */
@@ -599,7 +599,7 @@ class Qc extends CI_Controller
             return;
         }
         
-        // Step 1: Validate decision prerequisites
+        // Bước 1: Kiểm tra điều kiện tiên quyết cho quyết định
         $validation = $this->checklistservice->validateDecision($session_id, $result, $reason);
         
         if (!$validation['valid']) {
@@ -619,10 +619,10 @@ class Qc extends CI_Controller
             $aql = $this->qcModel->getDefaultAql();
         }
         
-        // Step 2: Get AI recommendation
+        // Bước 2: Lấy gợi ý kết luận
         $recommendation = $this->checklistservice->calculateDecisionRecommendation($session_id, $aql);
         
-        // Step 3: Alternative Flow 6.1 - Near threshold detection
+        // Bước 3: Luồng thay thế 6.1 - Phát hiện gần ngưỡng
         if ($recommendation['action'] === 'INCREASE_SAMPLE_SIZE' && !$force) {
             // Return 409 with suggestion to increase sample
             $this->jsonResponse([
@@ -639,10 +639,10 @@ class Qc extends CI_Controller
             return;
         }
         
-        // Step 4: Show warnings if any (but allow continue)
+        // Bước 4: Hiển thị cảnh báo nếu có (nhưng cho phép tiếp tục)
         $warnings = $validation['warnings'] ?? [];
         
-        // Step 5: Prepare decision data
+        // Bước 5: Chuẩn bị dữ liệu quyết định
         $decision_data = [
             'aql' => $aql,
             'defect_rate' => $stats['defect_rate'],
@@ -650,10 +650,10 @@ class Qc extends CI_Controller
             'decided_by' => $this->session->userdata('username')
         ];
         
-        // Step 6: Process decision (transactional)
+        // Bước 6: Xử lý quyết định (giao dịch)
         try {
             if ($result === 'APPROVE') {
-                // Step 8: APPROVE flow
+                // Bước 8: Luồng APPROVE
                 // - Update session status to DECIDED
                 // - Update closure status to VERIFIED
                 // - Set can_receive_fg = 1 (allow warehouse to receive)
@@ -661,7 +661,7 @@ class Qc extends CI_Controller
                 
                 $message = 'Lô hàng đã được PHÊ DUYỆT. Kho có thể nhận thành phẩm.';
             } else {
-                // Step 8.1: REJECT flow
+                // Bước 8.1: Luồng REJECT flow
                 // - Update session status to DECIDED
                 // - Update closure status to REJECTED
                 // - Create adjustment request for Leader

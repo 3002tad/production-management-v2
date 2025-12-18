@@ -4,9 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="apple-touch-icon" sizes="76x76" href="./assets/img/apple-icon.png">
-  <link rel="icon" type="image/png" href="./assets/img/favicon.png">
-  <title>
+  <link rel="apple-touch-icon" sizes="76x76" href="<?php echo base_url('asset/Backend/assets/img/apple-icon.png'); ?>">
+  <link rel="icon" type="image/png" href="<?php echo base_url('asset/Backend/assets/img/favicon.png'); ?>">  <title>
     Production System - Ban Giám Đốc
   </title>
   <!--     Fonts and icons     -->
@@ -19,7 +18,7 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" />
 
   <!-- Font Awesome Icons -->
-  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+  
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <!-- CSS Files -->
@@ -143,7 +142,7 @@
         <hr class="horizontal light mt-0 mb-2">
 
         <li class="nav-item navbar-expand-xs">
-          <a class="nav-link text-white" href="<?= site_url('login/logout'); ?>">
+          <a class="nav-link text-white" href="<?= site_url('login/logout'); ?>" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">logout</i>
             </div>
@@ -191,7 +190,17 @@
 
     <div class="container-fluid py-4">
       <!-- DYNAMIC CONTENT LOADED HERE -->
-      <?php $this->load->view($content); ?>
+      <?php 
+      // Extract all variables from controller and pass to child view
+      // This ensures $data, $customer, $product, etc. are available in child views
+      $child_vars = [];
+      foreach (get_defined_vars() as $key => $value) {
+          if ($key !== 'this' && $key !== 'content' && $key !== 'navlink') {
+              $child_vars[$key] = $value;
+          }
+      }
+      $this->load->view($content, $child_vars); 
+      ?>
 
       <!-- Footer -->
       <footer class="footer py-4">
@@ -212,20 +221,168 @@
   <!-- ═══════════════════════════════════════════════════════════════ -->
   <!-- SCRIPTS                                                          -->
   <!-- ═══════════════════════════════════════════════════════════════ -->
-  <script src="<?= site_url('asset/backend/assets/js/core/popper.min.js'); ?>"></script>
-  <script src="<?= site_url('asset/backend/assets/js/core/bootstrap.min.js'); ?>"></script>
-  <script src="<?= site_url('asset/backend/assets/js/plugins/perfect-scrollbar.min.js'); ?>"></script>
-  <script src="<?= site_url('asset/backend/assets/js/plugins/smooth-scrollbar.min.js'); ?>"></script>
-  <script src="<?= site_url('asset/backend/assets/js/plugins/chartjs.min.js'); ?>"></script>
+  <script src="<?= site_url('asset/Backend/assets/js/core/popper.min.js'); ?>"></script>
+  <script src="<?= site_url('asset/Backend/assets/js/core/bootstrap.min.js'); ?>"></script>
+  <script src="<?= site_url('asset/Backend/assets/js/plugins/perfect-scrollbar.min.js'); ?>"></script>
+  <script src="<?= site_url('asset/Backend/assets/js/plugins/smooth-scrollbar.min.js'); ?>"></script>
+  <script src="<?= site_url('asset/Backend/assets/js/plugins/chartjs.min.js'); ?>"></script>
 
   <!-- DataTables -->
-  <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+<!-- JQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Custom BOD Project Scripts -->
+  <script src="<?= site_url('asset/Backend/assets/js/bod_project_scripts.js'); ?>"></script>
+
+
+
   <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script>
     $(document).ready(function() {
       $('#table').DataTable();
+
+      // Show flashdata messages (following Project pattern)
+      var urlParams = new URLSearchParams(window.location.search);
+      var msgType = urlParams.get('msg');
+      var toastShown = sessionStorage.getItem('toast_shown');
+      
+      if (msgType && !toastShown) {
+        // Prefer structured JS flashdata if available
+        <?php if($this->session->flashdata('success_js')): ?>
+        if (msgType === 'success') {
+          let successFlashData = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
+          Swal.fire({
+            icon: 'success',
+            title: successFlashData.title || 'Thành công!',
+            text: successFlashData.message,
+            showConfirmButton: true,
+            confirmButtonColor: '#17ad37',
+            timer: 3000
+          });
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        <?php else: ?>
+        // Fallback to plain flashdata('success') when ?msg=success is present
+        if (msgType === 'success' && <?= $this->session->flashdata('success') ? 'true' : 'false' ?>) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Thành công!',
+            text: '<?= addslashes($this->session->flashdata('success')) ?>',
+            showConfirmButton: true,
+            confirmButtonColor: '#17ad37',
+            timer: 3000
+          });
+          sessionStorage.setItem('toast_shown', 'true');
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        <?php endif; ?>
+
+        <?php if($this->session->flashdata('error_js')): ?>
+        if (msgType === 'error') {
+          let errorFlashData = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
+          let errorMessage = errorFlashData.message;
+          if (errorFlashData.details && errorFlashData.details.length > 0) {
+            errorMessage += '<br>' + errorFlashData.details.join('<br>');
+          }
+          Swal.fire({
+            icon: 'error',
+            title: errorFlashData.title || 'Lỗi!',
+            html: errorMessage, // Use html to render <br> tags
+            showConfirmButton: true,
+            confirmButtonColor: '#dc3545'
+          });
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        <?php elseif($this->session->flashdata('error')): ?>
+        if (msgType === 'error') {
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: '<?= addslashes($this->session->flashdata('error')) ?>',
+            showConfirmButton: true,
+            confirmButtonColor: '#dc3545'
+          });
+          sessionStorage.setItem('toast_shown', 'true');
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        <?php endif; ?>
+
+        <?php if($this->session->flashdata('warning_js')): ?>
+        if (msgType === 'warning') {
+          let warningFlashData = JSON.parse('<?= addslashes($this->session->flashdata('warning_js')) ?>');
+          Swal.fire({
+            icon: 'warning',
+            title: warningFlashData.title || 'Cảnh báo!',
+            text: warningFlashData.message,
+            showConfirmButton: true,
+            confirmButtonColor: '#ffc107'
+          });
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        <?php elseif($this->session->flashdata('error')): ?>
+        // no-op
+        <?php endif; ?>
+      }
+
+      // Nếu không có msg parameter nhưng có flashdata, hiển thị toast 1 lần
+      if (!msgType && !toastShown) {
+        <?php if($this->session->flashdata('success_js')): ?>
+          let successFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
+          Swal.fire({
+            icon: 'success',
+            title: successFlashData2.title || 'Thành công!',
+            text: successFlashData2.message,
+            showConfirmButton: true,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#17ad37',
+            timer: 3000,
+            timerProgressBar: true
+          });
+        <?php elseif($this->session->flashdata('success')): ?>
+          Swal.fire({
+            icon: 'success',
+            title: 'Thành công!',
+            text: '<?= addslashes($this->session->flashdata('success')) ?>',
+            showConfirmButton: true,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#17ad37',
+            timer: 3000,
+            timerProgressBar: true
+          });
+          sessionStorage.setItem('toast_shown', 'true');
+        <?php endif; ?>
+
+        <?php if($this->session->flashdata('error_js')): ?>
+          let errorFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
+          let errorMessage2 = errorFlashData2.message;
+          if (errorFlashData2.details && errorFlashData2.details.length > 0) {
+            errorMessage2 += '<br>' + errorFlashData2.details.join('<br>');
+          }
+          Swal.fire({
+            icon: 'error',
+            title: errorFlashData2.title || 'Lỗi!',
+            html: errorMessage2,
+            showConfirmButton: true,
+            confirmButtonColor: '#dc3545'
+          });
+        <?php elseif($this->session->flashdata('error')): ?>
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: '<?= addslashes($this->session->flashdata('error')) ?>',
+            showConfirmButton: true,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+          });
+          sessionStorage.setItem('toast_shown', 'true');
+        <?php endif; ?>
+      }
+
+      // Keep the global toast_shown flag for the browser session so the toast only appears once per login.
     });
 
     var win = navigator.platform.indexOf('Win') > -1;
@@ -239,6 +396,8 @@
 
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
+<!-- Bootstrap 5 JS Bundle for Modal support -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Control Center for Material Dashboard -->
   <script src="<?= site_url('asset/backend/assets/js/material-dashboard.min.js?v=3.0.0'); ?>"></script>
 </body>

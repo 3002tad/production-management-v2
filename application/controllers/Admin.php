@@ -16,18 +16,25 @@ class Admin extends CI_Controller
         }
         
         // RBAC: Check if user has admin access
-        $role = $this->session->userdata('role');
-        if (empty($role)) {
-            $role = $this->session->userdata('role_name');
+        // Allow: BOD (level 100) and System Admin (level 90)
+        $role_name = $this->session->userdata('role_name');
+        $level = $this->session->userdata('level');
+        $old_role = $this->session->userdata('role'); // Backward compatibility
+        
+        $has_access = false;
+        
+        // New RBAC system
+        if ($role_name) {
+            $allowed_roles = ['bod', 'system_admin'];
+            $has_access = in_array($role_name, $allowed_roles) || ($level >= 90);
         }
-        $role = strtolower(trim((string)$role));
+        // Old system fallback
+        elseif ($old_role === 'admin') {
+            $has_access = true;
+        }
         
-        // Allowed roles for Admin page
-        // Include 'system_admin' so system administrators can access the Admin area
-        $allowed_roles = ['admin', 'bod', 'system_admin'];
-        
-        if (!in_array($role, $allowed_roles, true)) {
-            show_error('Access Denied - Admin Only. Your role: ' . var_export($role, true), 403, 'Forbidden');
+        if (!$has_access) {
+            show_error('Access Denied - Admin Only', 403, 'Forbidden');
         }
     }
 
@@ -304,18 +311,50 @@ class Admin extends CI_Controller
 
     public function addProduct()
     {
-            $add = [
-                'id_product' => $this->crudModel->generateCode(1, 'id_product', 'product'),
-                'product_name' => trim($this->input->post('product_name')),
-                'summary' => trim($this->input->post('summary')),
-                'application' => trim($this->input->post('application')),
-                'diameter' => floatval($this->input->post('diameter')),
+            // Tải ProductModel để xử lý logic nghiệp vụ
+        $this->load->model('ProductModel');
 
+        // --- VALIDATION: Đảm bảo BOM đã được cung cấp ---
+        // Giả định form gửi lên một mảng có tên là 'materials'
+        // Ví dụ: <input name="materials[0][id_material]">, <input name="materials[0][quantity]">
+        $materials = $this->input->post('materials');
+
+        if (empty($materials) || !is_array($materials) || count($materials) == 0) {
+            // Gửi thông báo lỗi cho người dùng
+            $this->session->set_flashdata('error', 'Không thể tạo sản phẩm. Vui lòng định mức Nguyên vật liệu (BOM).');
+            
+            // Chuyển hướng về lại form
+            redirect('admin/product/addproduct');
+            return; // Dừng xử lý
+        }
+        // --- KẾT THÚC VALIDATION ---
+
+        // Chuẩn bị dữ liệu sản phẩm từ input của form
+        $productData = [
+            'id_product'   => $this->crudModel->generateCode(1, 'id_product', 'product'),
+                'product_name' => trim($this->input->post('product_name')),
+                'summary'      => trim($this->input->post('summary')),
+                'application'  => trim($this->input->post('application')),
+                'diameter'     => floatval($this->input->post('diameter')),
             ];
 
-            $this->crudModel->addData('product', $add);
+// Gọi phương thức của model để tạo sản phẩm và BOM trong một transaction
+        $newProductId = $this->ProductModel->createProductWithBom($productData, $materials);
 
+        if ($newProductId) {
+            // Nếu thành công, báo thành công và chuyển về trang danh sách sản phẩm
+            $this->session->set_flashdata('success', 'Sản phẩm và Định mức NVL đã được tạo thành công.');
+            $this->session->set_flashdata('success_js', json_encode([
+                'title' => 'Thành công!',
+                'message' => 'Thêm sản phẩm thành công.',
+                'product_name' => $productData['product_name'] ?? ''
+            ]));
             redirect(site_url('Admin/product'));
+} else {
+            // Nếu thất bại, báo lỗi và quay lại form
+            $this->session->set_flashdata('error', 'Đã có lỗi xảy ra trong quá trình lưu vào database. Vui lòng thử lại.');
+            redirect(site_url('admin/product/addproduct'));
+        }
     }
 
     public function planning()
@@ -568,40 +607,30 @@ class Admin extends CI_Controller
 
     public function staff()
     {
-        // RBAC: Leader được thêm, sửa, xóa, cập nhật trạng thái; admin và bod chỉ xem
-        $role = $this->session->userdata('role');
-        if (empty($role)) {
-            $role = $this->session->userdata('role_name');
-        }
-        $role = strtolower(trim((string)$role));
-        $is_leader = ($role === 'leader');
-        $is_read_only = in_array($role, ['admin', 'bod']);
-
         if ($this->uri->segment(3) === 'addstaff') {
 
-            // Get roles for department dropdown
-            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
-
-            // Get users for position dropdown (using full_name)
-            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+            // Only leaders can access add staff UI
+            if ($this->session->userdata('role') !== 'leader') {
+                // redirect non-leaders to staff list
+                redirect(site_url('Admin/staff'));
+            }
 
             $data = [
                 'staff' => $this->db->query('SELECT * FROM staff')->result(),
-                'roles' => $roles,
-                'users' => $users,
                 'content' => 'admin/staff/addstaff',
                 'navlink' => 'staff',
                 ];
 
         } elseif ($this->uri->segment(4) === 'update') {
+
+            // Only leaders can access update staff UI
+            if ($this->session->userdata('role') !== 'leader') {
+                redirect(site_url('Admin/staff'));
+            }
+
             $id = $this->uri->segment(3);
+            
             $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
-
-            // Get roles for department dropdown
-            $roles = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
-
-            // Get users for position dropdown (using full_name)
-            $users = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
 
             $data = [
                 'detail' => [
@@ -609,58 +638,15 @@ class Admin extends CI_Controller
                     'staff_name' => $tampil->staff_name,
                     'phone' => $tampil->phone,
                     'email' => $tampil->email,
-                    'department' => $tampil->department,
-                    'position' => $tampil->position,
-                    'st_status' => $tampil->st_status,
                 ],
-                'roles' => $roles,
-                'users' => $users,
+
                 'content' => 'admin/staff/updatestaff',
                 'navlink' => 'staff',
                 ];
 
         } else {
-            // Support filters: department, position, status, search_code
-            $department = $this->input->get('department');
-            $position = $this->input->get('position');
-            $status = $this->input->get('status');
-            $search_code = $this->input->get('search_code');
-
-            $this->db->select('staff.*, roles.role_display_name as department_name');
-            $this->db->from('staff');
-            $this->db->join('roles', 'staff.department = roles.role_id', 'left');
-            if ($department) {
-                $this->db->where('staff.department', $department);
-            }
-            if ($position) {
-                $this->db->where('staff.position', $position);
-            }
-            if ($status !== null && $status !== '') {
-                $this->db->where('staff.st_status', $status);
-            }
-            if ($search_code) {
-                $this->db->where('staff.id_staff', $search_code);
-            }
-
-            $results = $this->db->get()->result();
-
-            // Get statistics
-            $stats = [];
-            $stats['total'] = $this->db->count_all('staff');
-            $stats['active'] = $this->db->where('st_status', 1)->count_all_results('staff');
-
-            // Count staff with user accounts using JOIN
-            $this->db->select('COUNT(DISTINCT staff.id_staff) as count');
-            $this->db->from('staff');
-            $this->db->join('user', 'staff.id_staff = user.staff_id', 'left');
-            $this->db->where('user.staff_id IS NOT NULL');
-            $with_user_result = $this->db->get()->row();
-            $stats['with_user'] = $with_user_result ? $with_user_result->count : 0;
-            $stats['without_user'] = $stats['total'] - $stats['with_user'];
-
             $data = [
-                'staff' => $results,
-                'statistics' => $stats,
+                'staff' => $this->db->query('SELECT * FROM staff')->result(),
                 'content' => 'admin/staff/staff',
                 'navlink' => 'staff',
                 ];
@@ -671,55 +657,18 @@ class Admin extends CI_Controller
 
     public function addStaff()
     {
-        // RBAC: Only Admin can add staff
-        $role = $this->session->userdata('role');
-        if (empty($role)) {
-            $role = $this->session->userdata('role_name');
+        // Protect action: only leader can add staff
+        if ($this->session->userdata('role') !== 'leader') {
+            show_error('Unauthorized', 403);
         }
-        $role = strtolower(trim((string)$role));
-        $allowed_roles = ['admin', 'bod', 'system_admin'];
-        if (!in_array($role, $allowed_roles)) {
-            show_error('Access Denied - Only Admin can add staff', 403, 'Forbidden');
-        }
-
-        $staff_name = trim($this->input->post('staff_name'));
-        $phone = trim($this->input->post('phone'));
-        $email = trim($this->input->post('email'));
-        $department = trim($this->input->post('department'));
-        $position = trim($this->input->post('position'));
-
-        // Validate phone format
-        if (!preg_match('/^0\d{9}$/', $phone)) {
-            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
-            redirect(site_url('admin/staff/addstaff'));
-            return;
-        }
-
-        // Validate email
-        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
-            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
-            redirect(site_url('admin/staff/addstaff'));
-            return;
-        }
-
-        // Check phone uniqueness
-        $exists = $this->db->where('phone', $phone)->get('staff')->row();
-        if ($exists) {
-            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại cho nhân viên khác');
-            redirect(site_url('admin/staff/addstaff'));
-            return;
-        }
-
         $add = [
             'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
-            'staff_name' => $staff_name,
-            'phone' => $phone,
-            'email' => $email,
-            'department' => $department,
-            'position' => $position,
-            'st_status' => 1,
+            'staff_name' => trim($this->input->post('staff_name')),
+            'phone' => trim($this->input->post('phone')),
+            'email' => trim($this->input->post('email')),
         ];
 
+        // skills removed — do not include skills field
         $this->crudModel->addData('staff', $add);
 
         redirect(site_url('Admin/staff'));
@@ -727,56 +676,20 @@ class Admin extends CI_Controller
 
     public function updateStaff()
     {
-        // RBAC: Only Admin can update staff
-        $role = $this->session->userdata('role');
-        if (empty($role)) {
-            $role = $this->session->userdata('role_name');
+        // Protect action: only leader can update staff
+        if ($this->session->userdata('role') !== 'leader') {
+            show_error('Unauthorized', 403);
         }
-        $role = strtolower(trim((string)$role));
-        $allowed_roles = ['admin', 'bod', 'system_admin'];
-        if (!in_array($role, $allowed_roles)) {
-            show_error('Access Denied - Only Admin can update staff', 403, 'Forbidden');
-        }
-
         $id_staff = $this->input->post('id_staff');
-        $staff_name = trim($this->input->post('staff_name'));
-        $phone = trim($this->input->post('phone'));
-        $email = trim($this->input->post('email'));
-        $department = trim($this->input->post('department'));
-        $position = trim($this->input->post('position'));
-        $st_status = trim($this->input->post('st_status', 1));
-
-        // Validate phone
-        if (!preg_match('/^0\d{9}$/', $phone)) {
-            $this->session->set_flashdata('error', 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0');
-            redirect(site_url('admin/staff/'.$id_staff.'/update'));
-            return;
-        }
-
-        // Validate email
-        if (!preg_match('/^[^@\s]+@mail\.com$/', $email)) {
-            $this->session->set_flashdata('error', 'Email phải kết thúc bằng @mail.com');
-            redirect(site_url('admin/staff/'.$id_staff.'/update'));
-            return;
-        }
-
-        // Check phone uniqueness (exclude current staff)
-        $exists = $this->db->where('phone', $phone)->where('id_staff !=', $id_staff)->get('staff')->row();
-        if ($exists) {
-            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại cho nhân viên khác');
-            redirect(site_url('admin/staff/'.$id_staff.'/update'));
-            return;
-        }
 
         $update = [
-            'staff_name' => $staff_name,
-            'phone' => $phone,
-            'email' => $email,
-            'department' => $department,
-            'position' => $position,
-            'st_status' => $st_status,
+            'staff_name' => trim($this->input->post('staff_name')),
+            'staff_name' => trim($this->input->post('staff_name')),
+            'phone' => trim($this->input->post('phone')),
+            'email' => trim($this->input->post('email')),
         ];
 
+        // skills removed — do not update skills field
         $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
 
         redirect(site_url('Admin/staff'));
@@ -784,90 +697,15 @@ class Admin extends CI_Controller
 
     public function deleteStaff()
     {
-        // RBAC: Only Admin can delete staff
-        $role = $this->session->userdata('role');
-        if (empty($role)) {
-            $role = $this->session->userdata('role_name');
+        // Protect action: only leader can delete staff
+        if ($this->session->userdata('role') !== 'leader') {
+            show_error('Unauthorized', 403);
         }
-        $role = strtolower(trim((string)$role));
-        $allowed_roles = ['admin', 'bod', 'system_admin'];
-        if (!in_array($role, $allowed_roles)) {
-            show_error('Access Denied - Only Admin can delete staff', 403, 'Forbidden');
-        }
-
         $id_staff = $this->uri->segment(3);
 
-        log_message('debug', 'Attempting to delete staff id: ' . $id_staff);
-        $this->session->set_flashdata('debug', 'ID staff to delete: ' . $id_staff);
+        $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
 
-        try {
-            // Delete associated records
-            $this->db->where('staff_id', $id_staff);
-            $this->db->delete('user');
-            log_message('debug', 'Deleted user records for staff id: ' . $id_staff . ', affected: ' . $this->db->affected_rows());
-
-            $this->db->where('id_staff', $id_staff);
-            $this->db->delete('plan_shift');
-            log_message('debug', 'Deleted plan_shift records for staff id: ' . $id_staff . ', affected: ' . $this->db->affected_rows());
-
-            $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
-            log_message('debug', 'Deleted staff record for id: ' . $id_staff . ', affected: ' . $this->db->affected_rows());
-
-            if ($this->db->affected_rows() > 0) {
-                $this->session->set_flashdata('flash', 'Xóa nhân viên thành công');
-            } else {
-                $this->session->set_flashdata('error', 'Không thể xóa nhân viên');
-            }
-        } catch (Exception $e) {
-            log_message('error', 'Exception deleting staff id ' . $id_staff . ': ' . $e->getMessage());
-            $this->session->set_flashdata('error', 'Lỗi khi xóa nhân viên: ' . $e->getMessage());
-        }
-
-        redirect(site_url('admin/staff'));
-    }
-
-    public function toggleStaffStatus()
-    {
-        // RBAC: Only Admin can toggle staff status
-        $role = $this->session->userdata('role');
-        if (empty($role)) {
-            $role = $this->session->userdata('role_name');
-        }
-        $role = strtolower(trim((string)$role));
-        $allowed_roles = ['admin', 'bod', 'system_admin'];
-        if (!in_array($role, $allowed_roles)) {
-            show_error('Access Denied - Only Admin can toggle staff status', 403, 'Forbidden');
-        }
-
-        // Chuyển trạng thái tuần tự: 1 -> 2 -> 3 -> 1
-        $id_staff = $this->uri->segment(3);
-
-        $staff = $this->crudModel->getDataWhere('staff', 'id_staff', $id_staff)->row();
-        if (empty($staff)) {
-            $this->session->set_flashdata('error', 'Nhân sự không tồn tại');
-            redirect(site_url('admin/staff'));
-            return;
-        }
-
-        // Cycle through three statuses
-        if ($staff->st_status == 1) {
-            $new_status = 2; // Đã xếp lịch
-        } elseif ($staff->st_status == 2) {
-            $new_status = 3; // Ngừng hoạt động
-        } else {
-            $new_status = 1; // Sẵn sàng
-        }
-
-        $update = [
-            'st_status' => $new_status,
-        ];
-
-        $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
-
-        $status_text = ($new_status == 1) ? 'Sẵn sàng' : (($new_status == 2) ? 'Đã xếp lịch' : 'Ngừng hoạt động');
-        $this->session->set_flashdata('flash', 'Trạng thái nhân sự đã thay đổi thành ' . $status_text);
-
-        redirect(site_url('admin/staff'));
+        redirect(site_url('Admin/staff'));
     }
 
     public function Production()
@@ -1133,6 +971,11 @@ class Admin extends CI_Controller
 
         $this->crudModel->deleteData('p_material', 'id_pmaterial', $id_pmaterial);
 
+        // AUTO-REFRESH: Làm mới cảnh báo cho TẤT CẢ đơn hàng sử dụng material này
+        // (Vì stock đã thay đổi → Ảnh hưởng đến tính toán NVL)
+        $this->load->model('OrderModel');
+        $this->OrderModel->refreshAllWarnings();
+
         redirect(site_url('admin/material'));
     }
 
@@ -1347,5 +1190,287 @@ class Admin extends CI_Controller
         $this->session->unset_userdata('role');
         $this->session->unset_userdata('user_id');
         redirect('login/');
+    }
+
+    // ========================================================================
+    // ========================================================================
+    // UC6 - QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN (Forward to admin/UserController)
+    // Actor: Admin (system_admin role)
+    // ========================================================================
+    // NOTE: UC6 methods đã được refactor vào admin/UserController.php
+    //       Methods dưới đây giữ lại để backward compatibility với routes cũ
+
+    /**
+     * UC6 - Danh sách người dùng
+     * Route: /Admin/user (backward compatibility)
+     * Forward to: admin/UserController/index
+     */
+    public function user()
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission: user.view
+        if (!$this->_hasPermission('user.view')) {
+            show_error('Bạn không có quyền xem danh sách người dùng.', 403);
+        }
+
+        // Get filters từ GET params
+        $filters = [
+            'role_id'   => $this->input->get('role_id'),
+            'is_active' => $this->input->get('is_active'),
+            'search'    => $this->input->get('search')
+        ];
+
+        // Cache roles to avoid repeated queries
+        $roles = $this->db->order_by('level', 'DESC')->get('roles')->result();
+        
+        $data = [
+            'users'      => $this->UserManagementModel->getAllUsers($filters),
+            'roles'      => $roles,
+            'statistics' => $this->UserManagementModel->getStatistics(),
+            'content'    => 'admin/user/user_list',
+            'navlink'    => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    /**
+     * UC6 - Hiển thị form tạo user mới
+     * Route: /Admin/user_add (backward compatibility)
+     * Forward to: admin/UserController/add
+     */
+    public function user_add()
+    {
+        // Check permission: user.create
+        if (!$this->_hasPermission('user.create')) {
+            show_error('Bạn không có quyền tạo người dùng.', 403);
+        }
+
+        $this->load->model('admin/UserManagementModel');
+
+        // Get staff chưa có user
+        $staff_without_user = $this->UserManagementModel->getStaffWithoutUser();
+
+        $data = [
+            'staff_without_user' => $staff_without_user,
+            'roles'              => $this->db->order_by('level', 'DESC')->get('roles')->result(),
+            'content'            => 'admin/user/user_add',
+            'navlink'            => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+    /**
+     * UC6 - Xử lý tạo user mới (POST)
+     * Route: /Admin/user_add_process (backward compatibility)
+     * Forward to: admin/UserController/add_process
+     */
+    public function user_add_process()
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission
+        if (!$this->_hasPermission('user.create')) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền.']);
+            return;
+        }
+
+        $staff_id = $this->input->post('staff_id');
+        
+        $data = [
+            'username'  => $this->input->post('username'),
+            'password'  => $this->input->post('password'),
+            'role_id'   => $this->input->post('role_id')
+        ];
+
+        $result = $this->UserManagementModel->createUser($staff_id, $data, $this->session->userdata('user_id'));
+
+        if ($result['success']) {
+            $this->session->set_flashdata('success', $result['message']);
+            redirect(site_url('admin/user?msg=success'));
+        } else {
+            $this->session->set_flashdata('error', $result['message']);
+            redirect(site_url('admin/user_add?msg=error'));
+        }
+    }
+    /**
+     * UC6 - Hiển thị form sửa user
+     * Route: /Admin/user_edit/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/edit/{user_id}
+     */
+    public function user_edit($user_id)
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission: user.edit
+        if (!$this->_hasPermission('user.edit')) {
+            show_error('Bạn không có quyền sửa người dùng.', 403);
+        }
+
+        $user = $this->UserManagementModel->getUserById($user_id);
+        if (!$user) {
+            show_404();
+        }
+
+        $data = [
+            'user'    => $user,
+            'roles'   => $this->db->order_by('level', 'DESC')->get('roles')->result(),
+            'content' => 'admin/user/user_edit',
+            'navlink' => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    /**
+     * UC6 - Xử lý sửa user (POST)
+     * Route: /Admin/user_edit_process (backward compatibility)
+     * Forward to: admin/UserController/edit_process
+     */
+    public function user_edit_process()
+    {
+        if (!$this->load->is_loaded('UserManagementModel')) {
+            $this->load->model('admin/UserManagementModel');
+        }
+
+        // Check permission
+        if (!$this->_hasPermission('user.edit')) {
+            echo json_encode(['success' => false, 'message' => 'Không có quyền.']);
+            return;
+        }
+
+        $user_id = $this->input->post('user_id');
+        $data = [
+            'role_id'   => $this->input->post('role_id')
+        ];
+
+        $result = $this->UserManagementModel->updateUser($user_id, $data, $this->session->userdata('user_id'));
+
+        if ($result['success']) {
+            $this->session->set_flashdata('success', $result['message']);
+            redirect(site_url('admin/user?msg=success'));
+        } else {
+            $this->session->set_flashdata('error', $result['message']);
+            redirect(site_url('admin/user?msg=error'));
+        }
+    }
+
+    /**
+     * UC6 - Khóa/Mở khóa user
+     * Route: /Admin/user_lock/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/lock/{user_id}
+     */
+    public function user_lock($user_id)
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        $user = $this->UserManagementModel->getUserById($user_id);
+        if (!$user) {
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy user.']);
+            return;
+        }
+
+        if ($user->is_active == 1) {
+            // Khóa user
+            if (!$this->_hasPermission('user.lock')) {
+                echo json_encode(['success' => false, 'message' => 'Không có quyền khóa user.']);
+                return;
+            }
+
+            $reason = $this->input->post('reason') ?: 'Khóa bởi admin';
+            $result = $this->UserManagementModel->lockUser($user_id, $reason, $this->session->userdata('user_id'));
+        } else {
+            // Mở khóa user
+            if (!$this->_hasPermission('user.unlock')) {
+                echo json_encode(['success' => false, 'message' => 'Không có quyền mở khóa user.']);
+                return;
+            }
+
+            $result = $this->UserManagementModel->unlockUser($user_id, $this->session->userdata('user_id'));
+        }
+
+                    echo json_encode($result);
+                }
+
+    /**
+     * UC6 - Reset password user
+     * Route: /Admin/user_reset_password/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/reset_password/{user_id}
+     */
+    public function user_reset_password($user_id)
+    {
+        // Only accept POST
+        if ($this->input->method() !== 'post') {
+            echo json_encode(['success' => false, 'message' => 'Method not allowed.']);
+            return;
+        }
+
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission
+        if (!$this->_hasPermission('user.reset_password')) {
+                            echo json_encode(['success' => false, 'message' => 'Không có quyền reset password.']);
+                            return;
+        }
+
+        $result = $this->UserManagementModel->resetPassword($user_id, $this->session->userdata('user_id'));
+
+        // Set header
+            header('Content-Type: application/json');
+            echo json_encode($result);
+                }
+
+    /**
+     * UC6 - Chi tiết user + audit log
+     * Route: /Admin/user_detail/{user_id} (backward compatibility)
+     * Forward to: admin/UserController/detail/{user_id}
+     */
+    public function user_detail($user_id)
+    {
+        $this->load->model('admin/UserManagementModel');
+
+        // Check permission
+        if (!$this->_hasPermission('user.view')) {
+            show_error('Bạn không có quyền xem chi tiết user.', 403);
+        }
+
+        $user = $this->UserManagementModel->getUserById($user_id);
+        if (!$user) {
+            show_404();
+        }
+
+        $data = [
+            'user'       => $user,
+            'audit_logs' => $this->UserManagementModel->getUserAuditLog($user_id, 50),
+            'content'    => 'admin/user/user_detail',
+            'navlink'    => 'user'
+        ];
+
+        $this->load->view('admin/vbackend', $data);
+    }
+
+    /**
+     * Helper: Check permission
+     * 
+     * @param string $permission_name (e.g., 'user.view', 'user.create')
+     * @return bool
+     */
+    private function _hasPermission($permission_name)
+    {
+        $role_id = $this->session->userdata('role_id');
+        if (!$role_id) {
+            return false;
+        }
+
+        // Query permission
+        $this->db->select('rp.id');
+        $this->db->from('role_permissions rp');
+        $this->db->join('permissions p', 'rp.permission_id = p.permission_id');
+        $this->db->where('rp.role_id', $role_id);
+        $this->db->where('p.permission_name', $permission_name);
+        $query = $this->db->get();
+
+        return $query->num_rows() > 0;
     }
 }

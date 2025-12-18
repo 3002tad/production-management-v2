@@ -1,116 +1,129 @@
-<?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
-<div class="container-fluid">
+<div class="container-fluid py-4">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
+                    <li class="breadcrumb-item text-sm">
+                        <a class="opacity-5 text-dark" href="<?= base_url('admin/') ?>">
+                            <i class="material-icons text-sm">home</i>
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item text-sm">
+                        <a class="opacity-5 text-dark" href="<?= base_url('admin/user') ?>">Người dùng</a>
+                    </li>
+                    <li class="breadcrumb-item text-sm active" aria-current="page">Sửa quyền: <?= $user->username ?></li>
+                </ol>
+                <h6 class="font-weight-bolder mb-0">Sửa Quyền Người dùng</h6>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-lg-10 mx-auto">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Chỉnh Sửa Người Dùng</h3>
+                <div class="card-header p-3 pb-0">
+                    <div class="d-flex align-items-center">
+                        <div class="icon icon-shape bg-gradient-primary shadow text-center border-radius-md">
+                            <i class="material-icons opacity-10" style="font-size: 24px; line-height: 40px;">edit</i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">Chỉnh sửa quyền: <?= $user->username ?></h6>
+                            <p class="text-sm mb-0">Thay đổi vai trò và quyền truy cập</p>
+                        </div>
+                    </div>
                 </div>
-                <form action="" method="POST">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="username">Username <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="username" name="username" value="<?php echo set_value('username', $user->username); ?>" required>
+                <div class="card-body p-3">
+                    <form action="<?= base_url('admin/user_edit_process') ?>" method="POST" id="userEditForm" class="multisteps-form__form">
+                        <input type="hidden" name="user_id" value="<?= $user->user_id ?>">
+
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="input-group input-group-static mb-3">
+                                    <label class="ms-0">Username <span class="text-muted">(Không thể thay đổi)</span></label>
+                                    <input type="text" class="form-control" value="<?= $user->username ?>" readonly disabled style="background-color: #f8f9fa; cursor: not-allowed;">
+                                </div>
+<small class="text-muted d-block mt-n2 mb-3">
+                                    <i class="material-icons text-xs">info</i> Username không thể thay đổi sau khi tạo
+                                </small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="input-group input-group-static mb-3">
+                                    <label for="role_id" class="ms-0">Vai trò <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="role_id" name="role_id" required>
+                                        <option value="">-- Chọn vai trò --</option>
+                                        <?php foreach ($roles as $role): ?>
+                                        <option value="<?= $role->role_id ?>" <?= $role->role_id == $user->role_id ? 'selected' : '' ?>>
+                                            <?= $role->role_display_name ?> (Level: <?= $role->level ?>)
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="password">Password (để trống nếu không đổi)</label>
-                            <input type="password" class="form-control" id="password" name="password">
-                            <small class="form-text text-muted">Để trống nếu không muốn thay đổi mật khẩu</small>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-gradient-light p-3 mb-3">
+                                    <h6 class="text-sm font-weight-bold mb-2">Thông tin nhân viên</h6>
+                                    <p class="text-xs mb-1"><strong>Họ tên:</strong> <?= htmlspecialchars($user->staff_name ?? $user->full_name) ?></p>
+                                    <p class="text-xs mb-1"><strong>Email:</strong> <?= htmlspecialchars($user->staff_email ?? $user->email) ?></p>
+                                    <p class="text-xs mb-0"><strong>SĐT:</strong> <?= htmlspecialchars($user->staff_phone ?? $user->phone) ?></p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-gradient-light p-3 mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon icon-sm icon-shape bg-white shadow text-center border-radius-md me-2">
+                                            <i class="material-icons text-dark opacity-10" style="font-size: 18px;">info</i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs mb-0"><strong>Trạng thái:</strong> 
+                                                <?php if ($user->is_active == 1): ?>
+                                                    <span class="badge badge-sm bg-gradient-success">Hoạt động</span>
+                                        <?php else: ?>
+                                                    <span class="badge badge-sm bg-gradient-danger">Bị khóa</span>
+                                                <?php endif; ?>
+                                            </p>
+                                            <p class="text-xs mb-0"><strong>Login cuối:</strong> <?= $user->last_login ? date('d/m/Y H:i', strtotime($user->last_login)) : 'Chưa login' ?></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" value="<?php echo set_value('email', $user->email); ?>">
+                        <!-- Alert Boxes - Không hiển thị flashdata error từ trang khác -->
+
+                        <div class="alert alert-info alert-dismissible text-white fade show" role="alert">
+                            <span class="alert-icon"><i class="material-icons">info</i></span>
+                            <span class="alert-text">
+                                <strong>Lưu ý:</strong> 
+                                <ul class="mb-0 mt-2">
+                                    <li>Chỉ có thể thay đổi vai trò của user</li>
+                                    <li>Thông tin nhân viên được quản lý riêng trong module HR</li>
+                                    <li>Mật khẩu chỉ được reset bằng nút riêng trong danh sách user</li>
+                                    <li>Thay đổi vai trò sẽ ảnh hưởng đến quyền truy cập ngay lập tức</li>
+                                </ul>
+                            </span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
 
-                        <div class="form-group">
-                            <label for="role_id">Vai Trò <span class="text-danger">*</span></label>
-                            <select class="form-control" id="role_id" name="role_id" required onchange="suggestStaff()">
-                                <option value="">Chọn vai trò</option>
-                                <?php foreach ($roles as $role): ?>
-                                    <option value="<?php echo $role->role_id; ?>" data-role-name="<?php echo $role->role_name; ?>" <?php echo ($user->role_id == $role->role_id) ? 'selected' : ''; ?>>
-                                        <?php echo $role->role_name; ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="row mt-4">
+                            <div class="col-12 text-end">
+                                <a href="<?= base_url('admin/user') ?>" class="btn btn-outline-secondary mb-0 me-2">
+                                    <i class="material-icons text-sm">arrow_back</i> Quay lại
+</a>
+                                <button type="submit" class="btn bg-gradient-primary mb-0">
+                                    <i class="material-icons text-sm">save</i> Lưu thay đổi
+</button>
+                            </div>
                         </div>
-
-                        <div class="form-group">
-                            <label for="staff_id">Liên Kết Nhân Viên</label>
-                            <select class="form-control" id="staff_id" name="staff_id">
-                                <option value="">Không liên kết</option>
-                                <?php foreach ($staff_without_user as $staff): ?>
-                                    <option value="<?php echo $staff->id_staff; ?>" data-position="<?php echo $staff->position; ?>" data-group="<?php echo $staff->staff_group; ?>" <?php echo ($user->staff_id == $staff->id_staff) ? 'selected' : ''; ?>>
-                                        <?php echo $staff->staff_name; ?> (<?php echo $staff->position; ?> - <?php echo $staff->staff_group; ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                                <?php if ($user->staff_id && !in_array($user->staff_id, array_column($staff_without_user, 'id_staff'))): ?>
-                                    <option value="<?php echo $user->staff_id; ?>" selected>
-                                        <?php echo $user->staff_name; ?> (<?php echo $user->position; ?> - <?php echo $user->staff_group; ?>) - Đã liên kết
-                                    </option>
-                                <?php endif; ?>
-                            </select>
-                            <small class="form-text text-muted">Chọn nhân viên để liên kết với user này (tùy chọn)</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="status">Trạng Thái</label>
-                            <select class="form-control" id="status" name="status">
-                                <option value="1" <?php echo ($user->status == 1) ? 'selected' : ''; ?>>Hoạt Động</option>
-                                <option value="0" <?php echo ($user->status == 0) ? 'selected' : ''; ?>>Khóa</option>
-                            </select>
-                        </div>
-
-                        <?php if (!empty($error)): ?>
-                            <div class="alert alert-danger"><?php echo $error; ?></div>
-                        <?php endif; ?>
-                    </div>
-
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">Cập Nhật</button>
-                        <a href="<?php echo site_url('admin/user'); ?>" class="btn btn-secondary">Hủy</a>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-function suggestStaff() {
-    const roleSelect = document.getElementById('role_id');
-    const staffSelect = document.getElementById('staff_id');
-    const selectedRole = roleSelect.options[roleSelect.selectedIndex];
-    const roleName = selectedRole.getAttribute('data-role-name');
-
-    // Auto-suggest staff based on role
-    const positionToRoleMap = {
-        'Giám Đốc': 'bod',
-        'Trưởng Dây Chuyền': 'line_manager',
-        'Nhân Viên Kho': 'warehouse_staff',
-        'Nhân Viên QC': 'qc_staff',
-        'Kỹ Thuật Viên': 'technical_staff',
-        'Công Nhân': 'worker',
-        'Administrator': 'system_admin',
-        'Leader': 'line_manager'
-    };
-
-    // Reset selection if not already selected
-    if (!staffSelect.value) {
-        staffSelect.selectedIndex = 0;
-
-        // Find matching staff
-        for (let i = 1; i < staffSelect.options.length; i++) {
-            const option = staffSelect.options[i];
-            const position = option.getAttribute('data-position');
-            const group = option.getAttribute('data-group');
-
-            if (positionToRoleMap[position] === roleName.toLowerCase() || group === roleName.toLowerCase()) {
-                staffSelect.selectedIndex = i;
-                break;
-            }
-        }
-    }
-}
-</script>

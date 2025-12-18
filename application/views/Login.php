@@ -21,22 +21,34 @@
                 <div class="form-login text-center">
                     <div class="parent d-flex justify-content-center align-items-center" style="height: 80vh;">
                         <div class="child">
-                            <?php if (!empty($error)): ?>
-                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                    <?php echo $error; ?>
-                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
+<?php if($this->session->flashdata('login_error')): ?>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fa fa-exclamation-circle me-2"></i>
+                                <strong>Lỗi!</strong> <?= $this->session->flashdata('login_error') ?>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
                             <?php endif; ?>
+                            
+                            <?php if($this->session->flashdata('login_success')): ?>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fa fa-check-circle me-2"></i>
+                                <?= $this->session->flashdata('login_success') ?>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                            
                             <form action="<?= site_url('login/'); ?>" method="post">
                                 <h4>Production System</h4>
                                 <h5 class="mt-3">Sign in by entering the information below</h5>
                                 <div class="form-group mt-5">
-                                    <input type="text" class="form-control" placeholder="Username" name="username" autofocus value="<?= set_value('username'); ?>">
+                                    <input type="text" class="form-control" placeholder="Username" name="username" autofocus>
                                 </div>
                                 <div class="form-group">
-                                    <input id="password-field" type="password" class="form-control" name="password" placeholder="Password" value="<?= set_value('password'); ?>">
+                                    <input id="password-field" type="password" class="form-control" name="password" placeholder="Password">
                                     <span toggle="#password-field" class="fa fa-fw fa-eye field-icon toggle-password"></span>
                                 </div>
                                 <button type="submit" class="btn btn-login bg-primary">LOGIN</button>

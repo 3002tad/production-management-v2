@@ -325,7 +325,7 @@ $config['cache_query_string'] = false;
 | https://codeigniter.com/user_guide/libraries/encryption.html
 |
 */
-$config['encryption_key'] = '';
+$config['encryption_key'] = 'production-management-v2-key';
 
 /*
 |--------------------------------------------------------------------------
@@ -381,7 +381,7 @@ $config['encryption_key'] = '';
 $config['sess_driver'] = 'files';
 $config['sess_cookie_name'] = 'ci_session';
 $config['sess_expiration'] = 7200;
-$config['sess_save_path'] = null;
+$config['sess_save_path'] = APPPATH . 'cache/sessions/'; // Use local cache for better performance
 $config['sess_match_ip'] = false;
 $config['sess_time_to_update'] = 300;
 $config['sess_regenerate_destroy'] = false;

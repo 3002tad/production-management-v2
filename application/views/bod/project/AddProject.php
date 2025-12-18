@@ -63,7 +63,7 @@
                                 Khách hàng <span class="text-danger">*</span>
                             </label>
                             <div class="input-group input-group-outline">
-                                <select class="form-control" name="id_cust" required>
+                                <select class="form-control" id="customer_select" name="id_cust" required>
                                     <option value="" disabled selected>-- Chọn khách hàng --</option>
                                     <?php if (!empty($customer)): ?>
                                         <?php foreach ($customer as $c): ?>
@@ -76,6 +76,39 @@
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </select>
+                            </div>
+
+                            <!-- Hiển thị ghi chú khách hàng -->
+                            <div id="customer_notes_section" style="display: none; margin-top: 12px;">
+                                <div class="alert alert-info py-2 px-3" style="background: linear-gradient(195deg, #42424a 0%, #191919 100%); color: white;">
+                                    <div class="d-flex align-items-start">
+                                        <i class="material-icons opacity-10 me-2" style="font-size: 20px;">sticky_note_2</i>
+                                        <div class="flex-grow-1">
+                                            <strong>Ghi chú khách hàng:</strong>
+                                            <div id="customer_notes_display" class="mt-1" style="font-size: 14px; line-height: 1.6;"></div>
+                                            
+                                            <!-- Form sửa ghi chú -->
+                                            <div id="customer_notes_edit_form" style="display: none; margin-top: 8px;">
+                                                <textarea id="customer_notes_input" class="form-control" rows="3" style="font-size: 13px;"></textarea>
+                                                <div class="mt-2">
+                                                    <button type="button" class="btn btn-sm btn-success" id="save_notes_btn">
+                                                        <i class="material-icons" style="font-size: 16px;">check</i> Lưu
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-secondary" id="cancel_notes_btn">
+                                                        <i class="material-icons" style="font-size: 16px;">close</i> Hủy
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Nút chỉnh sửa -->
+                                            <div class="mt-2" id="customer_notes_actions">
+                                                <button type="button" class="btn btn-sm btn-warning" id="edit_notes_btn">
+                                                    <i class="material-icons" style="font-size: 16px;">edit</i> Sửa ghi chú
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -140,7 +173,8 @@
                                        class="form-control" 
                                        placeholder="0.0"
                                        min="0.1"
-                                       required>
+                                       required
+                                       readonly>
                                 <span class="input-group-text">mm</span>
                             </div>
                         </div>
@@ -190,124 +224,8 @@
 <!-- Exception 5.1 - Hủy đơn trước khi lưu                                 -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    
-    // ========================================================================
-    // AUTO-FILL DIAMETER KHI CHỌN PRODUCT
-    // Basic Flow Bước 2 - Hiển thị gợi ý hợp lệ
-    // ========================================================================
-    $('#product_select').on('change', function() {
-        var selectedOption = $(this).find('option:selected');
-        var diameter = selectedOption.data('diameter');
-        
-        if (diameter) {
-            // Tự động điền diameter vào input
-            $('#diameter_input').val(diameter);
-            
-            // Hiệu ứng highlight
-            $('#diameter_input').addClass('is-valid');
-            setTimeout(function() {
-                $('#diameter_input').removeClass('is-valid');
-            }, 1500);
-        }
-    });
-    
-    // ========================================================================
-    // CLIENT-SIDE VALIDATION
-    // Alternative Flow 4.1 - Thiếu dữ liệu bắt buộc
-    // ========================================================================
-    $('#order_form').on('submit', function(e) {
-        // Lấy giá trị từ form
-        const id_cust = $('select[name="id_cust"]').val();
-        const id_product = $('select[name="id_product"]').val();
-        const diameter = $('input[name="diameter"]').val();
-        const qty_request = parseInt($('input[name="qty_request"]').val());
-        const entry_date = $('input[name="entry_date"]').val();
-        
-        let errorMessage = '';
-        
-        // Kiểm tra khách hàng
-        if (!id_cust || id_cust === '') {
-            errorMessage += '• Vui lòng chọn khách hàng\n';
-        }
-        
-        // Kiểm tra sản phẩm
-        if (!id_product || id_product === '') {
-            errorMessage += '• Vui lòng chọn sản phẩm\n';
-        }
-        
-        // Kiểm tra đường kính
-        if (!diameter || diameter === '' || parseFloat(diameter) <= 0) {
-            errorMessage += '• Vui lòng nhập đường kính hợp lệ (> 0)\n';
-        }
-        
-        // Kiểm tra số lượng (AF 4.1 - Số lượng phải > 0)
-        if (!qty_request || isNaN(qty_request) || qty_request <= 0) {
-            e.preventDefault();
-            alert('⚠️ LỖI: Số lượng phải lớn hơn 0\n\nVui lòng nhập lại.');
-            $('input[name="qty_request"]').focus();
-            return false;
-        }
-        
-        // Kiểm tra hạn giao (AF 4.1 - Hạn giao phải >= hôm nay)
-        if (!entry_date || entry_date === '') {
-            errorMessage += '• Vui lòng nhập hạn giao\n';
-        } else {
-            // FIX: Parse ngày đúng cách (tránh lỗi timezone UTC)
-            const entryDateParts = entry_date.split('-'); // ['2025', '11', '01']
-            const entryDateObj = new Date(entryDateParts[0], entryDateParts[1] - 1, entryDateParts[2]); // Local time
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            if (entryDateObj < today) {
-                e.preventDefault();
-                const todayStr = today.getFullYear() + '-' + 
-                                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                                String(today.getDate()).padStart(2, '0');
-                alert('⚠️ LỖI: Hạn giao phải từ hôm nay trở đi\n\nNgày bạn chọn: ' + entry_date + '\nNgày hôm nay: ' + todayStr);
-                $('input[name="entry_date"]').focus();
-                return false;
-            }
-        }
-        
-        // Nếu có lỗi validation
-        if (errorMessage !== '') {
-            e.preventDefault();
-            alert('⚠️ LỖI: Thiếu dữ liệu bắt buộc\n\n' + errorMessage + '\nVui lòng nhập đầy đủ thông tin.');
-            return false;
-        }
-        
-        // ====================================================================
-        // CONFIRM DIALOG - Exception 5.1: BGĐ hủy đơn trước khi lưu
-        // ====================================================================
-        const confirmMessage = 
-            '🎯 XÁC NHẬN TẠO ĐƠN HÀNG\n\n' +
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-            '📦 Sản phẩm: ' + $('select[name="id_product"] option:selected').text() + '\n' +
-            '👤 Khách hàng: ' + $('select[name="id_cust"] option:selected').text() + '\n' +
-            '📊 Số lượng: ' + qty_request.toLocaleString() + ' chiếc\n' +
-            '📏 Đường kính: ' + diameter + ' mm\n' +
-            '📅 Hạn giao: ' + entry_date + '\n' +
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-            '✅ Bấm OK để LƯU VÀ DUYỆT đơn hàng\n' +
-            '❌ Bấm Cancel để HỦY và quay lại';
-        
-        if (!confirm(confirmMessage)) {
-            // Exception 5.1.2 - Hiển thị thông báo xác nhận
-            // Exception 5.1.3 - Ban giám đốc xác nhận hủy
-            e.preventDefault();
-            alert('❌ Đã hủy tạo đơn hàng.\n\nBạn có thể tiếp tục chỉnh sửa hoặc quay lại.');
-            // Exception 5.1.4 - Kết thúc use case
-            return false;
-        }
-        
-        // Nếu confirm = OK → Submit form (tiếp tục Basic Flow)
-        return true;
-    });
-});
+window.allCustomers = <?= json_encode($customer); ?>;
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -431,69 +349,240 @@ $(document).ready(function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Kiểm tra URL parameter - CHỈ hiển thị toast khi có ?msg= (redirect từ submit thất bại)
     var urlParams = new URLSearchParams(window.location.search);
-    var hasMsg = urlParams.has('msg');
+    var msgType = urlParams.get('msg'); // Get msg value
     
     // SessionStorage backup - tránh hiển thị lại khi refresh
-    var toastShown = sessionStorage.getItem('toast_shown_addproject');
-    
-    if (hasMsg && !toastShown) {
+    // Show toast whenever ?msg param is present (no persistent blocking), then remove the query param
+    if (msgType) {
         <?php if ($this->session->flashdata('success_js')): ?>
-            // Parse dữ liệu từ session
-            const successData = <?= $this->session->flashdata('success_js'); ?>;
-            
-            // Tạo toast notification
-            showToast({
+            // SUCCESS - Only if msg=success
+            if (msgType === 'success') {
+                const successData = <?= $this->session->flashdata('success_js'); ?>;
+                
+                showToast({
                 type: 'success',
                 title: successData.title,
                 message: successData.message,
                 details: [
                     '📦 Mã đơn hàng: ' + successData.project_name,
-                    successData.risk_flag == 1 
-                        ? '⚠️ Trạng thái: Nguy cơ trễ hạn' 
+                    successData.risk_flag == 1
+                        ? '⚠️ Trạng thái: Cảnh báo trễ hạn' 
                         : '✅ Trạng thái: Bình thường'
                 ],
                 duration: 3000 // 3 giây
             });
             
-            // Đánh dấu đã hiển thị
-            sessionStorage.setItem('toast_shown_addproject', 'true');
-            
             // Xóa parameter khỏi URL
             window.history.replaceState({}, document.title, window.location.pathname);
+        }
         <?php endif; ?>
 
         <?php if ($this->session->flashdata('warning_js')): ?>
             const warningData = <?= $this->session->flashdata('warning_js'); ?>;
-            showToast({
-                type: 'warning',
-                title: 'Cảnh báo công suất!',
-                message: warningData.message,
-                details: warningData.details || [],
-                duration: 5000
-            });
-            
-            sessionStorage.setItem('toast_shown_addproject', 'true');
-            window.history.replaceState({}, document.title, window.location.pathname);
+                    showToast({
+                    type: 'warning',
+                    title: 'Cảnh báo công suất!',
+                    message: warningData.message,
+                    details: warningData.details || [],
+                    duration: 5000
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
         <?php endif; ?>
 
         <?php if ($this->session->flashdata('error_js')): ?>
-            const errorData = <?= $this->session->flashdata('error_js'); ?>;
-            showToast({
-                type: 'error',
-                title: 'Lỗi!',
-                message: errorData.message,
-                duration: 6000
-            });
-            
-            sessionStorage.setItem('toast_shown_addproject', 'true');
-            window.history.replaceState({}, document.title, window.location.pathname);
+            // ERROR - Only if msg=error
+            if (msgType === 'error') {
+                const errorData = <?= $this->session->flashdata('error_js'); ?>;
+                showToast({
+                    type: 'error',
+                    title: 'Lỗi!',
+                    message: errorData.message,
+                    duration: 6000
+                });
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         <?php endif; ?>
     }
     
-    // Xóa flag khi navigate sang trang khác
-    window.addEventListener('beforeunload', function() {
-        sessionStorage.removeItem('toast_shown_addproject');
+
+
+    // ========================================
+    // CUSTOMER NOTES MANAGEMENT
+    // ========================================
+    const customerSelect = document.getElementById('customer_select');
+    const notesSection = document.getElementById('customer_notes_section');
+    const notesDisplay = document.getElementById('customer_notes_display');
+    const notesEditForm = document.getElementById('customer_notes_edit_form');
+    const notesInput = document.getElementById('customer_notes_input');
+    const notesActions = document.getElementById('customer_notes_actions');
+    const editNotesBtn = document.getElementById('edit_notes_btn');
+    const saveNotesBtn = document.getElementById('save_notes_btn');
+    const cancelNotesBtn = document.getElementById('cancel_notes_btn');
+
+    let currentCustomerId = null;
+    let currentNotes = '';
+
+    // Khi chọn khách hàng
+    customerSelect.addEventListener('change', function() {
+        const customerId = this.value;
+        if (!customerId) {
+            notesSection.style.display = 'none';
+            return;
+        }
+
+        currentCustomerId = customerId;
+
+        // Find the selected customer in the allCustomers array
+        const selectedCustomer = allCustomers.find(cust => cust.id_cust == customerId);
+
+        if (selectedCustomer) {
+            currentNotes = selectedCustomer.notes || '';
+            
+            if (currentNotes.trim()) {
+                notesDisplay.innerHTML = currentNotes.replace(/\n/g, '<br>');
+                notesSection.style.display = 'block';
+            } else {
+                notesDisplay.innerHTML = '<em style="color: #ccc;">Chưa có ghi chú</em>';
+                notesSection.style.display = 'block';
+            }
+            
+            // Reset form
+            notesEditForm.style.display = 'none';
+            notesActions.style.display = 'block';
+        } else {
+            notesSection.style.display = 'none';
+        }
     });
+
+    // Nút chỉnh sửa
+    editNotesBtn.addEventListener('click', function() {
+        notesInput.value = currentNotes;
+        notesEditForm.style.display = 'block';
+        notesActions.style.display = 'none';
+        notesInput.focus();
+    });
+
+    // Nút hủy
+    cancelNotesBtn.addEventListener('click', function() {
+        notesEditForm.style.display = 'none';
+        notesActions.style.display = 'block';
+    });
+
+    // Nút lưu (ngăn trùng handler)
+    if (!saveNotesBtn.dataset.notesHandlerAttached) {
+        saveNotesBtn.addEventListener('click', function() {
+            if (saveNotesBtn.dataset.saving === '1') return; // prevent double clicks
+            saveNotesBtn.dataset.saving = '1';
+            saveNotesBtn.disabled = true;
+
+            const newNotes = notesInput.value;
+
+            // Abort any in-flight notes request to avoid overlapping responses
+            if (window._notesAbortController) {
+                try { window._notesAbortController.abort(); } catch (e) { /* ignore */ }
+            }
+            window._notesAbortController = new AbortController();
+
+            const _reqId = Date.now() + '-' + Math.random().toString(36).slice(2,8);
+            console.log('Sending updateCustomerNotes request', { reqId: _reqId, id_cust: currentCustomerId });
+            fetch('<?= site_url("BOD/updateCustomerNotes"); ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-Request-Id': _reqId
+                },
+                credentials: 'same-origin',
+                signal: window._notesAbortController.signal,
+                body: 'id_cust=' + currentCustomerId + '&notes=' + encodeURIComponent(newNotes) + '&ajax=1'
+            })
+            .then(response => response.text().then(body => ({ status: response.status, ok: response.ok, headers: response.headers, body })))
+            .then(({ status, ok, headers, body }) => {
+                console.log('updateCustomerNotes response', { status, ok, contentType: headers.get('content-type'), bodyPreview: body.slice(0, 500) });
+                const ct = headers.get('content-type') || '';
+                if (ok && (ct.includes('application/json') || body.trim().startsWith('{') || body.trim().startsWith('['))) {
+                    try {
+                        const data = JSON.parse(body);
+                        return data;
+                    } catch (e) {
+                        throw new Error('Server returned invalid JSON response. Possibly session expired.');
+                    }
+                }
+
+                if (!ok) {
+                    if (ct.includes('application/json')) {
+                        try {
+                            const data = JSON.parse(body);
+                            throw new Error(data.message || JSON.stringify(data));
+                        } catch (e) {
+                            throw new Error(body || 'Server error: ' + status);
+                        }
+                    }
+                    throw new Error(body || 'Server error: ' + status);
+                }
+
+                throw new Error('Server returned non-JSON response. Possible session timeout — please reload and login.');
+            })
+            .then(data => {
+                try {
+                    console.log('updateCustomerNotes parsed', data);
+                    if (data && data.success) {
+                        currentNotes = newNotes;
+                        notesDisplay.innerHTML = currentNotes ? currentNotes.replace(/\n/g, '<br>') : '<em style="color: #ccc;">Chưa có ghi chú</em>';
+                        notesEditForm.style.display = 'none';
+                        notesActions.style.display = 'block';
+
+                        showToast({ type: 'success', title: 'Thành công', message: 'Đã cập nhật ghi chú khách hàng', duration: 3000 });
+                    } else {
+                        showToast({ type: 'error', title: 'Lỗi', message: data && data.message ? data.message : 'Không thể cập nhật ghi chú', duration: 6000 });
+                    }
+                } catch (e) {
+                    console.error('Error in success handler:', e);
+                    showToast({ type: 'error', title: 'Lỗi', message: 'Lỗi nội bộ khi xử lý kết quả. Vui lòng kiểm tra console.', duration: 6000 });
+                }
+            })
+            .catch(error => {
+                if (error && error.name === 'AbortError') {
+                    console.warn('updateCustomerNotes request aborted');
+                    return;
+                }
+                console.error('Error:', error);
+                showToast({ type: 'error', title: 'Lỗi', message: error.message || 'Có lỗi xảy ra khi lưu ghi chú', duration: 6000 });
+            })
+            .finally(() => {
+                saveNotesBtn.dataset.saving = '0';
+                saveNotesBtn.disabled = false;
+                if (window._notesAbortController) { window._notesAbortController = null; }
+            });
+        });
+        saveNotesBtn.dataset.notesHandlerAttached = '1';
+    }
+
+    // ========================================================================
+    // PRODUCT -> AUTO-FILL DIAMETER
+    // Basic Flow Bước 2 - Tự động điền Đường kính khi chọn sản phẩm
+    // ========================================================================
+    const productSelect = document.getElementById('product_select');
+    const diameterInput = document.getElementById('diameter_input');
+
+    function syncDiameterFromProduct() {
+        if (!productSelect || !diameterInput) return;
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        if (!selectedOption) return;
+        const d = selectedOption.getAttribute('data-diameter');
+        if (d) {
+            diameterInput.value = d;
+            diameterInput.classList.add('is-valid');
+            setTimeout(() => diameterInput.classList.remove('is-valid'), 1500);
+        }
+    }
+
+    if (productSelect) {
+        productSelect.addEventListener('change', syncDiameterFromProduct);
+        // Initialize on load in case browser preserved selection
+        syncDiameterFromProduct();
+    }
+
 });
 
 /**
