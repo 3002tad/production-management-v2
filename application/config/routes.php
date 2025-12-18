@@ -69,15 +69,15 @@ $route['simulator'] = 'Simulator/settings';
 
 // =====================================================
 // User Management Routes (UC6 - Core & Security)
-// Commented out - let CI auto-route to admin/UserController
+// Routes to Admin wrapper methods which forward to admin/UserController
 // =====================================================
-// $route['admin/user'] = 'admin/UserController';
-// $route['admin/user/add'] = 'admin/UserController/add';
-// $route['admin/user/create'] = 'admin/UserController/create';
-// $route['admin/user/edit/(:num)'] = 'admin/UserController/edit/$1';
-// $route['admin/user/update/(:num)'] = 'admin/UserController/update/$1';
-// $route['admin/user/delete/(:num)'] = 'admin/UserController/delete/$1';
-// $route['admin/user/toggle_status/(:num)'] = 'admin/UserController/toggle_status/$1';
+$route['admin/user'] = 'Admin/user';
+$route['admin/user/add'] = 'Admin/user_add';
+$route['admin/user/create'] = 'Admin/user_create';
+$route['admin/user/edit/(:num)'] = 'Admin/user_edit/$1';
+$route['admin/user/update/(:num)'] = 'Admin/user_update/$1';
+$route['admin/user/delete/(:num)'] = 'Admin/user_delete/$1';
+$route['admin/user/toggle_status/(:num)'] = 'Admin/user_toggle_status/$1';
 
 // =====================================================
 // BOD Module Routes (UC1, UC2, UC7, UC8)

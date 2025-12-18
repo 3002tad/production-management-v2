@@ -1193,11 +1193,84 @@ class Admin extends CI_Controller
     }
 
     // ========================================================================
+    // UC6 - QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN (Wrapper methods forward to admin/UserController)
     // ========================================================================
-    // UC6 - QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN (Forward to admin/UserController)
-    // Actor: Admin (system_admin role)
+    
+    /**
+     * User Management - List all users
+     * Forwards to admin/UserController
+     */
+    public function user()
+    {
+        // Load the UserController
+        require_once(APPPATH . 'controllers/admin/UserController.php');
+        $userController = new UserController();
+        return $userController->index();
+    }
+
+    /**
+     * Add new user
+     */
+    public function user_add()
+    {
+        require_once(APPPATH . 'controllers/admin/UserController.php');
+        $userController = new UserController();
+        return $userController->add();
+    }
+
+    /**
+     * Create user (POST)
+     */
+    public function user_create()
+    {
+        require_once(APPPATH . 'controllers/admin/UserController.php');
+        $userController = new UserController();
+        return $userController->create();
+    }
+
+    /**
+     * Edit user
+     */
+    public function user_edit($user_id)
+    {
+        require_once(APPPATH . 'controllers/admin/UserController.php');
+        $userController = new UserController();
+        return $userController->edit($user_id);
+    }
+
+    /**
+     * Update user (POST)
+     */
+    public function user_update($user_id)
+    {
+        require_once(APPPATH . 'controllers/admin/UserController.php');
+        $userController = new UserController();
+        return $userController->update($user_id);
+    }
+
+    /**
+     * Delete user
+     */
+    public function user_delete($user_id)
+    {
+        require_once(APPPATH . 'controllers/admin/UserController.php');
+        $userController = new UserController();
+        return $userController->delete($user_id);
+    }
+
+    /**
+     * Toggle user status
+     */
+    public function user_toggle_status($user_id)
+    {
+        require_once(APPPATH . 'controllers/admin/UserController.php');
+        $userController = new UserController();
+        return $userController->toggle_status($user_id);
+    }
+
     // ========================================================================
-    // NOTE: UC6 user management methods removed - use admin/UserController instead
+    // Helper Methods
+    // ========================================================================
 
     private function _hasPermission($permission_name)
     {
