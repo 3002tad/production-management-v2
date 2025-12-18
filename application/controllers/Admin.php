@@ -1198,14 +1198,11 @@ class Admin extends CI_Controller
     
     /**
      * User Management - List all users
-     * Forwards to admin/UserController
+     * Forwards to admin/UserController using redirect
      */
     public function user()
     {
-        // Load the UserController
-        require_once(APPPATH . 'controllers/admin/UserController.php');
-        $userController = new UserController();
-        return $userController->index();
+        redirect('admin/UserController/index');
     }
 
     /**
@@ -1213,9 +1210,7 @@ class Admin extends CI_Controller
      */
     public function user_add()
     {
-        require_once(APPPATH . 'controllers/admin/UserController.php');
-        $userController = new UserController();
-        return $userController->add();
+        redirect('admin/UserController/add');
     }
 
     /**
@@ -1223,9 +1218,7 @@ class Admin extends CI_Controller
      */
     public function user_create()
     {
-        require_once(APPPATH . 'controllers/admin/UserController.php');
-        $userController = new UserController();
-        return $userController->create();
+        redirect('admin/UserController/create');
     }
 
     /**
@@ -1233,9 +1226,7 @@ class Admin extends CI_Controller
      */
     public function user_edit($user_id)
     {
-        require_once(APPPATH . 'controllers/admin/UserController.php');
-        $userController = new UserController();
-        return $userController->edit($user_id);
+        redirect('admin/UserController/edit/' . $user_id);
     }
 
     /**
@@ -1243,9 +1234,7 @@ class Admin extends CI_Controller
      */
     public function user_update($user_id)
     {
-        require_once(APPPATH . 'controllers/admin/UserController.php');
-        $userController = new UserController();
-        return $userController->update($user_id);
+        redirect('admin/UserController/update/' . $user_id);
     }
 
     /**
@@ -1253,9 +1242,7 @@ class Admin extends CI_Controller
      */
     public function user_delete($user_id)
     {
-        require_once(APPPATH . 'controllers/admin/UserController.php');
-        $userController = new UserController();
-        return $userController->delete($user_id);
+        redirect('admin/UserController/delete/' . $user_id);
     }
 
     /**
@@ -1263,9 +1250,7 @@ class Admin extends CI_Controller
      */
     public function user_toggle_status($user_id)
     {
-        require_once(APPPATH . 'controllers/admin/UserController.php');
-        $userController = new UserController();
-        return $userController->toggle_status($user_id);
+        redirect('admin/UserController/toggle_status/' . $user_id);
     }
 
     // ========================================================================
