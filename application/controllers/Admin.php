@@ -1205,43 +1205,15 @@ class Admin extends CI_Controller
      * Route: /Admin/user (backward compatibility)
      * Forward to: admin/UserController/index
      */
-    public function user()
-    {
-        $this->load->model('admin/UserManagementModel');
+    // Commented out - use admin/UserController instead
+    // public function user_old()
+    // {
+    //     redirect('admin/user');
+    // }
 
-        // Check permission: user.view
-        if (!$this->_hasPermission('user.view')) {
-            show_error('Bạn không có quyền xem danh sách người dùng.', 403);
-        }
-
-        // Get filters từ GET params
-        $filters = [
-            'role_id'   => $this->input->get('role_id'),
-            'is_active' => $this->input->get('is_active'),
-            'search'    => $this->input->get('search')
-        ];
-
-        // Cache roles to avoid repeated queries
-        $roles = $this->db->order_by('level', 'DESC')->get('roles')->result();
-        
-        $data = [
-            'users'      => $this->UserManagementModel->getAllUsers($filters),
-            'roles'      => $roles,
-            'statistics' => $this->UserManagementModel->getStatistics(),
-            'content'    => 'admin/user/user_list',
-            'navlink'    => 'user'
-        ];
-
-        $this->load->view('admin/vbackend', $data);
-    }
-
-    /**
-     * UC6 - Hiển thị form tạo user mới
-     * Route: /Admin/user_add (backward compatibility)
-     * Forward to: admin/UserController/add
-     */
-    public function user_add()
-    {
+    // Commented out - use admin/UserController instead
+    // public function user_add_old()
+    // {
         // Check permission: user.create
         if (!$this->_hasPermission('user.create')) {
             show_error('Bạn không có quyền tạo người dùng.', 403);
@@ -1266,7 +1238,7 @@ class Admin extends CI_Controller
      * Route: /Admin/user_add_process (backward compatibility)
      * Forward to: admin/UserController/add_process
      */
-    public function user_add_process()
+    public function user_add_process_old()
     {
         $this->load->model('admin/UserManagementModel');
 
@@ -1299,7 +1271,7 @@ class Admin extends CI_Controller
      * Route: /Admin/user_edit/{user_id} (backward compatibility)
      * Forward to: admin/UserController/edit/{user_id}
      */
-    public function user_edit($user_id)
+    public function user_edit_old($user_id)
     {
         $this->load->model('admin/UserManagementModel');
 
@@ -1328,7 +1300,7 @@ class Admin extends CI_Controller
      * Route: /Admin/user_edit_process (backward compatibility)
      * Forward to: admin/UserController/edit_process
      */
-    public function user_edit_process()
+    public function user_edit_process_old()
     {
         if (!$this->load->is_loaded('UserManagementModel')) {
             $this->load->model('admin/UserManagementModel');
@@ -1361,7 +1333,7 @@ class Admin extends CI_Controller
      * Route: /Admin/user_lock/{user_id} (backward compatibility)
      * Forward to: admin/UserController/lock/{user_id}
      */
-    public function user_lock($user_id)
+    public function user_lock_old($user_id)
     {
         $this->load->model('admin/UserManagementModel');
 
@@ -1398,7 +1370,7 @@ class Admin extends CI_Controller
      * Route: /Admin/user_reset_password/{user_id} (backward compatibility)
      * Forward to: admin/UserController/reset_password/{user_id}
      */
-    public function user_reset_password($user_id)
+    public function user_reset_password_old($user_id)
     {
         // Only accept POST
         if ($this->input->method() !== 'post') {
@@ -1426,7 +1398,7 @@ class Admin extends CI_Controller
      * Route: /Admin/user_detail/{user_id} (backward compatibility)
      * Forward to: admin/UserController/detail/{user_id}
      */
-    public function user_detail($user_id)
+    public function user_detail_old($user_id)
     {
         $this->load->model('admin/UserManagementModel');
 
@@ -1474,3 +1446,4 @@ class Admin extends CI_Controller
         return $query->num_rows() > 0;
     }
 }
+
