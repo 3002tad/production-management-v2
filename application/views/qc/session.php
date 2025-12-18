@@ -3,86 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?> - QC Module</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title><?= $title ?> - Hệ thống QC</title>
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,700,900" />
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+    
+    <!-- Material Dashboard CSS -->
+    <link href="<?= site_url('asset/backend/assets/css/material-dashboard.css?v=3.0.0'); ?>" rel="stylesheet" />
+    
     <style>
-        :root {
-            --qc-primary: #2c3e50;
-            --qc-secondary: #16a085;
-            --qc-warning: #f39c12;
-            --qc-danger: #e74c3c;
-            --qc-success: #27ae60;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ecf0f1;
-            padding: 20px;
-        }
-        
-        .session-header {
-            background: linear-gradient(135deg, var(--qc-primary), var(--qc-secondary));
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        
-        .info-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
         .checklist-item {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border-left: 4px solid var(--qc-secondary);
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
-        
         .checklist-item:hover {
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background-color: #f8f9fa;
+            transform: translateX(5px);
         }
-        
         .checklist-item.fail {
-            border-left-color: var(--qc-danger);
             background-color: #ffebee;
+            border-left: 4px solid #e74c3c;
         }
-        
         .checklist-item.pass {
-            border-left-color: var(--qc-success);
             background-color: #e8f5e9;
+            border-left: 4px solid #27ae60;
         }
-        
         .recommendation-box {
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: bold;
+            border-left: 4px solid #1A73E8;
+            background: linear-gradient(195deg, rgba(26, 115, 232, 0.05) 0%, rgba(22, 98, 196, 0.05) 100%);
         }
-        
         .recommendation-box.approve {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
+            border-left-color: #43A047;
+            background: linear-gradient(195deg, rgba(67, 160, 71, 0.05) 0%, rgba(56, 142, 60, 0.05) 100%);
         }
-        
         .recommendation-box.reject {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
+            border-left-color: #E53935;
+            background: linear-gradient(195deg, rgba(229, 57, 53, 0.05) 0%, rgba(211, 47, 47, 0.05) 100%);
         }
-        
-        .recommendation-box.review {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-            color: white;
-        }
-        
         .attachment-preview {
             width: 100px;
             height: 100px;
@@ -91,60 +53,124 @@
             margin: 5px;
             cursor: pointer;
         }
-        
-        .btn-qc {
-            background: var(--qc-secondary);
-            color: white;
-            border: none;
-            padding: 10px 30px;
-            border-radius: 5px;
-        }
-        
-        .btn-qc:hover {
-            background: #138f75;
-            color: white;
-        }
-        
-        .btn-reject {
-            background: var(--qc-danger);
-            color: white;
-        }
-        
-        .btn-reject:hover {
-            background: #c0392b;
-            color: white;
-        }
-        
-        .locked-session {
-            opacity: 0.7;
-            pointer-events: none;
-        }
     </style>
 </head>
-<body>
-    <!-- Session Header -->
-    <div class="session-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2><i class="fas fa-microscope"></i> <?= $session->code ?></h2>
-                <p class="mb-0">
-                    <i class="fas fa-calendar"></i> Started: <?= date('d/m/Y H:i', strtotime($session->started_at)) ?>
-                    | Inspector: <?= $session->inspector_name ?>
-                </p>
-            </div>
-            <div>
-                <a href="<?= base_url('qc/pending') ?>" class="btn btn-light">
-                    <i class="fas fa-arrow-left"></i> Back to List
+
+<body class="g-sidenav-show bg-gray-200">
+
+<!-- Sidebar -->
+<aside class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3 bg-gradient-dark" id="sidenav-main">
+    <div class="sidenav-header">
+        <i class="fas fa-times p-3 cursor-pointer text-white opacity-5 position-absolute end-0 top-0 d-none d-xl-none" aria-hidden="true" id="iconSidenav"></i>
+        <a class="navbar-brand m-0" href="<?= site_url('qc/'); ?>">
+            <span class="ms-1 font-weight-bold text-white">PRODUCTION SYSTEM</span>
+        </a>
+    </div>
+    
+    <hr class="horizontal light mt-0 mb-2">
+    
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+        <ul class="navbar-nav">
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">QC - KIỂM SOÁT CHẤT LƯỢNG</h6>
+            </li>
+            
+            <!-- Pending Inspections -->
+            <li class="nav-item">
+                <a class="nav-link text-white" href="<?= site_url('qc/'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">pending_actions</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Phiếu chốt ca chờ QC</span>
                 </a>
+            </li>
+            
+            <!-- My Sessions -->
+            <li class="nav-item">
+                <a class="nav-link text-white active bg-gradient-primary" href="<?= site_url('qc/sessions'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">assignment</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Phiên kiểm tra của tôi</span>
+                </a>
+            </li>
+            
+            <!-- Adjustment Requests -->
+            <li class="nav-item">
+                <a class="nav-link text-white" href="<?= site_url('qc/adjustments'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">build_circle</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Yêu cầu điều chỉnh</span>
+                </a>
+            </li>
+            
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">BÁO CÁO</h6>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link text-white" href="<?= site_url('qc/reports'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">analytics</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Báo cáo QC</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+    <!-- Navbar -->
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur">
+        <div class="container-fluid py-1 px-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('qc/'); ?>">QC</a></li>
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('qc/sessions'); ?>">Phiên kiểm tra</a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= $session->code ?></li>
+                </ol>
+                <h6 class="font-weight-bolder mb-0">Kiểm định chất lượng</h6>
+            </nav>
+            <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+                <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+                    <!-- User info -->
+                </div>
+                <ul class="navbar-nav justify-content-end">
+                    <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
+                        <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
+                            <div class="sidenav-toggler-inner">
+                                <i class="sidenav-toggler-line"></i>
+                                <i class="sidenav-toggler-line"></i>
+                                <i class="sidenav-toggler-line"></i>
+                            </div>
+                        </a>
+                    </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0">
+                            <i class="fa fa-user me-sm-1"></i>
+                            <span class="d-sm-inline d-none"><?= $user['full_name'] ?? 'QC Inspector' ?></span>
+                            <i class="material-icons ms-2">logout</i>
+                        </a>
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
+    </nav>
+    <!-- End Navbar -->
+
+    <div class="container-fluid py-4">
 
     <!-- Session Info -->
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-md-6">
-            <div class="info-card">
-                <h5><i class="fas fa-info-circle"></i> Closure Information</h5>
+            <div class="card">
+                <div class="card-header pb-0">
+                    <h6>Thông tin phiếu chốt ca</h6>
+                </div>
+                <div class="card-body">
                 <table class="table table-sm">
                     <tr>
                         <th>Closure Code:</th>
@@ -174,8 +200,11 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="info-card">
-                <h5><i class="fas fa-box"></i> Production Quantity</h5>
+            <div class="card">
+                <div class="card-header pb-0">
+                    <h6>Số lượng sản xuất</h6>
+                </div>
+                <div class="card-body">
                 <table class="table table-sm">
                     <tr>
                         <th>Finished Goods:</th>
@@ -200,6 +229,7 @@
                         </td>
                     </tr>
                 </table>
+                </div>
             </div>
         </div>
     </div>
@@ -454,71 +484,154 @@
                     location.reload();
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(err => {
-                alert('Error uploading file: ' + err.message);
-            });
-        }
+    </div>
+</main>
+
+<!-- Scripts -->
+<script src="<?= site_url('asset/backend/assets/js/core/popper.min.js'); ?>"></script>
+<script src="<?= site_url('asset/backend/assets/js/core/bootstrap.min.js'); ?>"></script>
+<script src="<?= site_url('asset/backend/assets/js/material-dashboard.min.js?v=3.0.0'); ?>"></script>
+
+<script>
+    const sessionId = <?= $session->id ?>;
+    const baseUrl = '<?= site_url() ?>';
+    
+    // Save checklist
+    function saveChecklist() {
+        const form = document.getElementById('checklistForm');
+        const items = [];
         
-        // Show reject modal
-        function showRejectModal() {
-            const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
-            modal.show();
-        }
-        
-        // Make decision
-        function makeDecision(result) {
-            let reason = null;
+        document.querySelectorAll('.checklist-item').forEach(div => {
+            const code = div.dataset.itemCode;
+            const result = form.querySelector(`select[name="result_${code}"]`).value;
             
-            if (result === 'REJECT') {
-                reason = document.getElementById('rejectReason').value.trim();
-                if (!reason) {
-                    alert('Reason is required for REJECT decision.');
-                    return;
-                }
-            }
+            if (!result) return; // Skip if no result selected
             
-            if (!confirm(`Are you sure you want to ${result} this inspection?`)) {
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('result', result);
-            if (reason) formData.append('reason', reason);
-            
-            fetch(`${baseUrl}qc/makeDecision/${sessionId}`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`Decision ${result} recorded successfully!`);
-                    location.reload();
-                } else if (data.code === 'NEAR_THRESHOLD') {
-                    alert(`Warning: ${data.message}\n\nPlease increase sample size and re-inspect.`);
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error') + '\n' + (data.errors ? data.errors.join('\n') : ''));
-                }
-            })
-            .catch(err => {
-                alert('Error making decision: ' + err.message);
-            });
-        }
-        
-        // Result select change handler
-        document.querySelectorAll('.result-select').forEach(select => {
-            select.addEventListener('change', function() {
-                const item = this.closest('.checklist-item');
-                item.classList.remove('pass', 'fail');
-                if (this.value === 'PASS') {
-                    item.classList.add('pass');
-                } else if (this.value === 'FAIL') {
-                    item.classList.add('fail');
-                }
+            items.push({
+                checklist_item_code: code,
+                checklist_item_name: div.querySelector('h6').textContent,
+                result: result,
+                defect_count: form.querySelector(`input[name="defect_count_${code}"]`).value || 0,
+                severity: form.querySelector(`select[name="severity_${code}"]`).value || null,
+                note: form.querySelector(`input[name="note_${code}"]`).value || null
             });
         });
-    </script>
+        
+        if (items.length === 0) {
+            alert('Please select at least one result.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('items', JSON.stringify(items));
+        
+        fetch(`${baseUrl}qc/saveItems/${sessionId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Checklist saved successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            alert('Error saving checklist: ' + err.message);
+        });
+    }
+    
+    // Upload file
+    function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Please select a file.');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        fetch(`${baseUrl}qc/uploadAttachment/${sessionId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('File uploaded successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            alert('Error uploading file: ' + err.message);
+        });
+    }
+    
+    // Show reject modal
+    function showRejectModal() {
+        const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+        modal.show();
+    }
+    
+    // Make decision
+    function makeDecision(result) {
+        let reason = null;
+        
+        if (result === 'REJECT') {
+            reason = document.getElementById('rejectReason').value.trim();
+            if (!reason) {
+                alert('Reason is required for REJECT decision.');
+                return;
+            }
+        }
+        
+        if (!confirm(`Are you sure you want to ${result} this inspection?`)) {
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('result', result);
+        if (reason) formData.append('reason', reason);
+        
+        fetch(`${baseUrl}qc/makeDecision/${sessionId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Decision ${result} recorded successfully!`);
+                location.reload();
+            } else if (data.code === 'NEAR_THRESHOLD') {
+                alert(`Warning: ${data.message}\n\nPlease increase sample size and re-inspect.`);
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error') + '\n' + (data.errors ? data.errors.join('\n') : ''));
+            }
+        })
+        .catch(err => {
+            alert('Error making decision: ' + err.message);
+        });
+    }
+    
+    // Result select change handler
+    document.querySelectorAll('.result-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const item = this.closest('.checklist-item');
+            item.classList.remove('pass', 'fail');
+            if (this.value === 'PASS') {
+                item.classList.add('pass');
+            } else if (this.value === 'FAIL') {
+                item.classList.add('fail');
+            }
+        });
+    });
+</script>
 </body>
 </html>

@@ -3,11 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?> - QC Module</title>
-    <link rel="stylesheet" href="<?= base_url('asset/Backend/assets/css/material-dashboard.min.css') ?>">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <title><?= $title ?> - Hệ thống QC</title>
+    
+    <!-- Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,700,900" />
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+    
+    <!-- Material Dashboard CSS -->
+    <link href="<?= site_url('asset/backend/assets/css/material-dashboard.css?v=3.0.0'); ?>" rel="stylesheet" />
 </head>
+
 <body class="g-sidenav-show bg-gray-200">
+
+<!-- Sidebar -->
+<aside class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3 bg-gradient-dark" id="sidenav-main">
+    <div class="sidenav-header">
+        <i class="fas fa-times p-3 cursor-pointer text-white opacity-5 position-absolute end-0 top-0 d-none d-xl-none" aria-hidden="true" id="iconSidenav"></i>
+        <a class="navbar-brand m-0" href="<?= site_url('qc/'); ?>">
+            <span class="ms-1 font-weight-bold text-white">PRODUCTION SYSTEM</span>
+        </a>
+    </div>
+    
+    <hr class="horizontal light mt-0 mb-2">
+    
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+        <ul class="navbar-nav">
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">QC - KIỂM SOÁT CHẤT LƯỢNG</h6>
+            </li>
+            
+            <!-- Pending Inspections -->
+            <li class="nav-item">
+                <a class="nav-link text-white" href="<?= site_url('qc/'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">pending_actions</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Phiếu chốt ca chờ QC</span>
+                </a>
+            </li>
+            
+            <!-- My Sessions -->
+            <li class="nav-item">
+                <a class="nav-link text-white active bg-gradient-primary" href="<?= site_url('qc/sessions'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">assignment</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Phiên kiểm tra của tôi</span>
+                </a>
+            </li>
+            
+            <!-- Adjustment Requests -->
+            <li class="nav-item">
+                <a class="nav-link text-white" href="<?= site_url('qc/adjustments'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">build_circle</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Yêu cầu điều chỉnh</span>
+                </a>
+            </li>
+            
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">BÁO CÁO</h6>
+            </li>
+            
+            <li class="nav-item">
+                <a class="nav-link text-white" href="<?= site_url('qc/reports'); ?>">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">analytics</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Báo cáo QC</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+    <!-- Navbar -->
+    <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur">
+        <div class="container-fluid py-1 px-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('qc/'); ?>">QC</a></li>
+                    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Phiên kiểm tra của tôi</li>
+                </ol>
+                <h6 class="font-weight-bolder mb-0">Quản lý phiên kiểm tra chất lượng</h6>
+            </nav>
+            <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+                <div class="ms-md-auto pe-md-3 d-flex align-items-center">
+                    <!-- User info -->
+                </div>
+                <ul class="navbar-nav justify-content-end">
+                    <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
+                        <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
+                            <div class="sidenav-toggler-inner">
+                                <i class="sidenav-toggler-line"></i>
+                                <i class="sidenav-toggler-line"></i>
+                                <i class="sidenav-toggler-line"></i>
+                            </div>
+                        </a>
+                    </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <a href="<?= site_url('login/logout'); ?>" class="nav-link text-body font-weight-bold px-0">
+                            <i class="fa fa-user me-sm-1"></i>
+                            <span class="d-sm-inline d-none"><?= $user['full_name'] ?? 'QC Inspector' ?></span>
+                            <i class="material-icons ms-2">logout</i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- End Navbar -->
     
     <div class="container-fluid py-4">
         <div class="row">
@@ -101,8 +214,11 @@
             </div>
         </div>
     </div>
+</main>
 
-    <script src="<?= base_url('asset/Backend/assets/js/core/popper.min.js') ?>"></script>
-    <script src="<?= base_url('asset/Backend/assets/js/core/bootstrap.min.js') ?>"></script>
+<!-- Scripts -->
+<script src="<?= site_url('asset/backend/assets/js/core/popper.min.js'); ?>"></script>
+<script src="<?= site_url('asset/backend/assets/js/core/bootstrap.min.js'); ?>"></script>
+<script src="<?= site_url('asset/backend/assets/js/material-dashboard.min.js?v=3.0.0'); ?>"></script>
 </body>
 </html>

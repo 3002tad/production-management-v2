@@ -17,7 +17,7 @@ $lang['menu_production'] = 'Sản xuất';
 $lang['menu_machine'] = 'Máy móc';
 $lang['menu_raw_materials'] = 'Nguyên liệu';
 $lang['menu_report'] = 'Báo cáo';
-$lang['menu_warehousing'] = 'Kho';
+$lang['menu_warehousing'] = 'Kho thành phẩm';
 
 // ===== SECTION HEADERS =====
 $lang['section_schedule'] = 'LỊCH BIỂU';
@@ -36,7 +36,7 @@ $lang['breadcrumb_shiftment'] = 'Làm việc theo ca';
 $lang['breadcrumb_staff'] = 'Nhân viên';
 $lang['breadcrumb_production'] = 'Sản xuất';
 $lang['breadcrumb_machine'] = 'Máy móc';
-$lang['breadcrumb_material'] = 'Nguyên liệu';
+$lang['breadcrumb_material'] = 'Kho nguyên liệu';
 $lang['breadcrumb_reports'] = 'Báo cáo';
 
 // ===== ACTION BUTTONS =====
@@ -111,6 +111,7 @@ $lang['label_data_machine'] = 'Dữ liệu Máy móc';
 $lang['label_material_used'] = 'Nguyên liệu sử dụng';
 $lang['label_material_history'] = 'Lịch sử nguyên liệu';
 $lang['label_material_status'] = 'Trạng thái nguyên liệu';
+$lang['label_min_stock'] = 'Tồn kho tối thiểu';
 $lang['label_sorting_report'] = 'Báo cáo Phân loại';
 $lang['label_finished_product'] = 'Sản phẩm hoàn thành';
 $lang['title_add_project'] = 'Thêm Dữ liệu Dự án';
@@ -405,6 +406,12 @@ $lang['note_diameter_x10'] = 'Lưu ý: Nhập giá trị x10 (VD: nhập 5 cho 0
 $lang['unit_pieces'] = 'cái';
 $lang['unit_mm'] = 'mm';
 $lang['unit_gram'] = 'gram';
+$lang['unit_kilogram'] = 'kg';
+$lang['unit_meter'] = 'mét';
+$lang['unit_centimeter'] = 'cm';
+$lang['unit_box'] = 'thùng';
+$lang['unit_liter'] = 'lít';
+$lang['unit_milliliter'] = 'ml';
 $lang['unit_pieces_per_hour'] = 'cái/giờ';
 $lang['unit_pieces_per_shift'] = 'cái/ca';
 $lang['form_ink_color'] = 'Màu mực';

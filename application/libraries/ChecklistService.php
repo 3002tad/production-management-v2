@@ -158,7 +158,7 @@ class ChecklistService
         }
         
         // 7. Add defect breakdown to analysis
-        if ($stats['major_count'] > 0 || $stats['minor_count'] > 0) {
+        if (isset($stats['major_count']) && (isset($stats['minor_count']) && (isset($stats['total_inspected']) && ($stats['major_count'] > 0 || $stats['minor_count'] > 0)))) {
             $analysis .= sprintf(
                 ' | Chi tiết: %d lỗi Major, %d lỗi Minor trên tổng %d mẫu kiểm tra.',
                 $stats['major_count'],
