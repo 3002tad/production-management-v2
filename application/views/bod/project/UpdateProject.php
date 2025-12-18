@@ -249,42 +249,52 @@
 window.allCustomers = <?= json_encode($customer); ?>;
     window.currentProjectId = <?= $order->id_project; ?>;
 document.addEventListener('DOMContentLoaded', function() {
-    // Page-specific toast handler for UpdateProject (avoid global 'toast_shown' blocking)
-    (function(){
+    // Toast handling for redirects with ?msg (show server flashdata as toast, per-page flag)
+    (function() {
         var urlParams = new URLSearchParams(window.location.search);
         var msgType = urlParams.get('msg');
-        var toastKey = 'toast_shown_updateproject';
-        var toastShownLocal = sessionStorage.getItem(toastKey);
-        if (msgType && !toastShownLocal) {
-            <?php if($this->session->flashdata('error_js')): ?>
-            if (msgType === 'error') {
-                let flashData = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
-                let errorMessage = flashData.message;
-                if (flashData.details && flashData.details.length > 0) {
-                    errorMessage += '<br>' + flashData.details.join('<br>');
+        var toastShownKey = 'toast_shown_' + window.location.pathname;
+        var toastShown = sessionStorage.getItem(toastShownKey);
+
+        // Minimal fallback showToast if global function not available
+        if (typeof showToast !== 'function') {
+            window.showToast = function(opts) {
+                var icons = { success: '✅', warning: '⚠️', error: '❌', info: 'ℹ️' };
+                var toast = document.createElement('div');
+                toast.className = 'toast-notification ' + (opts.type || 'info');
+                toast.innerHTML = '<button class="toast-close" onclick="(function(el){el.parentElement.removeChild(el);})(this);">✕</button>' +
+                                  '<div class="toast-header"><span class="toast-icon">' + (icons[opts.type]||icons.info) + '</span><h5 class="toast-title">' + (opts.title||'') + '</h5></div>' +
+                                  '<div class="toast-body">' + (opts.message||'') + '</div>' +
+                                  '<div class="toast-progress"></div>';
+                document.body.appendChild(toast);
+                setTimeout(function(){ if (toast.parentElement) toast.parentElement.removeChild(toast); }, opts.duration || 3000);
+            };
+        }
+
+        if (msgType && !toastShown) {
+            <?php if ($this->session->flashdata('success_js')): ?>
+                if (msgType === 'success') {
+                    const successData = <?= $this->session->flashdata('success_js'); ?>;
+                    showToast({ type: 'success', title: successData.title, message: successData.message, duration: 3000 });
+                    sessionStorage.setItem(toastShownKey, 'true');
+                    window.history.replaceState({}, document.title, window.location.pathname);
                 }
-                Swal.fire({ icon: 'error', title: flashData.title || 'Lỗi!', html: errorMessage, showConfirmButton: true, confirmButtonColor: '#dc3545' });
-                sessionStorage.setItem(toastKey, 'true');
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
             <?php endif; ?>
 
-            <?php if($this->session->flashdata('warning_js')): ?>
-            if (msgType === 'warning') {
-                let flashData = JSON.parse('<?= addslashes($this->session->flashdata('warning_js')) ?>');
-                Swal.fire({ icon: 'warning', title: flashData.title || 'Cảnh báo!', text: flashData.message, showConfirmButton: true, confirmButtonColor: '#ffc107' });
-                sessionStorage.setItem(toastKey, 'true');
+            <?php if ($this->session->flashdata('warning_js')): ?>
+                const warningData = <?= $this->session->flashdata('warning_js'); ?>;
+                showToast({ type: 'warning', title: 'Cảnh báo', message: warningData.message, duration: 5000 });
+                sessionStorage.setItem(toastShownKey, 'true');
                 window.history.replaceState({}, document.title, window.location.pathname);
-            }
             <?php endif; ?>
 
-            <?php if($this->session->flashdata('success_js')): ?>
-            if (msgType === 'success') {
-                let flashData = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
-                Swal.fire({ icon: 'success', title: flashData.title || 'Thành công!', text: flashData.message, showConfirmButton: true, confirmButtonColor: '#17ad37', timer: 3000 });
-                sessionStorage.setItem(toastKey, 'true');
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
+            <?php if ($this->session->flashdata('error_js')): ?>
+                if (msgType === 'error') {
+                    const errorData = <?= $this->session->flashdata('error_js'); ?>;
+                    showToast({ type: 'error', title: 'Lỗi', message: errorData.message || 'Có lỗi xảy ra', duration: 6000 });
+                    sessionStorage.setItem(toastShownKey, 'true');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
             <?php endif; ?>
         }
     })();
