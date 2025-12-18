@@ -249,6 +249,46 @@
 window.allCustomers = <?= json_encode($customer); ?>;
     window.currentProjectId = <?= $order->id_project; ?>;
 document.addEventListener('DOMContentLoaded', function() {
+    // Page-specific toast handler for UpdateProject (avoid global 'toast_shown' blocking)
+    (function(){
+        var urlParams = new URLSearchParams(window.location.search);
+        var msgType = urlParams.get('msg');
+        var toastKey = 'toast_shown_updateproject';
+        var toastShownLocal = sessionStorage.getItem(toastKey);
+        if (msgType && !toastShownLocal) {
+            <?php if($this->session->flashdata('error_js')): ?>
+            if (msgType === 'error') {
+                let flashData = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
+                let errorMessage = flashData.message;
+                if (flashData.details && flashData.details.length > 0) {
+                    errorMessage += '<br>' + flashData.details.join('<br>');
+                }
+                Swal.fire({ icon: 'error', title: flashData.title || 'Lỗi!', html: errorMessage, showConfirmButton: true, confirmButtonColor: '#dc3545' });
+                sessionStorage.setItem(toastKey, 'true');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            <?php endif; ?>
+
+            <?php if($this->session->flashdata('warning_js')): ?>
+            if (msgType === 'warning') {
+                let flashData = JSON.parse('<?= addslashes($this->session->flashdata('warning_js')) ?>');
+                Swal.fire({ icon: 'warning', title: flashData.title || 'Cảnh báo!', text: flashData.message, showConfirmButton: true, confirmButtonColor: '#ffc107' });
+                sessionStorage.setItem(toastKey, 'true');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            <?php endif; ?>
+
+            <?php if($this->session->flashdata('success_js')): ?>
+            if (msgType === 'success') {
+                let flashData = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
+                Swal.fire({ icon: 'success', title: flashData.title || 'Thành công!', text: flashData.message, showConfirmButton: true, confirmButtonColor: '#17ad37', timer: 3000 });
+                sessionStorage.setItem(toastKey, 'true');
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            <?php endif; ?>
+        }
+    })();
+
     // Customer notes inline editing (similar to AddProject)
         const customerSelect = document.getElementById('customer_select');
         const notesSection = document.getElementById('customer_notes_section');
