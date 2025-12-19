@@ -632,8 +632,59 @@ class Admin extends CI_Controller
                 ];
 
         } else {
+            // Support filters: department, position, status, search_code
+            $department = $this->input->get('department');
+            $position = $this->input->get('position');
+            $status = $this->input->get('status');
+            $search_code = $this->input->get('search_code');
+
+            $this->db->select('staff.*, roles.role_display_name as department_name');
+            $this->db->from('staff');
+            $this->db->join('roles', 'staff.department = roles.role_id', 'left');
+            if ($department) {
+                $this->db->where('staff.department', $department);
+            }
+            if ($position) {
+                $this->db->where('staff.position', $position);
+            }
+            if ($status !== null && $status !== '') {
+                $this->db->where('staff.st_status', $status);
+            }
+            if ($search_code) {
+                $this->db->where('staff.id_staff', $search_code);
+            }
+            $results = $this->db->get()->result();
+
+            // Get statistics
+            $stats = [];
+            $stats['total'] = $this->db->count_all('staff');
+            $stats['active'] = $this->db->where('st_status', 1)->count_all_results('staff');
+            // Count staff with user accounts
+            $this->db->select('COUNT(DISTINCT staff.id_staff) as count');
+            $this->db->from('staff');
+            $this->db->join('user', 'staff.id_staff = user.staff_id', 'left');
+            $this->db->where('user.staff_id IS NOT NULL');
+            $with_user_result = $this->db->get()->row();
+            $stats['with_user'] = $with_user_result ? $with_user_result->count : 0;
+            $stats['without_user'] = $stats['total'] - $stats['with_user'];
+
+            // departments and positions for filters
+            $departments = [];
+            $positions = [];
+            $departments_result = $this->db->select('role_id, role_display_name')->where('is_active', 1)->get('roles')->result_array();
+            foreach ($departments_result as $dept) {
+                $departments[$dept['role_id']] = $dept['role_display_name'];
+            }
+            $positions_result = $this->db->select('user_id, full_name')->where('is_active', 1)->get('user')->result_array();
+            foreach ($positions_result as $pos) {
+                $positions[$pos['user_id']] = $pos['full_name'];
+            }
+
             $data = [
-                'staff' => $this->db->query('SELECT * FROM staff')->result(),
+                'staff' => $results,
+                'statistics' => $stats,
+                'departments' => $departments,
+                'positions' => $positions,
                 'content' => 'admin/staff/staff',
                 'navlink' => 'staff',
                 ];

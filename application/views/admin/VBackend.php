@@ -39,141 +39,182 @@
         <hr class="horizontal light mt-0 mb-2">
             <div class="col-14">
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link text-white<?= ($navlink === 'beranda') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/index'); ?>">
+                    <?php
+                    $role_name = $this->session->userdata('role_name');
+                    $legacy_role = $this->session->userdata('role');
+                    $is_admin_dashboard = ($role_name === 'system_admin' || $role_name === 'admin' || $legacy_role === 'admin');
+                    ?>
+
+                    <?php if ($is_admin_dashboard): ?>
+                        <!-- Admin sees only Staff and User management -->
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">dashboard</i>
+                            <i class="material-icons opacity-10">manage_accounts</i>
                             </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_dashboard'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'customer') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/customer'); ?>">
-                        <div class="text-white text me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">people</i>
-                        </div>
-                        <span class="nav-link-text ms-1"><?= lang('menu_customer'); ?></span>
-                      </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
-                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">manage_accounts</i>
-                        </div>
-                        <span class="nav-link-text ms-1">Nhân viên</span>
-                      </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'user') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/user'); ?>">
-                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">person</i>
-                        </div>
-                        <span class="nav-link-text ms-1">Quản lý User</span>
-                      </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'project') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/project'); ?>">
-                        <div class="text-white me-2 d-flex align-items justify-content">
-                        <i class="material-icons opacity-10">task</i>
-                        </div>
-                        <span class="nav-link-text ms-1"><?= lang('menu_project'); ?></span>
-                      </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'product') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/product'); ?>">
+                            <span class="nav-link-text ms-1">Nhân viên</span>
+                          </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white<?= ($navlink === 'user') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/user'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">person</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Quản lý người dùng</span>
+                          </a>
+                        </li>
+                        <!-- Hệ thống section with logout -->
+                        <li class="navbar-vertical">
+                          <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
+                            <span class="nav-link-text ms-1 p-2">Hệ thống</span>
+                          </div>
+                        </li>
+                        <hr class="horizontal light mt-0 mb-2">
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white" href="<?= site_url('login/logout'); ?>" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                              <i class="material-icons opacity-10">logout</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Đăng xuất</span>
+                          </a>
+                        </li>
+                    <?php else: ?>
+                        <li class="nav-item">
+                            <a class="nav-link text-white<?= ($navlink === 'beranda') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/index'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">dashboard</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_dashboard'); ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white<?= ($navlink === 'customer') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/customer'); ?>">
+                            <div class="text-white text me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">people</i>
+                            </div>
+                            <span class="nav-link-text ms-1"><?= lang('menu_customer'); ?></span>
+                          </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">manage_accounts</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Nhân viên</span>
+                          </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white<?= ($navlink === 'user') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/user'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">person</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Quản lý người dùng</span>
+                          </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white<?= ($navlink === 'project') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/project'); ?>">
                             <div class="text-white me-2 d-flex align-items justify-content">
-                            <i class="material-icons opacity-10">lan</i>
+                            <i class="material-icons opacity-10">task</i>
                             </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_product'); ?></span>
-                        </a>
-                    </li>
+                            <span class="nav-link-text ms-1"><?= lang('menu_project'); ?></span>
+                          </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'product') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/product'); ?>">
+                                <div class="text-white me-2 d-flex align-items justify-content">
+                                <i class="material-icons opacity-10">lan</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_product'); ?></span>
+                            </a>
+                        </li>
 
-                    <li class="navbar-vertical">
-                    <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
-                    <span class="nav-link-text ms-1 p-2"><?= lang('section_schedule'); ?></span>
-                    </div>
-                    </li>
-                    <hr class="horizontal light mt-0 mb-2">
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'planning') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/planning'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">schedule</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_planning'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'plan_shift') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/plan_shift'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">tune</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_shiftment'); ?></span>
-                        </a>
-                    </li>
-                    <!-- staff moved above between customer and project -->
-
-                    <li class="navbar-vertical">
-                    <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
-                    <span class="nav-link-text ms-1 p-2"><?= lang('section_processing'); ?></span>
-                    </div>
-                    </li>
-                    <hr class="horizontal light mt-0 mb-2">
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'production') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/production'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">settings_input_component</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_production'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'machine') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/machine'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">build</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_machine'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'material') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/material'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">view_in_ar</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_raw_materials'); ?></span>
-                        </a>
-                    </li>
-
-                    <li class="navbar-vertical">
-                    <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
-                    <span class="nav-link-text ms-1 p-2"><?= lang('section_reports'); ?></span>
-                    </div>
-                    </li>
-                    <hr class="horizontal light mt-0 mb-2">
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'sorting') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/sorting'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">receipt</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_report'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'finished') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/finished'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">room_preferences</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_warehousing'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'incident') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
-                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10">report_problem</i>
+                        <li class="navbar-vertical">
+                        <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
+                        <span class="nav-link-text ms-1 p-2"><?= lang('section_schedule'); ?></span>
                         </div>
-                        <span class="nav-link-text ms-1">Sự cố</span>
-                      </a>
-                    </li>
-                </ul>
+                        </li>
+                        <hr class="horizontal light mt-0 mb-2">
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'planning') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/planning'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">schedule</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_planning'); ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'plan_shift') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/plan_shift'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">tune</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_shiftment'); ?></span>
+                            </a>
+                        </li>
+                        <!-- staff moved above between customer and project -->
+
+                        <li class="navbar-vertical">
+                        <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
+                        <span class="nav-link-text ms-1 p-2"><?= lang('section_processing'); ?></span>
+                        </div>
+                        </li>
+                        <hr class="horizontal light mt-0 mb-2">
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'production') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/production'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">settings_input_component</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_production'); ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'machine') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/machine'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">build</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_machine'); ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'material') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/material'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">view_in_ar</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_raw_materials'); ?></span>
+                            </a>
+                        </li>
+
+                        <li class="navbar-vertical">
+                        <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
+                        <span class="nav-link-text ms-1 p-2"><?= lang('section_reports'); ?></span>
+                        </div>
+                        </li>
+                        <hr class="horizontal light mt-0 mb-2">
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'sorting') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/sorting'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">receipt</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_report'); ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                            <a class="nav-link text-white<?= ($navlink === 'finished') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/finished'); ?>">
+                                <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                                <i class="material-icons opacity-10">room_preferences</i>
+                                </div>
+                                <span class="nav-link-text ms-1"><?= lang('menu_warehousing'); ?></span>
+                            </a>
+                        </li>
+                        <li class="nav-item navbar-expand-xs">
+                          <a class="nav-link text-white<?= ($navlink === 'incident') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">report_problem</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Sự cố</span>
+                          </a>
+                        </li>
+                    <?php endif; ?>
+                    </ul>
             </div>
     </aside>
 

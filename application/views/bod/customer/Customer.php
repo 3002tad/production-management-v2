@@ -384,6 +384,9 @@ if (function_exists('opcache_invalidate')) {
  * Toast Notification Functions
  */
 function showToast(options) {
+    // Mark global and path-specific flag
+    try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true'); } catch(e) { /* ignore */ }
+
     const icons = {
         success: '✅',
         warning: '⚠️',
@@ -458,7 +461,7 @@ function closeToast(element) {
         toastShown = null;
     }
     
-    if (msgType && !toastShown) {
+    if (msgType) {
         <?php if ($this->session->flashdata('success_js')): ?>
             // SUCCESS - Only if msg=success
             if (msgType === 'success') {

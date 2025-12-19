@@ -83,7 +83,7 @@
 
         <!-- Quản lý Nhân viên (View Only) -->
         <li class="nav-item navbar-expand-xs">
-          <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('admin/staff'); ?>">
+          <a class="nav-link text-white<?= ($navlink === 'staff') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('BOD/staff'); ?>">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
               <i class="material-icons opacity-10">manage_accounts</i>
             </div>
@@ -124,6 +124,8 @@
             <span class="nav-link-text ms-1">Báo cáo tổng hợp</span>
           </a>
         </li>
+        <?php // Ẩn mục "Sự cố" cho BOD để tránh hiển thị không cần thiết trên sidebar của Ban Giám Đốc ?>
+        <?php if ($this->session->userdata('role_name') !== 'bod'): ?>
         <li class="nav-item navbar-expand-xs">
           <a class="nav-link text-white<?= ($navlink === 'incident') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -132,6 +134,7 @@
             <span class="nav-link-text ms-1">Sự cố</span>
           </a>
         </li>
+        <?php endif; ?>
 
         <!-- Đăng xuất -->
         <li class="navbar-vertical">
@@ -248,14 +251,63 @@
       // Show flashdata messages (following Project pattern)
       var urlParams = new URLSearchParams(window.location.search);
       var msgType = urlParams.get('msg');
-      var toastShown = sessionStorage.getItem('toast_shown');
-      
-      if (msgType && !toastShown) {
+      var pathToastKey = 'toast_shown_' + window.location.pathname;
+      var toastShown = sessionStorage.getItem('toast_shown') || sessionStorage.getItem(pathToastKey);
+
+      // Helper to mark both global and path-specific flags so child and parent agree
+      function markToastShown(){ try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem(pathToastKey, 'true'); } catch (e) { /* ignore */ } }
+      function removeMsgParam(){ try { window.history.replaceState({}, document.title, window.location.pathname); } catch(e) { /* ignore */ } }
+      function showAlert(opts){ Swal.fire(opts); markToastShown(); removeMsgParam(); }
+
+      // If a page-level showToast exists, let the page handle showing and marking the toast.
+      var pageHasShowToast = (typeof window.showToast === 'function');
+
+      // Delay a short time so page scripts that show toasts naturally can run first and set sessionStorage
+      function attemptShowFlashToasts(){
+        // Re-read flags (in case a page-level toast already ran)
+        var pathToastShown = sessionStorage.getItem(pathToastKey);
+        var globalToastShown = sessionStorage.getItem('toast_shown');
+        // Prefer path-specific flag: if this path already showed a toast, don't show again unless an explicit ?msg param is present (e.g., login redirect)
+        if (pathToastShown && !msgType) {
+            console.debug('Toast skipped: already shown for this path', pathToastKey);
+            return;
+        }
+        if (pathToastShown && msgType) {
+            // The path already showed a toast earlier, but an explicit msg param is present now — override the skip so the user sees the redirect message
+            console.debug('Path-level toast flag exists but ?msg present, overriding skip for', pathToastKey, 'msg=', msgType);
+        }
+        // If only global flag exists (from other pages), allow showing toast for this path (useful for login redirect)
+        if (globalToastShown) console.debug('Global toast flag present, but showing per-path toast for msg:', msgType);
+
+        // Detect whether server-side flashdata exists (injected from PHP)
+        var php_has_success_flash = <?= ($this->session->flashdata('success_js') || $this->session->flashdata('success')) ? 'true' : 'false' ?>;
+        var php_has_error_flash = <?= ($this->session->flashdata('error_js') || $this->session->flashdata('error')) ? 'true' : 'false' ?>;
+        var php_has_warning_flash = <?= $this->session->flashdata('warning_js') ? 'true' : 'false' ?>;
+
+        // If page provides its own showToast handler, prefer it — BUT if msg param exists and
+        // there is NO corresponding server flashdata, show a small generic fallback so redirects like
+        // login/?msg=success still produce a toast for the user.
+        if (pageHasShowToast) {
+            if (msgType === 'success' && !php_has_success_flash) {
+                showAlert({ icon: 'success', title: 'Thành công!', text: 'Đăng nhập thành công!', showConfirmButton: true, confirmButtonColor: '#17ad37', timer: 2500 });
+                return;
+            }
+            if (msgType === 'error' && !php_has_error_flash) {
+                showAlert({ icon: 'error', title: 'Lỗi!', text: 'Có lỗi xảy ra', showConfirmButton: true, confirmButtonColor: '#dc3545' });
+                return;
+            }
+            if (msgType === 'warning' && !php_has_warning_flash) {
+                showAlert({ icon: 'warning', title: 'Cảnh báo!', text: 'Thông báo', showConfirmButton: true, confirmButtonColor: '#ffc107' });
+                return;
+            }
+            return; // else let page handle showing its own flash
+        }
+
         // Prefer structured JS flashdata if available
         <?php if($this->session->flashdata('success_js')): ?>
         if (msgType === 'success') {
           let successFlashData = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
-          Swal.fire({
+          showAlert({
             icon: 'success',
             title: successFlashData.title || 'Thành công!',
             text: successFlashData.message,
@@ -268,7 +320,7 @@
         <?php else: ?>
         // Fallback to plain flashdata('success') when ?msg=success is present
         if (msgType === 'success' && <?= $this->session->flashdata('success') ? 'true' : 'false' ?>) {
-          Swal.fire({
+          showAlert({
             icon: 'success',
             title: 'Thành công!',
             text: '<?= addslashes($this->session->flashdata('success')) ?>',
@@ -276,8 +328,16 @@
             confirmButtonColor: '#17ad37',
             timer: 3000
           });
-          sessionStorage.setItem('toast_shown', 'true');
-          window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (msgType === 'success') {
+          // Generic fallback when only ?msg=success is provided (Login redirect)
+          showAlert({
+            icon: 'success',
+            title: 'Thành công!',
+            text: 'Đăng nhập thành công!',
+            showConfirmButton: true,
+            confirmButtonColor: '#17ad37',
+            timer: 2500
+          });
         }
         <?php endif; ?>
 
@@ -288,51 +348,72 @@
           if (errorFlashData.details && errorFlashData.details.length > 0) {
             errorMessage += '<br>' + errorFlashData.details.join('<br>');
           }
-          Swal.fire({
+          showAlert({
             icon: 'error',
             title: errorFlashData.title || 'Lỗi!',
             html: errorMessage, // Use html to render <br> tags
             showConfirmButton: true,
             confirmButtonColor: '#dc3545'
           });
-          window.history.replaceState({}, document.title, window.location.pathname);
         }
         <?php elseif($this->session->flashdata('error')): ?>
         if (msgType === 'error') {
-          Swal.fire({
+          showAlert({
             icon: 'error',
             title: 'Lỗi!',
             text: '<?= addslashes($this->session->flashdata('error')) ?>',
             showConfirmButton: true,
             confirmButtonColor: '#dc3545'
           });
-          sessionStorage.setItem('toast_shown', 'true');
-          window.history.replaceState({}, document.title, window.location.pathname);
         }
         <?php endif; ?>
 
         <?php if($this->session->flashdata('warning_js')): ?>
         if (msgType === 'warning') {
           let warningFlashData = JSON.parse('<?= addslashes($this->session->flashdata('warning_js')) ?>');
-          Swal.fire({
+          showAlert({
             icon: 'warning',
             title: warningFlashData.title || 'Cảnh báo!',
             text: warningFlashData.message,
             showConfirmButton: true,
             confirmButtonColor: '#ffc107'
           });
-          window.history.replaceState({}, document.title, window.location.pathname);
         }
         <?php elseif($this->session->flashdata('error')): ?>
         // no-op
         <?php endif; ?>
       }
 
-      // Nếu không có msg parameter nhưng có flashdata, hiển thị toast 1 lần
+      // Run after a short delay to let page-level code run first
+      setTimeout(attemptShowFlashToasts, 120);
+
+      // Nếu không có msg parameter nhưng có flashdata, hiển thị toast 1 lần (prioritize: error > success > warning)
       if (!msgType && !toastShown) {
-        <?php if($this->session->flashdata('success_js')): ?>
+        <?php if($this->session->flashdata('error_js')): ?>
+          let errorFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
+          let errorMessage2 = errorFlashData2.message;
+          if (errorFlashData2.details && errorFlashData2.details.length > 0) {
+            errorMessage2 += '<br>' + errorFlashData2.details.join('<br>');
+          }
+          showAlert({
+            icon: 'error',
+            title: errorFlashData2.title || 'Lỗi!',
+            html: errorMessage2,
+            showConfirmButton: true,
+            confirmButtonColor: '#dc3545'
+          });
+        <?php elseif($this->session->flashdata('error')): ?>
+          showAlert({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: '<?= addslashes($this->session->flashdata('error')) ?>',
+            showConfirmButton: true,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
+          });
+        <?php elseif($this->session->flashdata('success_js')): ?>
           let successFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('success_js')) ?>');
-          Swal.fire({
+          showAlert({
             icon: 'success',
             title: successFlashData2.title || 'Thành công!',
             text: successFlashData2.message,
@@ -343,7 +424,7 @@
             timerProgressBar: true
           });
         <?php elseif($this->session->flashdata('success')): ?>
-          Swal.fire({
+          showAlert({
             icon: 'success',
             title: 'Thành công!',
             text: '<?= addslashes($this->session->flashdata('success')) ?>',
@@ -353,32 +434,15 @@
             timer: 3000,
             timerProgressBar: true
           });
-          sessionStorage.setItem('toast_shown', 'true');
-        <?php endif; ?>
-
-        <?php if($this->session->flashdata('error_js')): ?>
-          let errorFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('error_js')) ?>');
-          let errorMessage2 = errorFlashData2.message;
-          if (errorFlashData2.details && errorFlashData2.details.length > 0) {
-            errorMessage2 += '<br>' + errorFlashData2.details.join('<br>');
-          }
-          Swal.fire({
-            icon: 'error',
-            title: errorFlashData2.title || 'Lỗi!',
-            html: errorMessage2,
+        <?php elseif($this->session->flashdata('warning_js')): ?>
+          let warningFlashData2 = JSON.parse('<?= addslashes($this->session->flashdata('warning_js')) ?>');
+          showAlert({
+            icon: 'warning',
+            title: warningFlashData2.title || 'Cảnh báo!',
+            text: warningFlashData2.message,
             showConfirmButton: true,
-            confirmButtonColor: '#dc3545'
+            confirmButtonColor: '#ffc107'
           });
-        <?php elseif($this->session->flashdata('error')): ?>
-          Swal.fire({
-            icon: 'error',
-            title: 'Lỗi!',
-            text: '<?= addslashes($this->session->flashdata('error')) ?>',
-            showConfirmButton: true,
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#dc3545'
-          });
-          sessionStorage.setItem('toast_shown', 'true');
         <?php endif; ?>
       }
 

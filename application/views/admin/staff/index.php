@@ -19,6 +19,29 @@
         </div>
     <?php endif; ?>
 
+    <script>
+    (function(){
+      try {
+        var urlParams = new URLSearchParams(window.location.search);
+        var msg = urlParams.get('msg');
+        // If msg=success and no server-side bootstrap success alert was rendered, show a SweetAlert toast if available
+        if (msg === 'success' && !document.querySelector('.alert-success')) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'success', title: 'Thành công!', text: 'Đăng nhập thành công!', showConfirmButton: true, confirmButtonColor: '#17ad37', timer: 2500 });
+          } else {
+            var div = document.createElement('div');
+            div.className = 'alert alert-success alert-dismissible fade show';
+            div.role = 'alert';
+            div.innerHTML = 'Đăng nhập thành công!<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+            var container = document.querySelector('.container-fluid');
+            if (container) container.insertBefore(div, container.firstChild);
+          }
+          try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
+        }
+      } catch (e) { /* ignore */ }
+    })();
+    </script>
+
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <div class="d-flex justify-content-between align-items-center">

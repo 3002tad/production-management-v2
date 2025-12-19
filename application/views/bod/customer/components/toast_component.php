@@ -142,6 +142,9 @@ FEATURES:
  * @param {number} duration - Duration in milliseconds (default: auto)
  */
 function showToast(type, message, duration = null) {
+    // Mark global and path-specific flag
+    try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true'); } catch(e) { /* ignore */ }
+
     // Auto duration based on type
     if (!duration) {
         duration = type === 'success' ? 3000 : (type === 'warning' ? 5000 : 6000);
@@ -168,6 +171,17 @@ function showToast(type, message, duration = null) {
         <div class="toast-progress" style="animation-duration: ${duration}ms;"></div>
     `;
     
+    // Prevent exact duplicate toasts (same type + message)
+    try {
+        var existingToasts = document.querySelectorAll('.custom-toast');
+        for (var i = 0; i < existingToasts.length; i++) {
+            var t = existingToasts[i];
+            if (t.classList.contains('toast-' + type) && t.innerText && t.innerText.indexOf((message||'').trim()) !== -1) {
+                return; // duplicate detected
+            }
+        }
+    } catch(e) { /* ignore */ }
+
     // Add to container
     const container = document.getElementById('toastContainer');
     container.appendChild(toast);
@@ -196,8 +210,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         showToast(type, decodeURIComponent(text));
         
-        // Mark as shown
-        sessionStorage.setItem(storageKey, 'true');
+        // Mark as shown (both global and path-specific)
+        try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem(storageKey, 'true'); } catch(e) {}
         
         // Clean URL
         window.history.replaceState({}, '', window.location.pathname);

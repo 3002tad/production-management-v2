@@ -590,6 +590,9 @@ document.addEventListener('DOMContentLoaded', function() {
  * @param {Object} options - {type, title, message, details, duration}
  */
 function showToast(options) {
+    // Mark global and path-specific toast shown flag to avoid duplicate toasts
+    try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true'); } catch(e) { /* ignore */ }
+
     // Icon theo loại thông báo
     const icons = {
         success: '✅',
@@ -597,6 +600,17 @@ function showToast(options) {
         error: '❌',
         info: 'ℹ️'
     };
+
+    // Prevent exact duplicate toasts (same type + message)
+    try {
+        var existingToasts = document.querySelectorAll('.toast-notification');
+        for (var i = 0; i < existingToasts.length; i++) {
+            var t = existingToasts[i];
+            if (t.classList.contains(options.type) && t.innerText && t.innerText.indexOf((options.message||'').trim()) !== -1) {
+                return; // duplicate detected, skip
+            }
+        }
+    } catch(e) { /* ignore DOM errors */ }
 
     // Tạo HTML cho toast
     const toast = document.createElement('div');

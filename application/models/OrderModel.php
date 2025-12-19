@@ -152,11 +152,38 @@ class OrderModel extends CI_Model
         $has_production = $this->db->where('id_project', $id_project)->count_all_results('finished_report') > 0;
         if (!$has_production) {
             $total_finished = isset($order->qty_request) ? $order->qty_request : 0;
-            $this->db->insert('finished_report', [
+
+            // If the table does not use AUTO_INCREMENT for id_finished (legacy schema),
+            // compute an explicit id to avoid inserting a row with id = 0 which causes
+            // Duplicate entry '0' for key 'PRIMARY' errors observed in production.
+            $insert_data = [
                 'id_project' => $id_project,
                 'total_finished' => $total_finished,
                 'fdate' => date('Y-m-d H:i:s')
-            ]);
+            ];
+
+            $col = $this->db->query("SHOW COLUMNS FROM `finished_report` LIKE 'id_finished'")->row();
+            if ($col && strpos($col->Extra ?? '', 'auto_increment') === false) {
+                // Fix any legacy rows that may have id_finished = 0 by assigning them new ids
+                $zero_count = $this->db->where('id_finished', 0)->count_all_results('finished_report');
+                if ($zero_count > 0) {
+                    $max = (int) $this->db->select_max('id_finished')->get('finished_report')->row()->id_finished;
+                    $next = $max > 0 ? $max + 1 : 1;
+                    $zeros = $this->db->where('id_finished', 0)->get('finished_report')->result();
+                    foreach ($zeros as $z) {
+                        // update one by one to keep uniqueness
+                        $this->db->where('id_finished', 0)->limit(1)->update('finished_report', ['id_finished' => $next]);
+                        $next++;
+                    }
+                }
+
+                // Compute next id and set it explicitly for this insert
+                $max_after = (int) $this->db->select_max('id_finished')->get('finished_report')->row()->id_finished;
+                $next_id = $max_after > 0 ? $max_after + 1 : 1;
+                $insert_data['id_finished'] = $next_id;
+            }
+
+            $this->db->insert('finished_report', $insert_data);
         }
 
         // Update project status

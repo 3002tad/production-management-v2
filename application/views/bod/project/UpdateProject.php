@@ -271,12 +271,12 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
-        if (msgType && !toastShown) {
+        if (msgType) {
             <?php if ($this->session->flashdata('success_js')): ?>
                 if (msgType === 'success') {
                     const successData = <?= $this->session->flashdata('success_js'); ?>;
                     showToast({ type: 'success', title: successData.title, message: successData.message, duration: 3000 });
-                    sessionStorage.setItem(toastShownKey, 'true');
+                    try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem(toastShownKey, 'true'); } catch(e) {}
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             <?php endif; ?>
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <?php if ($this->session->flashdata('warning_js')): ?>
                 const warningData = <?= $this->session->flashdata('warning_js'); ?>;
                 showToast({ type: 'warning', title: 'Cảnh báo', message: warningData.message, duration: 5000 });
-                sessionStorage.setItem(toastShownKey, 'true');
+                try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem(toastShownKey, 'true'); } catch(e) {}
                 window.history.replaceState({}, document.title, window.location.pathname);
             <?php endif; ?>
 
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (msgType === 'error') {
                     const errorData = <?= $this->session->flashdata('error_js'); ?>;
                     showToast({ type: 'error', title: 'Lỗi', message: errorData.message || 'Có lỗi xảy ra', duration: 6000 });
-                    sessionStorage.setItem(toastShownKey, 'true');
+                    try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem(toastShownKey, 'true'); } catch(e) {}
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
             <?php endif; ?>

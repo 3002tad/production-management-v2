@@ -513,15 +513,15 @@
             return resp.json();
         }).then(function(resp){
             if (resp && resp.success) {
-                alert(resp.message || 'Đã đánh dấu đơn hàng là Đã sản xuất');
-                window.location.reload();
+                try { showToast({ type: 'success', title: 'Thành công', message: resp.message || 'Đã đánh dấu đơn hàng là Đã sản xuất', duration: 2500 }); } catch(e) { alert(resp.message || 'Đã đánh dấu đơn hàng là Đã sản xuất'); }
+                setTimeout(function(){ window.location.reload(); }, 400);
             } else {
-                alert((resp && resp.message) || 'Lỗi');
+                try { showToast({ type: 'error', title: 'Lỗi', message: (resp && resp.message) || 'Lỗi', duration: 6000 }); } catch(e) { alert((resp && resp.message) || 'Lỗi'); }
                 btn.disabled = false;
             }
         }).catch(function(err){
             console.error(err);
-            alert('Lỗi hệ thống, vui lòng thử lại');
+            try { showToast({ type: 'error', title: 'Lỗi hệ thống', message: 'Vui lòng thử lại', duration: 6000 }); } catch(e) { alert('Lỗi hệ thống, vui lòng thử lại'); }
             btn.disabled = false;
         });
     });

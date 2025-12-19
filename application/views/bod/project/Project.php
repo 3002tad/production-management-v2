@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Chỉ hiển thị toast khi:
     // 1. Có msg parameter trong URL (redirect từ action)
     // 2. Chưa được hiển thị trong session này
-    if (msgType && !toastShown) {
+    if (msgType) {
         <?php if ($this->session->flashdata('success_js')): ?>
             // Chỉ hiển thị success toast nếu msg=success hoặc msg=warning_then_success
             if (msgType === 'success' || msgType === 'warning_then_success') {
@@ -1015,6 +1015,9 @@ function closeWarningModal() {
  * @param {Object} options - {type, title, message, details, duration}
  */
 function showToast(options) {
+    // Mark global and path-specific toast shown flag to avoid duplicate toasts
+    try { sessionStorage.setItem('toast_shown', 'true'); sessionStorage.setItem('toast_shown_' + window.location.pathname, 'true'); } catch(e) { /* ignore */ }
+
     // Icon theo loại thông báo
     const icons = {
         success: '✅',
@@ -1022,6 +1025,17 @@ function showToast(options) {
         error: '❌',
         info: 'ℹ️'
     };
+
+    // Prevent exact duplicate toasts (same type + message)
+    try {
+        var existingToasts = document.querySelectorAll('.toast-notification');
+        for (var i = 0; i < existingToasts.length; i++) {
+            var t = existingToasts[i];
+            if (t.classList.contains(options.type) && t.innerText && t.innerText.indexOf((options.message||'').trim()) !== -1) {
+                return; // duplicate detected, skip
+            }
+        }
+    } catch(e) { /* ignore DOM errors */ }
 
     // Tạo HTML cho toast
     const toast = document.createElement('div');

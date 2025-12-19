@@ -98,7 +98,7 @@
                         <div class="row mt-3">
                             <div class="col-md-12 text-right">
                                 <button type="submit" class="btn btn-primary">Lọc</button>
-                                <a href="<?php echo site_url('admin/staff'); ?>" class="btn btn-secondary">Reset</a>
+                                <a href="<?php echo site_url('admin/staff'); ?>" class="btn btn-secondary">Xóa lọc</a>
                             </div>
                         </div>
                     </form>

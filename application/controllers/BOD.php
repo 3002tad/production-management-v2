@@ -62,9 +62,78 @@ class BOD extends CI_Controller
             'planning' => $this->crudModel->getData('planning')->num_rows(),
             'plan_shift' => $this->crudModel->getData('plan_shift')->num_rows(),
             'finished_report' => $this->crudModel->getData('finished_report')->num_rows(),
+            // Recent lists for dashboard tables (up to 5 items)
+            'recent_projects' => $this->db->query('SELECT p.id_project, p.project_name, c.cust_name FROM project p LEFT JOIN customer c ON p.id_cust = c.id_cust ORDER BY p.id_project DESC LIMIT 5')->result(),
+            'recent_planning' => $this->db->query("SELECT pl.id_plan, pl.plan_name, COALESCE(pl.start_date, DATE(pl.created_at)) as entry_date, pr.project_name FROM planning pl LEFT JOIN project pr ON pl.id_project = pr.id_project ORDER BY pl.id_plan DESC LIMIT 5")->result(),
             'content' => 'bod/beranda',
             'navlink' => 'beranda',
         ];
+        $this->load->view('bod/vbackend', $data);
+    }
+
+    /**
+     * Staff listing (view-only for BOD)
+     */
+    public function staff()
+    {
+        // Support filters: department, position, status, search_code
+        $department = $this->input->get('department');
+        $position = $this->input->get('position');
+        $status = $this->input->get('status');
+        $search_code = $this->input->get('search_code');
+
+        $this->db->select('staff.*, roles.role_display_name as department_name');
+        $this->db->from('staff');
+        $this->db->join('roles', 'staff.department = roles.role_id', 'left');
+        if ($department) {
+            $this->db->where('staff.department', $department);
+        }
+        if ($position) {
+            $this->db->where('staff.position', $position);
+        }
+        if ($status !== null && $status !== '') {
+            $this->db->where('staff.st_status', $status);
+        }
+        if ($search_code) {
+            $this->db->where('staff.id_staff', $search_code);
+        }
+        $results = $this->db->get()->result();
+
+        // Get statistics
+        $stats = [];
+        $stats['total'] = $this->db->count_all('staff');
+        $stats['active'] = $this->db->where('st_status', 1)->count_all_results('staff');
+        $this->db->select('COUNT(DISTINCT staff.id_staff) as count');
+        $this->db->from('staff');
+        $this->db->join('user', 'staff.id_staff = user.staff_id', 'left');
+        $this->db->where('user.staff_id IS NOT NULL');
+        $with_user_result = $this->db->get()->row();
+        $stats['with_user'] = $with_user_result ? $with_user_result->count : 0;
+        $stats['without_user'] = $stats['total'] - $stats['with_user'];
+
+        // Get departments and positions for filters from staff table (use DISTINCT to reflect actual data)
+        $departments = [];
+        $positions = [];
+        $departments_result = $this->db->distinct()->select('department')->from('staff')->order_by('department')->get()->result_array();
+        foreach ($departments_result as $deptRow) {
+            $dept = trim($deptRow['department'] ?? '');
+            if ($dept !== '') $departments[$dept] = $dept;
+        }
+        $positions_result = $this->db->distinct()->select('position')->from('staff')->order_by('position')->get()->result_array();
+        foreach ($positions_result as $posRow) {
+            $pos = trim($posRow['position'] ?? '');
+            if ($pos !== '') $positions[$pos] = $pos;
+        }
+
+        $data = [
+            'staff' => $results,
+            'statistics' => $stats,
+            'departments' => $departments,
+            'positions' => $positions,
+            'content' => 'bod/staff/staff',
+            'navlink' => 'staff',
+        ];
+
         $this->load->view('bod/vbackend', $data);
     }
 

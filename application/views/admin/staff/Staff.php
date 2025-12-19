@@ -21,7 +21,7 @@
                 <h6 class="mb-0"><?= lang('label_data_staff'); ?></h6>
             </div>
             <div class="col-4 text-end">
-                <a href="<?= site_url('admin/staff/addstaff'); ?>" class="btn btn-primary mb-0"><?= lang('btn_add_staff'); ?></a>
+                <span class="badge bg-warning text-dark">View Only</span>
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@
                     <div class="small-box border">
                         <div class="inner text-center">
                             <h3><?php echo isset($statistics['active']) ? $statistics['active'] : 0; ?></h3>
-                            <p class="mb-0">Active</p>
+                            <p class="mb-0">Trạng thái</p>
                         </div>
                     </div>
                 </div>
@@ -108,7 +108,7 @@
                     </div>
                     <div class="col-12 mt-2">
                         <button class="btn btn-sm btn-primary" type="submit">Lọc</button>
-                        <a href="<?= site_url('admin/staff'); ?>" class="btn btn-sm btn-secondary ml-2">Reset</a>
+                        <a href="<?= site_url('admin/staff'); ?>" class="btn btn-sm btn-secondary ml-2">Xóa lọc</a>
                     </div>
                 </form>
             </div>
@@ -149,10 +149,11 @@
                         <tr>
                         <th class="text-center">STT</th>
                         <th>Tên nhân viên</th>
+                        <th>Bộ phận</th>
+                        <th>Chức vụ</th>
                         <th>Số điện thoại</th>
                         <th>Email</th>
                         <th>Trạng thái</th>
-                        <th class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
@@ -163,6 +164,12 @@
                         </td>
                         <td>
                             <?= $value->staff_name; ?>
+                        </td>
+                        <td>
+                            <?= !empty($value->department_name) ? $value->department_name : (!empty($value->department) ? $value->department : 'Chưa Phân Loại'); ?>
+                        </td>
+                        <td>
+                            <?= !empty($value->position) ? $value->position : 'Chưa Phân Loại'; ?>
                         </td>
                         <td>
                             <?= $value->phone; ?>
@@ -183,17 +190,6 @@
                             }
                         ?>
                         <?= $status_text; ?>
-                        </td>
-                        <td class="text-center">
-                            <a href="<?= site_url('admin/staff/'.$value->id_staff.'/update'); ?>" class="btn btn-sm btn-warning">
-                                <i class="material-icons">edit</i>
-                            </a>
-                            <a href="<?= site_url('admin/toggleStaffStatus/'.$value->id_staff); ?>" class="btn btn-sm btn-info">
-                                <i class="material-icons">power_settings_new</i>
-                            </a>
-                            <a href="<?= site_url('admin/deleteStaff/'.$value->id_staff); ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc muốn xóa nhân viên này?')">
-                                <i class="material-icons">close</i>
-                            </a>
                         </td>
                         </tr>
                         <?php endforeach; endif; ?>
