@@ -172,10 +172,133 @@ class Shift extends CI_Controller
         // Get breakdown logs
         $breakdown_logs = $this->shiftModel->getBreakdownLogs($shift_id);
 
+        // Chuẩn bị dữ liệu NVL theo kế hoạch (nếu có)
+        $material_coverage = null;
+        $bom_source = 'none';
+        $material_confirm = null;
+        try {
+            // Chỉ xử lý nếu có liên kết tới kế hoạch sản xuất
+            if (isset($shift->id_plan) && !empty($shift->id_plan)) {
+                $this->load->model('PlanModel', 'planModel');
+
+                $plan = $this->planModel->getPlanById($shift->id_plan);
+                if ($plan && isset($plan->project) && isset($plan->project->id_product)) {
+                    $product_id = $plan->project->id_product;
+
+                    // Xác định số lượng dùng để tính NVL: CHỈ lấy theo sản lượng của CA
+                    // - Nếu bảng production_shifts có cột target_quantity và ca này đã khai báo, dùng giá trị đó
+                    // - Nếu không có target_quantity hoặc bằng 0/NULL thì KHÔNG fallback về qty_target của kế hoạch
+                    //   (tránh trường hợp ca chỉ thực hiện một phần nhưng lại tính NVL cho cả kế hoạch)
+                    $qty_for_calc = 0;
+                    if ($this->db->field_exists('target_quantity', 'production_shifts') && !empty($shift->target_quantity)) {
+                        $qty_for_calc = (float) $shift->target_quantity;
+                    }
+
+                    if ($qty_for_calc > 0) {
+                        // 1) Thử tính coverage dựa trên BOM của product (product.bom)
+                        $material_coverage = $this->planModel->checkMaterialCoverage($product_id, $qty_for_calc);
+                        if (is_array($material_coverage) && !empty($material_coverage['details'])) {
+                            $bom_source = 'product_bom';
+                        }
+
+                        // 2) Nếu không có chi tiết (BOM rỗng) nhưng kế hoạch có lưu JSON materials,
+                        //    fallback: dùng trực tiếp plan.materials để tính nhu cầu NVL.
+                        $needs_fallback = empty($material_coverage) || empty($material_coverage['details']);
+                        if ($needs_fallback && isset($plan->materials) && is_array($plan->materials) && !empty($plan->materials)) {
+                            $details = [];
+                            $ok = true;
+
+                            foreach ($plan->materials as $m) {
+                                $id_material = isset($m['id_material']) ? $m['id_material'] : null;
+
+                                // Hỗ trợ cả quantity_per_unit (mới) và quantity (legacy)
+                                if (isset($m['quantity_per_unit'])) {
+                                    $per_unit = (float) $m['quantity_per_unit'];
+                                } elseif (isset($m['quantity'])) {
+                                    $per_unit = (float) $m['quantity'];
+                                } else {
+                                    $per_unit = 0.0;
+                                }
+
+                                if ($per_unit <= 0) {
+                                    continue;
+                                }
+
+                                $required = $per_unit * (float) $qty_for_calc;
+
+                                // Lấy stock hiện tại (không trừ phân bổ đã có để đơn giản)
+                                $stock = 0.0;
+                                if (!empty($id_material)) {
+                                    $mat = $this->db->get_where('material', ['id_material' => $id_material])->row();
+                                    if ($mat && isset($mat->stock)) {
+                                        $stock = (float) $mat->stock;
+                                    }
+                                }
+
+                                $available = max(0.0, $stock);
+                                $shortage = max(0.0, $required - $available);
+                                if ($shortage > 0) {
+                                    $ok = false;
+                                }
+
+                                $details[] = [
+                                    'material_name' => isset($m['material_name']) ? $m['material_name'] : null,
+                                    'required_qty' => $required,
+                                    'available_qty' => $available,
+                                    'shortage' => $shortage,
+                                    'unit' => isset($m['uom']) ? $m['uom'] : (isset($m['unit']) ? $m['unit'] : null),
+                                    'id_material' => $id_material,
+                                ];
+                            }
+
+                            $material_coverage = [
+                                'ok' => $ok,
+                                'details' => $details,
+                            ];
+
+                            $bom_source = 'planning_materials';
+                        }
+
+                        // Bổ sung thêm thông tin ngữ cảnh cho view
+                        if (is_array($material_coverage)) {
+                            $material_coverage['_meta'] = [
+                                'product_id' => $product_id,
+                                'plan_id' => $plan->id_plan,
+                                'plan_name' => $plan->plan_name ?? '',
+                                'qty_for_calc' => $qty_for_calc,
+                                'bom_source' => $bom_source,
+                            ];
+                        }
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            // Không chặn màn hình chi tiết ca nếu tính NVL lỗi – chỉ bỏ qua tab NVL
+            log_message('error', 'Shift::detail material coverage error: ' . $e->getMessage());
+            $material_coverage = null;
+        }
+
+        if (function_exists('log_message')) {
+            $src = isset($bom_source) ? $bom_source : 'none';
+            $cnt = (is_array($material_coverage) && !empty($material_coverage['details'])) ? count($material_coverage['details']) : 0;
+            log_message('debug', 'Shift::detail NVL source=' . $src . ' shift_id=' . $shift_id . ' plan_id=' . (isset($shift->id_plan) ? $shift->id_plan : 'null') . ' detail_count=' . $cnt);
+        }
+
+        // Lấy thông tin xác nhận NVL (nếu đã xác nhận trước đó)
+        if ($this->db->table_exists('shift_material_confirmations')) {
+            $material_confirm = $this->db
+                ->where('shift_id', $shift_id)
+                ->order_by('id', 'DESC')
+                ->get('shift_material_confirmations')
+                ->row();
+        }
+
         $data = [
             'shift' => $shift,
             'assigned_staff' => $assigned_staff,
             'breakdown_logs' => $breakdown_logs,
+            'material_coverage' => $material_coverage,
+            'material_confirm' => $material_confirm,
             'active_tab' => $active_tab,
             'content' => 'leader/shift/detail',
             'navlink' => 'shift'
@@ -223,6 +346,174 @@ class Shift extends CI_Controller
             ]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * API: Xác nhận nhu cầu Nguyên Vật Liệu cho một ca
+     * - Tính lại coverage NVL giống như màn detail
+     * - Chỉ cho phép xác nhận khi không thiếu NVL (shortage = 0)
+     * - Lưu snapshot vào bảng shift_material_confirmations
+     */
+    public function confirm_material()
+    {
+        header('Content-Type: application/json');
+
+        $shift_id = (int) $this->input->post('shift_id');
+        if (!$shift_id) {
+            echo json_encode(['success' => false, 'message' => 'Thiếu shift_id']);
+            return;
+        }
+
+        $shift = $this->shiftModel->getShiftById($shift_id);
+        if (!$shift) {
+            echo json_encode(['success' => false, 'message' => 'Ca không tồn tại']);
+            return;
+        }
+
+        if (empty($shift->id_plan)) {
+            echo json_encode(['success' => false, 'message' => 'Ca chưa gắn với kế hoạch sản xuất']);
+            return;
+        }
+
+        $this->load->model('PlanModel', 'planModel');
+
+        try {
+            $plan = $this->planModel->getPlanById($shift->id_plan);
+            if (!$plan || !isset($plan->project) || !isset($plan->project->id_product)) {
+                echo json_encode(['success' => false, 'message' => 'Không tìm thấy sản phẩm để tính NVL']);
+                return;
+            }
+
+            $product_id = $plan->project->id_product;
+
+            // Xác định số lượng dùng để tính NVL (giống detail): chỉ theo sản lượng ca
+            $qty_for_calc = 0;
+            if ($this->db->field_exists('target_quantity', 'production_shifts') && !empty($shift->target_quantity)) {
+                $qty_for_calc = (float) $shift->target_quantity;
+            }
+
+            if ($qty_for_calc <= 0) {
+                echo json_encode(['success' => false, 'message' => 'Ca chưa có sản lượng mục tiêu (target_quantity) hợp lệ để xác nhận NVL']);
+                return;
+            }
+
+            // Tính coverage dựa trên BOM sản phẩm
+            $material_coverage = $this->planModel->checkMaterialCoverage($product_id, $qty_for_calc);
+            $bom_source = 'product_bom';
+
+            // Fallback: nếu BOM rỗng, nhưng kế hoạch có lưu materials JSON thì dùng materials
+            $needs_fallback = empty($material_coverage) || empty($material_coverage['details']);
+            if ($needs_fallback && isset($plan->materials) && is_array($plan->materials) && !empty($plan->materials)) {
+                $details = [];
+                $ok = true;
+
+                foreach ($plan->materials as $m) {
+                    $id_material = isset($m['id_material']) ? $m['id_material'] : null;
+
+                    if (isset($m['quantity_per_unit'])) {
+                        $per_unit = (float) $m['quantity_per_unit'];
+                    } elseif (isset($m['quantity'])) {
+                        $per_unit = (float) $m['quantity'];
+                    } else {
+                        $per_unit = 0.0;
+                    }
+
+                    if ($per_unit <= 0) {
+                        continue;
+                    }
+
+                    $required = $per_unit * (float) $qty_for_calc;
+
+                    $stock = 0.0;
+                    if (!empty($id_material)) {
+                        $mat = $this->db->get_where('material', ['id_material' => $id_material])->row();
+                        if ($mat && isset($mat->stock)) {
+                            $stock = (float) $mat->stock;
+                        }
+                    }
+
+                    $available = max(0.0, $stock);
+                    $shortage = max(0.0, $required - $available);
+                    if ($shortage > 0) {
+                        $ok = false;
+                    }
+
+                    $details[] = [
+                        'material_name' => isset($m['material_name']) ? $m['material_name'] : null,
+                        'required_qty' => $required,
+                        'available_qty' => $available,
+                        'shortage' => $shortage,
+                        'unit' => isset($m['uom']) ? $m['uom'] : (isset($m['unit']) ? $m['unit'] : null),
+                        'id_material' => $id_material,
+                    ];
+                }
+
+                $material_coverage = [
+                    'ok' => $ok,
+                    'details' => $details,
+                ];
+
+                $bom_source = 'planning_materials';
+            }
+
+            if (!is_array($material_coverage) || empty($material_coverage['details'])) {
+                echo json_encode(['success' => false, 'message' => 'Không có dữ liệu NVL để xác nhận']);
+                return;
+            }
+
+            // Không cho xác nhận nếu còn thiếu NVL
+            $ok = isset($material_coverage['ok']) ? (bool) $material_coverage['ok'] : true;
+            if (!$ok) {
+                echo json_encode(['success' => false, 'message' => 'NVL còn thiếu, không thể xác nhận']);
+                return;
+            }
+
+            // Bổ sung meta giống detail
+            $material_coverage['_meta'] = [
+                'product_id' => $product_id,
+                'plan_id' => $plan->id_plan,
+                'plan_name' => $plan->plan_name ?? '',
+                'qty_for_calc' => $qty_for_calc,
+                'bom_source' => $bom_source,
+            ];
+
+            // Đảm bảo bảng xác nhận tồn tại
+            $this->db->query('CREATE TABLE IF NOT EXISTS `shift_material_confirmations` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                `shift_id` INT NOT NULL,
+                `plan_id` INT NULL,
+                `product_id` INT NULL,
+                `qty_calculated` DECIMAL(15,3) NULL,
+                `status` VARCHAR(20) DEFAULT "confirmed",
+                `coverage_ok` TINYINT(1) DEFAULT 1,
+                `confirmed_by` INT NULL,
+                `confirmed_username` VARCHAR(100) NULL,
+                `confirmed_at` DATETIME NOT NULL,
+                `snapshot_json` LONGTEXT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_shift` (`shift_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;');
+
+            $data = [
+                'shift_id' => $shift_id,
+                'plan_id' => $plan->id_plan,
+                'product_id' => $product_id,
+                'qty_calculated' => $qty_for_calc,
+                'status' => 'confirmed',
+                'coverage_ok' => 1,
+                'confirmed_by' => $this->session->userdata('user_id'),
+                'confirmed_username' => $this->session->userdata('username'),
+                'confirmed_at' => date('Y-m-d H:i:s'),
+                'snapshot_json' => json_encode($material_coverage, JSON_UNESCAPED_UNICODE),
+            ];
+
+            $this->db->insert('shift_material_confirmations', $data);
+
+            echo json_encode(['success' => true, 'message' => 'Đã xác nhận NVL cho ca']);
+        } catch (Exception $e) {
+            log_message('error', 'Shift::confirm_material error: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Lỗi khi xác nhận NVL: ' . $e->getMessage()]);
         }
     }
 
