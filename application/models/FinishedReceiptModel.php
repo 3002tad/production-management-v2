@@ -28,46 +28,79 @@ class FinishedReceiptModel extends CI_Model {
         $result = [];
         $shift_closures_exists = $this->db->table_exists('shift_closures');
 
-        // Pick a closure code column that exists to avoid missing-column errors
+        // Determine primary key column name and a human-friendly closure code column
+        // Many deployments use 'id' as PK, some use 'closure_id' or 'id_finished'.
+        $pkColumn = 'id';
         $closureCodeColumn = 'sc.id';
         if ($shift_closures_exists) {
+            if ($this->db->field_exists('id', 'shift_closures')) {
+                $pkColumn = 'id';
+            } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
+                $pkColumn = 'closure_id';
+            } elseif ($this->db->field_exists('id_finished', 'shift_closures')) {
+                $pkColumn = 'id_finished';
+            } else {
+                // fallback to closure_id if nothing matched
+                $pkColumn = 'closure_id';
+            }
+
+            // closureCodeColumn is a display code; prefer 'code' or 'closure_id' when available
             if ($this->db->field_exists('code', 'shift_closures')) {
                 $closureCodeColumn = 'sc.code';
-            } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
-                $closureCodeColumn = 'sc.closure_id';
+            } else {
+                $closureCodeColumn = 'sc.' . $pkColumn;
             }
         }
 
         // Thử lấy từ QC Module trước (mới)
         if ($shift_closures_exists) {
-            $sql = "SELECT 
-                      sc.id AS id_finished,
-                      {$closureCodeColumn} AS closure_code,
-                      sc.project_code,
-                      sc.product_code,
-                      sc.qty_finished AS qty_passed,
-                      sc.qty_waste,
-                      sc.closed_at AS fdate,
-                      sc.closed_by,
-                      p.id_project,
-                      p.project_name,
-                      pr.product_name,
-                      qd.result AS qc_result,
-                      qd.aql AS qc_aql,
-                      qd.defect_rate,
-                      qd.decided_at AS qc_approved_at,
-                      qd.decided_by AS qc_approved_by,
-                      COALESCE(SUM(CASE WHEN recpt.status = 'posted' THEN recpt.quantity_received ELSE 0 END), 0) AS qty_already_received
-                    FROM shift_closures sc
-                    LEFT JOIN qc_sessions qs ON qs.closure_id = sc.id
-                    LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
-                    LEFT JOIN project p ON sc.project_code = p.id_project
-                    LEFT JOIN product pr ON sc.product_code = pr.id_product
-                    LEFT JOIN finished_receipt recpt ON sc.id = recpt.id_finished_report AND recpt.status = 'posted'
-                    WHERE sc.can_receive_fg = 1
-                      AND sc.status = 'VERIFIED'
-                    GROUP BY sc.id
-                    ORDER BY sc.closed_at DESC";
+                        // Use detected primary key column name instead of assuming 'id'
+                        $pk = 'sc.' . $pkColumn;
+
+                        // Determine closure join key for tables that reference closure_id
+                        $closureJoinKey = $this->db->field_exists('closure_id', 'shift_closures') ? 'sc.closure_id' : $pk;
+
+                        $sql = "SELECT 
+                                            {$pk} AS id_finished,
+                                            {$closureCodeColumn} AS closure_code,
+                                            sc.shift_id,
+                                            ps.id_plan AS id_project,
+                                            p.project_name,
+                                            wir.product_id,
+                                            pr.product_name,
+                                            sc.total_good AS qty_passed,
+                                            sc.total_defect AS qty_waste,
+                                            sc.closure_date AS fdate,
+                                            sc.closed_by,
+                                            qd.result AS qc_result,
+                                            qd.aql AS qc_aql,
+                                            qd.defect_rate,
+                                            qd.decided_at AS qc_approved_at,
+                                            qd.decided_by AS qc_approved_by,
+                                            COALESCE(SUM(CASE WHEN recpt.status = 'posted' THEN recpt.quantity_received ELSE 0 END), 0) AS qty_already_received
+                                        FROM shift_closures sc
+                                        LEFT JOIN production_shifts ps ON sc.shift_id = ps.shift_id
+                                        LEFT JOIN project p ON ps.id_plan = p.id_project
+                                        LEFT JOIN warehouse_import_requests wir ON wir.closure_id = {$closureJoinKey}
+                                        LEFT JOIN product pr ON wir.product_id = pr.id_product
+                                        LEFT JOIN qc_sessions qs ON qs.closure_id = {$closureJoinKey}
+                                        LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
+                                        LEFT JOIN finished_receipt recpt ON {$pk} = recpt.id_finished_report AND recpt.status = 'posted'
+                                        WHERE 1=1 ";
+
+                        // Require can_receive flag if column exists
+                        if ($this->db->field_exists('can_receive_fg', 'shift_closures')) {
+                            $sql .= " AND sc.can_receive_fg = 1 ";
+                        }
+
+                        // Require either QC APPROVE or confirmed status depending on schema
+                        if ($this->db->field_exists('status', 'shift_closures')) {
+                            $sql .= " AND (qd.result = 'APPROVE' OR sc.status IN ('confirmed','VERIFIED')) ";
+                        } else {
+                            $sql .= " AND qd.result = 'APPROVE' ";
+                        }
+
+                        $sql .= " GROUP BY {$pk} ORDER BY sc.closure_date DESC";
             
             $result = $this->db->query($sql)->result();
             // If shift_closures exists, always use it (even if empty) - don't fallback
@@ -131,7 +164,31 @@ class FinishedReceiptModel extends CI_Model {
             return false;
         }
 
+        // Some deployments (from provided SQL dumps) may have created the
+        // `finished_receipt` table without an AUTO_INCREMENT on `id_receipt`.
+        // In that case inserting without specifying `id_receipt` would fail
+        // due to NOT NULL constraint or return insert_id = 0. Detect that
+        // situation and assign a sensible next id to avoid silent failures.
+        $col = $this->db->query("SHOW COLUMNS FROM finished_receipt LIKE 'id_receipt'")->row_array();
+        $manually_set_id = false;
+        if ($col && isset($col['Extra'])) {
+            $extra = $col['Extra'];
+            if (stripos($extra, 'auto_increment') === false) {
+                // id_receipt exists but is NOT auto_increment -> set it manually
+                $max = $this->db->select_max('id_receipt')->get('finished_receipt')->row();
+                $next = (int)($max->id_receipt ?? 0) + 1;
+                $data['id_receipt'] = $next;
+                $manually_set_id = true;
+            }
+        }
+
         $this->db->insert('finished_receipt', $data);
+
+        // If we set the id manually return it, otherwise return insert_id()
+        if ($manually_set_id) {
+            return $data['id_receipt'];
+        }
+
         return $this->db->insert_id();
     }
 
@@ -280,17 +337,27 @@ class FinishedReceiptModel extends CI_Model {
             return $result;
         }
 
-        // Pick an existing closure code column to avoid missing-column errors
+        // Pick an existing closure code and primary key column to avoid missing-column errors
+        $pkColumn = 'id';
         $closureCodeColumn = 'sc.id';
-        if ($this->db->field_exists('code', 'shift_closures')) {
-            $closureCodeColumn = 'sc.code';
+        if ($this->db->field_exists('id', 'shift_closures')) {
+            $pkColumn = 'id';
         } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
-            $closureCodeColumn = 'sc.closure_id';
+            $pkColumn = 'closure_id';
+        } elseif ($this->db->field_exists('id_finished', 'shift_closures')) {
+            $pkColumn = 'id_finished';
         }
 
-        // Query: Check all conditions
+        if ($this->db->field_exists('code', 'shift_closures')) {
+            $closureCodeColumn = 'sc.code';
+        } else {
+            $closureCodeColumn = 'sc.' . $pkColumn;
+        }
+
+        // Query: Check all conditions using detected PK column
+        $pk = 'sc.' . $pkColumn;
         $sql = "SELECT 
-                  sc.id,
+                  {$pk} AS closure_pk,
                   {$closureCodeColumn} AS closure_code,
                   sc.can_receive_fg,
                   sc.status,
@@ -301,9 +368,9 @@ class FinishedReceiptModel extends CI_Model {
                   qd.decided_at,
                   qd.decided_by
                 FROM shift_closures sc
-                LEFT JOIN qc_sessions qs ON qs.closure_id = sc.id
+                LEFT JOIN qc_sessions qs ON qs.closure_id = {$pk}
                 LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
-                WHERE sc.id = {$closure_id}
+                WHERE {$pk} = {$closure_id}
                 LIMIT 1";
 
         $check = $this->db->query($sql)->row_array();
@@ -315,23 +382,28 @@ class FinishedReceiptModel extends CI_Model {
 
         $result['closure_code'] = $check['closure_code'];
 
-        // Check condition 1: can_receive_fg flag
-        if ($check['can_receive_fg'] != 1) {
-            $result['message'] = 'Cờ nhập kho chưa được bật (can_receive_fg = 0)';
-            return $result;
+        // Check condition 1: can_receive_fg flag (only if column exists)
+        if ($this->db->field_exists('can_receive_fg', 'shift_closures')) {
+            if (!isset($check['can_receive_fg']) || $check['can_receive_fg'] != 1) {
+                $result['message'] = 'Cờ nhập kho chưa được bật (can_receive_fg = 0)';
+                return $result;
+            }
         }
 
-        // Check condition 2: status = VERIFIED
-        if ($check['status'] != 'VERIFIED') {
-            // Check why not verified
-            if ($check['status'] == 'REJECTED') {
-                $result['message'] = 'Ca sản xuất đã bị QC từ chối: ' . ($check['qc_reason'] ?? 'Lý do không rõ');
-            } else if ($check['status'] == 'PENDING_QC') {
-                $result['message'] = 'Ca sản xuất đang chờ QC kiểm tra';
-            } else {
-                $result['message'] = 'Trạng thái ca sản xuất không hợp lệ: ' . $check['status'];
+        // Check condition 2: status - adapt to available status vocabulary
+        if ($this->db->field_exists('status', 'shift_closures')) {
+            $status = $check['status'] ?? null;
+            // Accept 'confirmed' or 'VERIFIED' as valid 'approved' states in different schemas
+            if (!in_array($status, ['confirmed', 'VERIFIED'], true)) {
+                if ($status === 'REJECTED') {
+                    $result['message'] = 'Ca sản xuất đã bị QC từ chối: ' . ($check['qc_reason'] ?? 'Lý do không rõ');
+                } elseif ($status === 'PENDING_QC' || $status === 'draft') {
+                    $result['message'] = 'Ca sản xuất đang chờ QC kiểm tra';
+                } else {
+                    $result['message'] = 'Trạng thái ca sản xuất không hợp lệ: ' . ($status ?? 'NULL');
+                }
+                return $result;
             }
-            return $result;
         }
 
         // Check condition 3: qc_result = APPROVE
@@ -372,21 +444,33 @@ class FinishedReceiptModel extends CI_Model {
             return NULL;
         }
 
-        $sql = "SELECT 
-                  qd.result,
-                  qd.reason,
-                  qd.decided_at,
-                  qd.decided_by,
-                  ar.code AS adjustment_code,
-                  ar.status AS adjustment_status
-                FROM shift_closures sc
-                LEFT JOIN qc_sessions qs ON qs.closure_id = sc.id
-                LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
-                LEFT JOIN adjustment_requests ar ON ar.closure_id = sc.id
-                WHERE sc.id = {$closure_id}
-                  AND qd.result = 'REJECT'
-                LIMIT 1";
+                // Detect PK column
+                $pkColumn = 'id';
+                if ($this->db->field_exists('id', 'shift_closures')) {
+                        $pkColumn = 'id';
+                } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
+                        $pkColumn = 'closure_id';
+                } elseif ($this->db->field_exists('id_finished', 'shift_closures')) {
+                        $pkColumn = 'id_finished';
+                }
 
-        return $this->db->query($sql)->row_array();
+                $pk = 'sc.' . $pkColumn;
+
+                $sql = "SELECT 
+                                    qd.result,
+                                    qd.reason,
+                                    qd.decided_at,
+                                    qd.decided_by,
+                                    ar.code AS adjustment_code,
+                                    ar.status AS adjustment_status
+                                FROM shift_closures sc
+                                LEFT JOIN qc_sessions qs ON qs.closure_id = {$pk}
+                                LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
+                                LEFT JOIN adjustment_requests ar ON ar.closure_id = {$pk}
+                                WHERE {$pk} = {$closure_id}
+                                    AND qd.result = 'REJECT'
+                                LIMIT 1";
+
+                return $this->db->query($sql)->row_array();
     }
 }
