@@ -159,7 +159,7 @@
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= $session->closure_code ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= $session->line_code ?> - <?= $session->shift_code ?></p>
+                                                <p class="text-xs text-secondary mb-0"><?= isset($session->line_code) ? $session->line_code : 'N/A' ?> - <?= isset($session->shift_code) ? $session->shift_code : 'N/A' ?></p>
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= $session->project_name ?></p>
