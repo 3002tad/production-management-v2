@@ -109,7 +109,7 @@
 							<div class="mb-3">
 								<div class="card mb-2">
 									<div class="card-body p-2">
-										<label class="form-label">Chọn dây chuyền</label>
+										<label class="form-label">Chọn công suất</label>
 										<select id="machine_id" name="machine_id" class="form-select">
 											<option value="">-- Không chọn --</option>
 											<?= $machine_options_html ?? ''; ?>
