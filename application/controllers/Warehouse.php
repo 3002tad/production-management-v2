@@ -1205,38 +1205,11 @@ class Warehouse extends CI_Controller
             LIMIT 10
         ')->result();
 
-        // Provide additional data used by embedded forms (receipt/delivery)
-        // Load finished models if available and fetch helper datasets
-        if (!isset($this->FinishedReceiptModel)) {
-            $this->load->model('FinishedReceiptModel');
-        }
-        if (!isset($this->FinishedIssueModel)) {
-            $this->load->model('FinishedIssueModel');
-        }
-
-        $batches = [];
-        $projects = [];
-        $current_stock = 0;
-
-        // Use models to fetch batches/projects/stock when possible
-        if (method_exists($this->FinishedReceiptModel, 'getQcPassedBatches')) {
-            $batches = $this->FinishedReceiptModel->getQcPassedBatches();
-        }
-        if (method_exists($this->FinishedIssueModel, 'getProjectsForDelivery')) {
-            $projects = $this->FinishedIssueModel->getProjectsForDelivery();
-        }
-        if (method_exists($this->FinishedIssueModel, 'getCurrentStock')) {
-            $current_stock = $this->FinishedIssueModel->getCurrentStock();
-        }
-
         $data = [
             'content' => 'warehouse/finished/dashboard',
             'navlink' => 'finished',
             'receipts_data' => $receipts_data,
             'deliveries_data' => $deliveries_data,
-            'batches' => $batches,
-            'projects' => $projects,
-            'current_stock' => $current_stock,
         ];
         $this->load->view('warehouse/VBackend', $data);
     }
@@ -1681,30 +1654,13 @@ class Warehouse extends CI_Controller
         $id_project = null;
         
         if ($this->db->table_exists('shift_closures')) {
-            // Determine primary key column for shift_closures dynamically
-            $pk = null;
-            if ($this->db->field_exists('id', 'shift_closures')) {
-                $pk = 'id';
-            } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
-                $pk = 'closure_id';
-            } elseif ($this->db->field_exists('id_finished', 'shift_closures')) {
-                $pk = 'id_finished';
-            }
-
-            if ($pk) {
-                $batch = $this->db->where($pk, $id_finished_report)
-                                  ->get('shift_closures')
-                                  ->row();
-            } else {
-                // fallback to original 'id' - may trigger an empty result if not present
-                $batch = $this->db->where('id', $id_finished_report)
-                                  ->get('shift_closures')
-                                  ->row();
-            }
-
+            $batch = $this->db->where('id', $id_finished_report)
+                              ->get('shift_closures')
+                              ->row();
+            
             if ($batch) {
-                $quantity_planned = $batch->qty_finished ?? ($batch->total_finished ?? 0);
-                $id_project = $batch->project_code ?? $batch->id_project ?? null;
+                $quantity_planned = $batch->qty_finished;
+                $id_project = $batch->project_code;
             }
         }
 

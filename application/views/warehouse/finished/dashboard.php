@@ -25,115 +25,183 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         </div>
     </div>
 </nav>
-
-<div class="container-fluid">
-    <!-- Small summary cards were removed as requested (were duplicating the lower lists) -->
-    <div class="row mt-4">
-            <!-- Receipt List (50% chiều rộng) -->
-            <div class="col-md-6 mb-4">
-                <?php $this->load->view('warehouse/finished/receipt_list'); ?>
-            </div>
-
-            <!-- Delivery List (50% chiều rộng) -->
-            <div class="col-md-6 mb-4">
-                <?php $this->load->view('warehouse/finished/delivery_list'); ?>
-            </div>
-        </div>
-    <!-- Modal/Container cho Receipt Form -->
-    <div id="receiptFormContainer" style="display: none; margin-top: 20px;">
-        <div class="row">
-            <div class="col-12">
-                <?php $this->load->view('warehouse/finished/receipt_form'); ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal/Container cho Delivery Form -->
-    <div id="deliveryFormContainer" style="display: none; margin-top: 20px;">
-        <div class="row">
-            <div class="col-12">
-                <?php $this->load->view('warehouse/finished/delivery_form'); ?>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal/Container cho Receipt Detail -->
-    <div id="receiptDetailContainer" style="display: none; margin-top: 20px;">
-        <div class="row">
-            <div class="col-12" id="receiptDetailContent"></div>
-        </div>
-    </div>
-
-    <!-- Modal/Container cho Delivery Detail -->
-    <div id="deliveryDetailContainer" style="display: none; margin-top: 20px;">
-        <div class="row">
-            <div class="col-12" id="deliveryDetailContent"></div>
-        </div>
-    </div>
-</div>
-
-<script>
-// Toggle form hiển thị
-function showReceiptForm() {
-    document.getElementById('receiptFormContainer').style.display = 'block';
-    document.getElementById('deliveryFormContainer').style.display = 'none';
-    document.getElementById('receiptDetailContainer').style.display = 'none';
-    document.getElementById('deliveryDetailContainer').style.display = 'none';
-    // Scroll to form
-    document.getElementById('receiptFormContainer').scrollIntoView({ behavior: 'smooth' });
-}
-
-function showDeliveryForm() {
-    document.getElementById('deliveryFormContainer').style.display = 'block';
-    document.getElementById('receiptFormContainer').style.display = 'none';
-    document.getElementById('receiptDetailContainer').style.display = 'none';
-    document.getElementById('deliveryDetailContainer').style.display = 'none';
-    // Scroll to form
-    document.getElementById('deliveryFormContainer').scrollIntoView({ behavior: 'smooth' });
-}
-
-function showReceiptDetail(id) {
-    // Load chi tiết phiếu nhập via AJAX
-    fetch('<?= site_url("warehouse/finished/receipt_view/") ?>' + id, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById('receiptDetailContent').innerHTML = data;
-            document.getElementById('receiptDetailContainer').style.display = 'block';
-            document.getElementById('deliveryDetailContainer').style.display = 'none';
-            document.getElementById('receiptFormContainer').style.display = 'none';
-            document.getElementById('deliveryFormContainer').style.display = 'none';
-            document.getElementById('receiptDetailContainer').scrollIntoView({ behavior: 'smooth' });
-        });
-}
-
-function showDeliveryDetail(id) {
-    // Load chi tiết phiếu xuất via AJAX
-    fetch('<?= site_url("warehouse/finished/delivery_view/") ?>' + id, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(response => response.text())
-        .then(data => {
-            document.getElementById('deliveryDetailContent').innerHTML = data;
-            document.getElementById('deliveryDetailContainer').style.display = 'block';
-            document.getElementById('receiptDetailContainer').style.display = 'none';
-            document.getElementById('receiptFormContainer').style.display = 'none';
-            document.getElementById('deliveryFormContainer').style.display = 'none';
-            document.getElementById('deliveryDetailContainer').scrollIntoView({ behavior: 'smooth' });
-        });
-}
-
-function hideAllContainers() {
-    document.getElementById('receiptFormContainer').style.display = 'none';
-    document.getElementById('deliveryFormContainer').style.display = 'none';
-    document.getElementById('receiptDetailContainer').style.display = 'none';
-    document.getElementById('deliveryDetailContainer').style.display = 'none';
-}
-</script>
 <!-- Finished Goods Management Dashboard -->
 <div class="container-fluid mt-4">
 
     <br/>
 
-   
+    <!-- Card tiêu đề: Quản lý thành phẩm -->
+    <div class="container-fluid pt-0 px-4">
+        <div class="card-header p-0 mt-n4 mx-2 z-index-2">
+            <div class="shadow-dark border-radius-lg d-flex px-5 pt-4 pb-3">
+                <div class="col-8 d-flex align-items-center">
+                    <i class="material-icons pr-3 text-lg">inventory_2</i>
+                    <h6 class="mb-0 pr-4">Quản lý thành phẩm</h6>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Hai card dưới: Phiếu nhập & Phiếu xuất -->
+    <div class="container-fluid py-4 pt-2 px-4">
+        <div class="row g-4 mx-1">
+            <!-- Phiếu nhập thành phẩm (40%) -->
+            <div class="col-md-5">
+                <div class="card h-100">
+                    <div class="card-header card-header-info py-3 px-4">
+                        <div class="row">
+                            <div class="col-7 align-items-center">
+                                <h6 class="mb-0">Danh sách phiếu nhập</h6>
+                                <span class="text-sm mb-0">Nhập thành phẩm từ QC vào kho</span>
+                            </div>
+                            <div class="col-5 text-end">
+                                <a href="<?= site_url('warehouse/finished/receipts') ?>" class="btn btn-sm btn-white mb-0 me-2" title="Xem danh sách">
+                                    <i class="material-icons-round align-middle text-lg">view_list</i>
+                                </a>
+                                <a href="<?= site_url('warehouse/finished/receipts/new') ?>" class="btn btn-sm btn-white mb-0" title="Tạo phiếu mới">
+                                    <i class="material-icons-round align-middle text-lg">add_circle</i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-3 px-4 pb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <p class="text-sm text-muted mb-0">Tổng phiếu nhập</p>
+                            <h6 class="mb-0 font-weight-bold">
+                                <?php 
+                                    if (!empty($receipts_data)) {
+                                        echo count($receipts_data);
+                                    } else {
+                                        echo '0';
+                                    }
+                                ?>
+                            </h6>
+                        </div>
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center justify-content-center mb-0 table-center table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Mã phiếu</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Dự án</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">SL nhập</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Trạng thái</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="pl-3">
+                                    <?php if (!empty($receipts_data)): ?>
+                                        <?php $count = 0; foreach ($receipts_data as $receipt): if ($count >= 5) break; $count++; ?>
+                                        <tr>
+                                            <td>
+                                                <span class="text-xs font-weight-bold"><?= isset($receipt->id_receipt) ? $receipt->id_receipt : 'N/A' ?></span>
+                                            </td>
+                                            <td>
+                                                <span class="text-xs font-weight-bold"><?= isset($receipt->project_name) ? $receipt->project_name : 'N/A' ?></span>
+                                            </td>
+                                            <td>
+                                                <span class="text-xs font-weight-bold"><?= isset($receipt->quantity_received) ? $receipt->quantity_received : 0 ?></span>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                    $status = isset($receipt->status) ? $receipt->status : 'pending';
+                                                    $badge_class = ($status === 'completed') ? 'badge-success' : (($status === 'cancelled') ? 'badge-danger' : 'badge-warning');
+                                                ?>
+                                                <span class="badge <?= $badge_class ?> text-white text-xs"><?= ucfirst($status) ?></span>
+                                            </td>
+                                            <td>
+                                                <a href="<?= site_url('warehouse/finished/receipt_view/' . (isset($receipt->id_receipt) ? $receipt->id_receipt : '#')) ?>" class="btn btn-info btn-link btn-sm">
+                                                    <i class="material-icons">visibility</i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-xs text-muted">Chưa có phiếu nhập</td>
+                                    </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phiếu xuất giao hàng (60%) -->
+            <div class="col-md-7">
+                <div class="card h-100">
+                    <div class="card-header card-header-success py-3 px-4">
+                        <div class="row">
+                            <div class="col-7 align-items-center">
+                                <h6 class="mb-0">Danh sách phiếu xuất</h6>
+                                <span class="text-sm mb-0">Xuất thành phẩm giao cho khách hàng</span>
+                            </div>
+                            <div class="col-5 text-end">
+                                <a href="<?= site_url('warehouse/finished/deliveries') ?>" class="btn btn-sm btn-white mb-0 me-2" title="Xem danh sách">
+                                    <i class="material-icons-round align-middle text-lg">view_list</i>
+                                </a>
+                                <a href="<?= site_url('warehouse/finished/deliveries/new') ?>" class="btn btn-sm btn-white mb-0" title="Tạo phiếu mới">
+                                    <i class="material-icons-round align-middle text-lg">add_circle</i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-3 px-4 pb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <p class="text-sm text-muted mb-0">Tổng phiếu xuất</p>
+                            <h6 class="mb-0 font-weight-bold">
+                                <?php 
+                                    if (!empty($deliveries_data)) {
+                                        echo count($deliveries_data);
+                                    } else {
+                                        echo '0';
+                                    }
+                                ?>
+                            </h6>
+                        </div>
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center justify-content-center mb-0 table-center table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7 pl-0">Mã phiếu</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Dự án</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">SL xuất</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Trạng thái</th>
+                                        <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="pl-3">
+                                    <?php if (!empty($deliveries_data)): ?>
+                                        <?php $count = 0; foreach ($deliveries_data as $delivery): if ($count >= 5) break; $count++; ?>
+                                        <tr>
+                                            <td><span class="text-xs font-weight-bold"><?= isset($delivery->id_issue) ? $delivery->id_issue : 'N/A' ?></span></td>
+                                            <td><span class="text-xs font-weight-bold"><?= isset($delivery->project_name) ? $delivery->project_name : 'N/A' ?></span></td>
+                                            <td>
+                                                <span class="text-xs font-weight-bold"><?= isset($delivery->quantity_issued) ? $delivery->quantity_issued : 0 ?></span>
+                                            </td>
+                                            <td>
+                                                <?php 
+                                                    $status = isset($delivery->status) ? $delivery->status : 'pending';
+                                                    $badge_class = ($status === 'completed') ? 'badge-success' : (($status === 'cancelled') ? 'badge-danger' : 'badge-warning');
+                                                ?>
+                                                <span class="badge <?= $badge_class ?> text-white text-xs"><?= ucfirst($status) ?></span>
+                                            </td>
+                                            <td>
+                                                <a href="<?= site_url('warehouse/finished/delivery_view/' . (isset($delivery->id_issue) ? $delivery->id_issue : '#')) ?>" class="btn btn-info btn-link btn-sm">
+                                                    <i class="material-icons">visibility</i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-xs text-muted">Chưa có phiếu xuất</td>
+                                    </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
