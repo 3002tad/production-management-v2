@@ -608,13 +608,6 @@ class Admin extends CI_Controller
     public function staff()
     {
         if ($this->uri->segment(3) === 'addstaff') {
-
-            // Only leaders can access add staff UI
-            if ($this->session->userdata('role') !== 'leader') {
-                // redirect non-leaders to staff list
-                redirect(site_url('Admin/staff'));
-            }
-
             $data = [
                 'staff' => $this->db->query('SELECT * FROM staff')->result(),
                 'content' => 'admin/staff/addstaff',
@@ -622,12 +615,6 @@ class Admin extends CI_Controller
                 ];
 
         } elseif ($this->uri->segment(4) === 'update') {
-
-            // Only leaders can access update staff UI
-            if ($this->session->userdata('role') !== 'leader') {
-                redirect(site_url('Admin/staff'));
-            }
-
             $id = $this->uri->segment(3);
             
             $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id)->row();
@@ -657,10 +644,6 @@ class Admin extends CI_Controller
 
     public function addStaff()
     {
-        // Protect action: only leader can add staff
-        if ($this->session->userdata('role') !== 'leader') {
-            show_error('Unauthorized', 403);
-        }
         $add = [
             'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
             'staff_name' => trim($this->input->post('staff_name')),
@@ -676,10 +659,6 @@ class Admin extends CI_Controller
 
     public function updateStaff()
     {
-        // Protect action: only leader can update staff
-        if ($this->session->userdata('role') !== 'leader') {
-            show_error('Unauthorized', 403);
-        }
         $id_staff = $this->input->post('id_staff');
 
         $update = [
@@ -697,10 +676,6 @@ class Admin extends CI_Controller
 
     public function deleteStaff()
     {
-        // Protect action: only leader can delete staff
-        if ($this->session->userdata('role') !== 'leader') {
-            show_error('Unauthorized', 403);
-        }
         $id_staff = $this->uri->segment(3);
 
         $this->crudModel->deleteData('staff', 'id_staff', $id_staff);

@@ -15,6 +15,46 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  */
 class QcModel extends CI_Model
 {
+    /**
+     * Detect shift_closures table schema at runtime (supports multiple migration versions)
+     *
+     * @return array
+     */
+    private function _getShiftClosureSchema()
+    {
+        static $schema = null;
+
+        if ($schema !== null) {
+            return $schema;
+        }
+
+        $table = 'shift_closures';
+        $schema = [
+            'exists' => $this->db->table_exists($table),
+            'has_id' => false,
+            'has_closure_id' => false,
+            'has_line_code' => false,
+            'has_shift_code' => false,
+            'has_project_code' => false,
+            'has_product_code' => false,
+            'has_status' => false,
+        ];
+
+        if (!$schema['exists']) {
+            return $schema;
+        }
+
+        $schema['has_id'] = $this->db->field_exists('id', $table);
+        $schema['has_closure_id'] = $this->db->field_exists('closure_id', $table);
+        $schema['has_line_code'] = $this->db->field_exists('line_code', $table);
+        $schema['has_shift_code'] = $this->db->field_exists('shift_code', $table);
+        $schema['has_project_code'] = $this->db->field_exists('project_code', $table);
+        $schema['has_product_code'] = $this->db->field_exists('product_code', $table);
+        $schema['has_status'] = $this->db->field_exists('status', $table);
+
+        return $schema;
+    }
+
     // ========================================
     // SHIFT CLOSURES
     // ========================================
@@ -27,34 +67,75 @@ class QcModel extends CI_Model
      */
     public function getPendingClosures($filters = [])
     {
-        $this->db->select('sc.*, p.project_name, pr.product_name');
-        $this->db->from('shift_closures sc');
-        $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
-        $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
-        $this->db->where('sc.status', 'PENDING_QC');
-        
-        if (!empty($filters['line_code'])) {
-            $this->db->where('sc.line_code', $filters['line_code']);
+        $schema = $this->_getShiftClosureSchema();
+
+        if (!$schema['exists']) {
+            return [];
         }
-        
-        if (!empty($filters['shift_code'])) {
-            $this->db->where('sc.shift_code', $filters['shift_code']);
+
+        // New QC schema with project_code/product_code/line_code/shift_code
+        if ($schema['has_project_code'] && $schema['has_product_code'] && $schema['has_line_code'] && $schema['has_shift_code']) {
+            $this->db->select('sc.*, p.project_name, pr.product_name');
+            $this->db->from('shift_closures sc');
+            $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
+            $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+
+            if ($schema['has_status']) {
+                $this->db->where('sc.status', 'PENDING_QC');
+            }
+
+            if (!empty($filters['line_code'])) {
+                $this->db->where('sc.line_code', $filters['line_code']);
+            }
+
+            if (!empty($filters['shift_code'])) {
+                $this->db->where('sc.shift_code', $filters['shift_code']);
+            }
+
+            if (!empty($filters['project_code'])) {
+                $this->db->where('sc.project_code', $filters['project_code']);
+            }
+
+            if (!empty($filters['date_from'])) {
+                $this->db->where('sc.closed_at >=', $filters['date_from']);
+            }
+
+            if (!empty($filters['date_to'])) {
+                $this->db->where('sc.closed_at <=', $filters['date_to']);
+            }
+        } else {
+            // Legacy/alternative schema: select basic fields only, avoid non-existent columns
+            $this->db->select('sc.*');
+            $this->db->from('shift_closures sc');
+
+            if ($schema['has_status']) {
+                // Use same status value if column exists
+                $this->db->where('sc.status', 'PENDING_QC');
+            }
+
+            // Filters based only on existing columns
+            if ($schema['has_line_code'] && !empty($filters['line_code'])) {
+                $this->db->where('sc.line_code', $filters['line_code']);
+            }
+
+            if ($schema['has_shift_code'] && !empty($filters['shift_code'])) {
+                $this->db->where('sc.shift_code', $filters['shift_code']);
+            }
+
+            if ($schema['has_project_code'] && !empty($filters['project_code'])) {
+                $this->db->where('sc.project_code', $filters['project_code']);
+            }
         }
-        
-        if (!empty($filters['project_code'])) {
-            $this->db->where('sc.project_code', $filters['project_code']);
+
+        // Order by a datetime column that actually exists
+        if ($this->db->field_exists('closed_at', 'shift_closures')) {
+            $this->db->order_by('sc.closed_at', 'DESC');
+        } elseif ($this->db->field_exists('closure_date', 'shift_closures')) {
+            $this->db->order_by('sc.closure_date', 'DESC');
+        } elseif ($this->db->field_exists('created_at', 'shift_closures')) {
+            $this->db->order_by('sc.created_at', 'DESC');
         }
-        
-        if (!empty($filters['date_from'])) {
-            $this->db->where('sc.closed_at >=', $filters['date_from']);
-        }
-        
-        if (!empty($filters['date_to'])) {
-            $this->db->where('sc.closed_at <=', $filters['date_to']);
-        }
-        
-        $this->db->order_by('sc.closed_at', 'DESC');
-        
+
         return $this->db->get()->result();
     }
     
@@ -68,9 +149,16 @@ class QcModel extends CI_Model
         $today = date('Y-m-d');
         
         // Count pending QC
-        $this->db->where('status', 'PENDING_QC');
-        $this->db->where('DATE(closed_at)', $today);
-        $pending = $this->db->count_all_results('shift_closures');
+        $pending = 0;
+        if ($this->db->table_exists('shift_closures')) {
+            $this->db->where('status', 'PENDING_QC');
+            if ($this->db->field_exists('closed_at', 'shift_closures')) {
+                $this->db->where('DATE(closed_at)', $today);
+            } elseif ($this->db->field_exists('closure_date', 'shift_closures')) {
+                $this->db->where('DATE(closure_date)', $today);
+            }
+            $pending = $this->db->count_all_results('shift_closures');
+        }
         
         // Count verified today
         $this->db->select('COUNT(*) as count');
@@ -105,12 +193,27 @@ class QcModel extends CI_Model
      */
     public function getClosureById($id)
     {
-        $this->db->select('sc.*, p.project_name, pr.product_name');
-        $this->db->from('shift_closures sc');
-        $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
-        $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
-        $this->db->where('sc.id', $id);
-        
+        $schema = $this->_getShiftClosureSchema();
+
+        if (!$schema['exists']) {
+            return null;
+        }
+
+        // Determine primary key column
+        $pk = $schema['has_id'] ? 'id' : ($schema['has_closure_id'] ? 'closure_id' : 'id');
+
+        if ($schema['has_project_code'] && $schema['has_product_code']) {
+            $this->db->select('sc.*, p.project_name, pr.product_name');
+            $this->db->from('shift_closures sc');
+            $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
+            $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+        } else {
+            $this->db->select('sc.*');
+            $this->db->from('shift_closures sc');
+        }
+
+        $this->db->where('sc.' . $pk, $id);
+
         return $this->db->get()->row();
     }
     
@@ -168,32 +271,77 @@ class QcModel extends CI_Model
      */
     public function getSessionById($id)
     {
-        $this->db->select('
-            qs.*,
-            sc.code as closure_code,
-            sc.line_code,
-            sc.shift_code,
-            sc.project_code,
-            sc.lot_code,
-            sc.product_code,
-            sc.variant,
-            sc.qty_finished,
-            sc.qty_waste,
-            sc.status as closure_status,
-            p.project_name,
-            pr.product_name,
-            u.full_name as inspector_name,
-            qd.result,
-            qd.reason as decision_reason,
-            qd.defect_rate,
-            qd.aql as decision_aql,
-            qd.decided_by,
-            qd.decided_at
-        ');
+        $schema = $this->_getShiftClosureSchema();
+
+        // Determine closure PK for join
+        $closurePk = 'id';
+        if ($schema['exists'] && !$schema['has_id'] && $schema['has_closure_id']) {
+            $closurePk = 'closure_id';
+        }
+
+        // Base select
+        $select = [
+            'qs.*',
+        ];
+
+        if ($schema['exists']) {
+            // Always try to expose basic closure info if table exists
+            $select[] = 'sc.code as closure_code';
+            $select[] = 'sc.status as closure_status';
+
+            if ($schema['has_line_code']) {
+                $select[] = 'sc.line_code';
+            }
+            if ($schema['has_shift_code']) {
+                $select[] = 'sc.shift_code';
+            }
+            if ($schema['has_project_code']) {
+                $select[] = 'sc.project_code';
+            }
+            if ($schema['has_product_code']) {
+                $select[] = 'sc.product_code';
+            }
+
+            $select[] = 'sc.lot_code';
+            $select[] = 'sc.variant';
+            $select[] = 'sc.qty_finished';
+            $select[] = 'sc.qty_waste';
+        }
+
+        $select[] = 'p.project_name';
+        $select[] = 'pr.product_name';
+        $select[] = 'u.full_name as inspector_name';
+        $select[] = 'qd.result';
+        $select[] = 'qd.reason as decision_reason';
+        $select[] = 'qd.defect_rate';
+        $select[] = 'qd.aql as decision_aql';
+        $select[] = 'qd.decided_by';
+        $select[] = 'qd.decided_at';
+
+        $this->db->select(implode(",\n            ", $select));
         $this->db->from('qc_sessions qs');
-        $this->db->join('shift_closures sc', 'qs.closure_id = sc.id', 'left');
-        $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
-        $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+
+        if ($schema['exists']) {
+            $this->db->join('shift_closures sc', 'qs.closure_id = sc.' . $closurePk, 'left');
+
+            if ($schema['has_project_code']) {
+                $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
+            } else {
+                $this->db->join('project p', '1=0', 'left'); // keep structure, no rows
+            }
+
+            if ($schema['has_product_code']) {
+                $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+            } else {
+                $this->db->join('product pr', '1=0', 'left');
+            }
+        } else {
+            // No shift_closures table - still allow session info without closure details
+            $this->db->join('shift_closures sc', '1=0', 'left');
+            $this->db->join('project p', '1=0', 'left');
+            $this->db->join('product pr', '1=0', 'left');
+        }
+
         $this->db->join('user u', 'qs.inspector_code = u.username', 'left');
         $this->db->join('qc_decisions qd', 'qs.id = qd.session_id', 'left');
         $this->db->where('qs.id', $id);
@@ -209,22 +357,60 @@ class QcModel extends CI_Model
      */
     public function getSessionsByInspector($inspector_code)
     {
-        $this->db->select('
-            qs.*,
-            sc.code as closure_code,
-            sc.line_code,
-            sc.shift_code,
-            sc.project_code,
-            sc.product_code,
-            p.project_name,
-            pr.product_name,
-            qd.result,
-            qd.decided_at
-        ');
+        $schema = $this->_getShiftClosureSchema();
+
+        // Determine closure PK for join
+        $closurePk = 'id';
+        if ($schema['exists'] && !$schema['has_id'] && $schema['has_closure_id']) {
+            $closurePk = 'closure_id';
+        }
+
+        $select = ['qs.*'];
+
+        if ($schema['exists']) {
+            $select[] = 'sc.code as closure_code';
+            if ($schema['has_line_code']) {
+                $select[] = 'sc.line_code';
+            }
+            if ($schema['has_shift_code']) {
+                $select[] = 'sc.shift_code';
+            }
+            if ($schema['has_project_code']) {
+                $select[] = 'sc.project_code';
+            }
+            if ($schema['has_product_code']) {
+                $select[] = 'sc.product_code';
+            }
+        }
+
+        $select[] = 'p.project_name';
+        $select[] = 'pr.product_name';
+        $select[] = 'qd.result';
+        $select[] = 'qd.decided_at';
+
+        $this->db->select(implode(",\n            ", $select));
         $this->db->from('qc_sessions qs');
-        $this->db->join('shift_closures sc', 'qs.closure_id = sc.id', 'left');
-        $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
-        $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+
+        if ($schema['exists']) {
+            $this->db->join('shift_closures sc', 'qs.closure_id = sc.' . $closurePk, 'left');
+
+            if ($schema['has_project_code']) {
+                $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
+            } else {
+                $this->db->join('project p', '1=0', 'left');
+            }
+
+            if ($schema['has_product_code']) {
+                $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+            } else {
+                $this->db->join('product pr', '1=0', 'left');
+            }
+        } else {
+            $this->db->join('shift_closures sc', '1=0', 'left');
+            $this->db->join('project p', '1=0', 'left');
+            $this->db->join('product pr', '1=0', 'left');
+        }
+
         $this->db->join('qc_decisions qd', 'qs.id = qd.session_id', 'left');
         $this->db->where('qs.inspector_code', $inspector_code);
         $this->db->order_by('qs.created_at', 'DESC');
@@ -240,42 +426,80 @@ class QcModel extends CI_Model
      */
     public function getDecidedSessions($filters = [])
     {
-        $this->db->select('
-            qs.*,
-            sc.code as closure_code,
-            sc.line_code,
-            sc.shift_code,
-            sc.project_code,
-            sc.product_code,
-            sc.lot_code,
-            p.project_name,
-            pr.product_name,
-            qd.result,
-            qd.defect_rate,
-            qd.aql,
-            qd.reason as decision_reason,
-            qd.decided_by,
-            qd.decided_at,
-            u.full_name as inspector_name,
-            u2.full_name as decided_by_name
-        ');
+        $schema = $this->_getShiftClosureSchema();
+
+        // Determine closure PK for join
+        $closurePk = 'id';
+        if ($schema['exists'] && !$schema['has_id'] && $schema['has_closure_id']) {
+            $closurePk = 'closure_id';
+        }
+
+        $select = ['qs.*'];
+
+        if ($schema['exists']) {
+            $select[] = 'sc.code as closure_code';
+            if ($schema['has_line_code']) {
+                $select[] = 'sc.line_code';
+            }
+            if ($schema['has_shift_code']) {
+                $select[] = 'sc.shift_code';
+            }
+            if ($schema['has_project_code']) {
+                $select[] = 'sc.project_code';
+            }
+            if ($schema['has_product_code']) {
+                $select[] = 'sc.product_code';
+            }
+            $select[] = 'sc.lot_code';
+        }
+
+        $select[] = 'p.project_name';
+        $select[] = 'pr.product_name';
+        $select[] = 'qd.result';
+        $select[] = 'qd.defect_rate';
+        $select[] = 'qd.aql';
+        $select[] = 'qd.reason as decision_reason';
+        $select[] = 'qd.decided_by';
+        $select[] = 'qd.decided_at';
+        $select[] = 'u.full_name as inspector_name';
+        $select[] = 'u2.full_name as decided_by_name';
+
+        $this->db->select(implode(",\n            ", $select));
         $this->db->from('qc_sessions qs');
-        $this->db->join('shift_closures sc', 'qs.closure_id = sc.id', 'left');
-        $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
-        $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+
+        if ($schema['exists']) {
+            $this->db->join('shift_closures sc', 'qs.closure_id = sc.' . $closurePk, 'left');
+
+            if ($schema['has_project_code']) {
+                $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
+            } else {
+                $this->db->join('project p', '1=0', 'left');
+            }
+
+            if ($schema['has_product_code']) {
+                $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
+            } else {
+                $this->db->join('product pr', '1=0', 'left');
+            }
+        } else {
+            $this->db->join('shift_closures sc', '1=0', 'left');
+            $this->db->join('project p', '1=0', 'left');
+            $this->db->join('product pr', '1=0', 'left');
+        }
+
         $this->db->join('qc_decisions qd', 'qs.id = qd.session_id', 'inner');
         $this->db->join('user u', 'qs.inspector_code = u.username', 'left');
         $this->db->join('user u2', 'qd.decided_by = u2.username', 'left');
         $this->db->where('qs.status', 'DECIDED');
         
         // Apply filters
-        if (!empty($filters['line_code'])) {
+        if (!empty($filters['line_code']) && $schema['has_line_code']) {
             $this->db->where('sc.line_code', $filters['line_code']);
         }
-        if (!empty($filters['shift_code'])) {
+        if (!empty($filters['shift_code']) && $schema['has_shift_code']) {
             $this->db->where('sc.shift_code', $filters['shift_code']);
         }
-        if (!empty($filters['project_code'])) {
+        if (!empty($filters['project_code']) && $schema['has_project_code']) {
             $this->db->where('sc.project_code', $filters['project_code']);
         }
         if (!empty($filters['result'])) {
