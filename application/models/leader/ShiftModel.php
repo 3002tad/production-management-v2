@@ -85,8 +85,46 @@ class ShiftModel extends CI_Model
      */
     public function createShift($data)
     {
+        // Auto-generate shift_code if not provided
+        if (!isset($data['shift_code']) || $data['shift_code'] === '' || $data['shift_code'] === null) {
+            $data['shift_code'] = $this->generateShiftCode(
+                isset($data['shift_date']) ? $data['shift_date'] : null,
+                isset($data['start_time']) ? $data['start_time'] : null,
+                isset($data['end_time']) ? $data['end_time'] : null
+            );
+        }
+
         $this->db->insert($this->table_shifts, $data);
         return $this->db->insert_id();
+    }
+
+    /**
+     * Sinh mã ca (shift_code) dựa trên khung giờ
+     * Quy ước mặc định:
+     *  - 06:00-<14:00  => CA1
+     *  - 14:00-<22:00  => CA2
+     *  - Còn lại       => CA3 (ca đêm)
+     */
+    private function generateShiftCode($shift_date = null, $start_time = null, $end_time = null)
+    {
+        // Nếu thiếu start_time thì dùng CA1 làm mặc định an toàn
+        if (empty($start_time)) {
+            return 'CA1';
+        }
+
+        // Lấy giờ bắt đầu (0-23)
+        $hour = (int)substr($start_time, 0, 2);
+
+        if ($hour >= 6 && $hour < 14) {
+            return 'CA1';
+        }
+
+        if ($hour >= 14 && $hour < 22) {
+            return 'CA2';
+        }
+
+        // Các khung còn lại coi như ca đêm
+        return 'CA3';
     }
 
     /**
@@ -169,6 +207,60 @@ class ShiftModel extends CI_Model
         });
         
         return array_values($available_staff); // Re-index array
+
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Lấy danh sách user theo vai trò hệ thống (role_name)
+     * Dùng cho phân nhân sự vào máy theo loại máy (worker / qc_staff ...)
+     *
+     * @param array $role_names Danh sách role_name cần lọc, ví dụ ['worker', 'production_staff']
+     * @return array
+     */
+    public function getStaffByRole($role_names = [])
+    {
+        // Nếu bảng user không tồn tại thì trả rỗng để tránh lỗi
+        if (!$this->db->table_exists('user')) {
+            return [];
+        }
+
+        $this->db->select('
+            u.user_id,
+            u.username,
+            COALESCE(s.staff_name, u.full_name, u.username) AS full_name,
+            r.role_name,
+            r.role_display_name,
+            s.department,
+            s.position
+        ');
+        $this->db->from('user u');
+
+        // Join staff info nếu có
+        if ($this->db->table_exists('staff')) {
+            $this->db->join('staff s', 's.id_staff = u.staff_id', 'left');
+        } else {
+            $this->db->join('staff s', '1=0', 'left');
+        }
+
+        // Join roles nếu schema RBAC đã tồn tại
+        if ($this->db->table_exists('roles')) {
+            $this->db->join('roles r', 'r.role_id = u.role_id', 'left');
+        } else {
+            $this->db->join('roles r', '1=0', 'left');
+        }
+
+        // Chỉ lấy user đang active
+        if ($this->db->field_exists('is_active', 'user')) {
+            $this->db->where('u.is_active', 1);
+        }
+
+        // Lọc theo danh sách role_name nếu được truyền vào và bảng roles tồn tại
+        if (!empty($role_names) && $this->db->table_exists('roles')) {
+            $this->db->where_in('r.role_name', $role_names);
+        }
+
+        $this->db->order_by('full_name', 'ASC');
 
         return $this->db->get()->result();
     }
