@@ -54,7 +54,7 @@
                                 <option value="0" <?= (isset($filters['status']) && $filters['status'] === '0') ? 'selected' : ''; ?>>Hủy</option>
                                 <option value="1" <?= (isset($filters['status']) && $filters['status'] === '1') ? 'selected' : ''; ?>>Đã duyệt</option>
                                 <option value="2" <?= (isset($filters['status']) && $filters['status'] === '2') ? 'selected' : ''; ?>>Đang sản xuất</option>
-                                <option value="3" <?= (isset($filters['status']) && $filters['status'] === '3') ? 'selected' : ''; ?>>Hoàn thành</option>
+                                <option value="3" <?= (isset($filters['status']) && $filters['status'] === '3') ? 'selected' : ''; ?>>Đã sản xuất</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex gap-2">
@@ -195,7 +195,7 @@
                                                         echo '<span class="badge badge-sm bg-gradient-info">Đang sản xuất</span>';
                                                         break;
                                                     case 3:
-                                                        echo '<span class="badge badge-sm bg-gradient-dark">Hoàn thành</span>';
+                                                        echo '<span class="badge badge-sm bg-gradient-primary">Đã sản xuất</span>';
                                                         break;
                                                     case 4:
                                                         echo '<span class="badge badge-sm bg-gradient-danger">Hủy</span>';

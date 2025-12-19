@@ -56,6 +56,7 @@ class BOD extends CI_Controller
     {
         $data = [
             'finished' => $this->db->query('SELECT fr.id_finished, fr.total_finished, fr.fdate, p.project_name, p.qty_request, c.cust_name FROM finished_report fr JOIN project p ON fr.id_project = p.id_project JOIN customer c ON p.id_cust = c.id_cust ORDER BY fr.id_finished DESC LIMIT 10')->result(),
+            'finished_report' => $this->crudModel->getData('finished_report')->num_rows(),
             'sorting' => $this->db->query('SELECT sr.id_sorting, sr.finished, sr.waste, (sr.finished + sr.waste) as qty_output, ps.id_plan, s.staff_name FROM sorting_report sr JOIN plan_shift ps ON sr.id_planshift = ps.id_planshift JOIN staff s ON ps.id_staff = s.id_staff JOIN planning pl ON ps.id_plan = pl.id_plan ORDER BY sr.id_sorting DESC LIMIT 10')->result(),
             'project' => $this->crudModel->getData('project')->num_rows(),
             'planning' => $this->crudModel->getData('planning')->num_rows(),
@@ -989,6 +990,27 @@ class BOD extends CI_Controller
 
         $result = $this->OrderModel->refreshProjectWarnings($id_project);
 
+        header('Content-Type: application/json');
+        echo json_encode($result);
+    }
+
+    /**
+     * AJAX: Mark project as produced (Đã sản xuất)
+     * Endpoint: POST { id_project }
+     */
+    public function markProduced()
+    {
+        if (!$this->input->is_ajax_request()) {
+            show_404();
+        }
+
+        $id_project = $this->input->post('id_project', TRUE);
+        if (!$id_project) {
+            echo json_encode(['success' => false, 'message' => 'Thiếu ID đơn hàng']);
+            return;
+        }
+
+        $result = $this->OrderModel->markAsProduced($id_project);
         header('Content-Type: application/json');
         echo json_encode($result);
     }

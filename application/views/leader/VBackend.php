@@ -60,7 +60,14 @@
                     <span class="nav-link-text ms-1 p-2"><?= lang('section_schedule'); ?></span>
                     </div>
                     </li>
-
+                    <li class="nav-item navbar-expand-xs">
+                      <a class="nav-link text-white<?= ($navlink === 'planning') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/planning'); ?>">
+                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">calendar_today</i>
+                        </div>
+                        <span class="nav-link-text ms-1">Kế hoạch</span>
+                      </a>
+                    </li>
                     <li class="navbar-vertical">
                     <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
                     <span class="nav-link-text ms-1 p-2"><?= lang('section_processing'); ?></span>

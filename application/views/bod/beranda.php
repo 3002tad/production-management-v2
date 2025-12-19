@@ -55,7 +55,7 @@
                     <i class="material-icons opacity-10">settings_input_component</i>
                 </div>
                 <div class="text-end pt-1">
-                    <p class="text-sm mb-0 text-capitalize">Đang sản xuất</p>
+                    <p class="text-sm mb-0 text-capitalize">Ca đã hoàn thành</p>
                     <h4 class="mb-0"><?= $plan_shift ?></h4>
                 </div>
             </div>
@@ -73,13 +73,13 @@
                     <i class="material-icons opacity-10">done_all</i>
                 </div>
                 <div class="text-end pt-1">
-                    <p class="text-sm mb-0 text-capitalize">Đã hoàn thành</p>
+                    <p class="text-sm mb-0 text-capitalize">Đã sản xuất</p>
                     <h4 class="mb-0"><?= $finished_report ?></h4>
                 </div>
             </div>
             <hr class="dark horizontal my-0">
             <div class="card-footer p-3">
-                <p class="mb-0"><span class="text-success text-sm font-weight-bolder">Báo cáo hoàn thành</span></p>
+                <p class="mb-0"><span class="text-success text-sm font-weight-bolder">Báo cáo sản xuất</span></p>
             </div>
         </div>
     </div>
@@ -147,10 +147,10 @@
     <div class="col-lg-6 col-md-6">
         <div class="card h-100">
             <div class="card-header pb-0">
-                <h6>Đơn hàng hoàn thành gần đây</h6>
+                <h6>Đơn hàng đã sản xuất gần đây</h6>
                 <p class="text-sm">
                     <i class="fa fa-check text-info" aria-hidden="true"></i>
-                    <span class="font-weight-bold ms-1"><?= count($finished) ?> đơn</span> đã hoàn thành
+                    <span class="font-weight-bold ms-1"><?= count($finished) ?> đơn</span> đã sản xuất
                 </p>
             </div>
             <div class="card-body p-3">
@@ -187,7 +187,7 @@
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="3" class="text-center">Chưa có đơn hàng hoàn thành</td>
+                                    <td colspan="3" class="text-center">Chưa có đơn hàng đã sản xuất</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

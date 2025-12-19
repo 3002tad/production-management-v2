@@ -25,7 +25,7 @@ class OrderModel extends CI_Model
 
     public function getAllOrders($filters = [])
     {
-        $this->db->select("p.*, c.cust_name, c.address, c.telp, c.email, pr.product_name, pr.application AS product_color, CASE WHEN p.pr_status = 1 THEN 'Đã duyệt' WHEN p.pr_status = 2 THEN 'Đang sản xuất' WHEN p.pr_status = 3 THEN 'Hoàn thành' ELSE 'Hủy' END AS status_text, CONCAT(p.diameter, 'mm') AS diameter_display", FALSE);
+        $this->db->select("p.*, c.cust_name, c.address, c.telp, c.email, pr.product_name, pr.application AS product_color, CASE WHEN p.pr_status = 1 THEN 'Đã duyệt' WHEN p.pr_status = 2 THEN 'Đang sản xuất' WHEN p.pr_status = 3 THEN 'Đã sản xuất' ELSE 'Hủy' END AS status_text, CONCAT(p.diameter, 'mm') AS diameter_display", FALSE);
         $this->db->from('project p');
         $this->db->join('customer c', 'p.id_cust = c.id_cust');
         $this->db->join('product pr', 'p.id_product = pr.id_product');
@@ -74,7 +74,7 @@ class OrderModel extends CI_Model
                 CASE
                     WHEN p.pr_status = 1 THEN 'Đã duyệt'
                     WHEN p.pr_status = 2 THEN 'Đang sản xuất'
-                    WHEN p.pr_status = 3 THEN 'Hoàn thành'
+                    WHEN p.pr_status = 3 THEN 'Đã sản xuất'
                     ELSE 'Hủy'
                 END AS status_text,
                 CONCAT(p.diameter, 'mm') AS diameter_display
@@ -95,7 +95,7 @@ class OrderModel extends CI_Model
                 CASE
                     WHEN p.pr_status = 1 THEN 'Đã duyệt'
                     WHEN p.pr_status = 2 THEN 'Đang sản xuất'
-                    WHEN p.pr_status = 3 THEN 'Hoàn thành'
+                    WHEN p.pr_status = 3 THEN 'Đã sản xuất'
                     ELSE 'Hủy'
                 END AS status_text,
                 CONCAT(p.diameter, 'mm') AS diameter_display
@@ -117,7 +117,7 @@ class OrderModel extends CI_Model
                 CASE
                     WHEN p.pr_status = 1 THEN 'Đã duyệt'
                     WHEN p.pr_status = 2 THEN 'Đang sản xuất'
-                    WHEN p.pr_status = 3 THEN 'Hoàn thành'
+                    WHEN p.pr_status = 3 THEN 'Đã sản xuất'
                     ELSE 'Hủy'
                 END AS status_text,
                 CONCAT(p.diameter, 'mm') AS diameter_display
@@ -128,6 +128,47 @@ class OrderModel extends CI_Model
             ORDER BY p.created_at DESC
         ", [$product_id]);
         return $query->result();
+    }
+
+    /**
+     * Mark a project as produced (pr_status = 3) and create a finished_report record if none exists.
+     * This is intentionally conservative: if a finished_report already exists we only update the status to avoid duplicates.
+     * @param string $id_project
+     * @return array ['success'=>bool,'message'=>string]
+     */
+    public function markAsProduced($id_project)
+    {
+        $order = $this->getOrderById($id_project);
+        if (!$order) return ['success' => false, 'message' => 'Không tìm thấy đơn hàng'];
+
+        // If already marked produced, return success
+        if (intval($order->pr_status) === 3) {
+            return ['success' => true, 'message' => 'Đơn hàng đã ở trạng thái Đã sản xuất'];
+        }
+
+        $this->db->trans_start();
+
+        // Create finished_report if missing
+        $has_production = $this->db->where('id_project', $id_project)->count_all_results('finished_report') > 0;
+        if (!$has_production) {
+            $total_finished = isset($order->qty_request) ? $order->qty_request : 0;
+            $this->db->insert('finished_report', [
+                'id_project' => $id_project,
+                'total_finished' => $total_finished,
+                'fdate' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        // Update project status
+        $this->db->where('id_project', $id_project)->update('project', ['pr_status' => 3, 'updated_at' => date('Y-m-d H:i:s')]);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status()) {
+            return ['success' => true, 'message' => 'Đã đánh dấu đơn hàng là Đã sản xuất'];
+        }
+
+        return ['success' => false, 'message' => 'Lỗi khi cập nhật cơ sở dữ liệu'];
     }
     
     public function getCustomers()
@@ -333,6 +374,8 @@ class OrderModel extends CI_Model
             ", [$order->id_product, $order->id_project, $order->entry_date, $order->entry_date, $order->created_at]);
 
             $allocated_production = $allocated_query->row()->allocated_production_capacity ?? 0;
+            // Normalize via helper to centralize logic and avoid duplication
+            $allocated_production = $this->_getAllocatedProductionCapacity($order->id_product, $order->id_project, $order->entry_date, $order->created_at, true);
 
             // 3. Stock available = tổng stock - stock đã cam kết cho production của các đơn priority cao hơn
             $available_stock = max(0, $total_stock - $allocated_production);
@@ -343,23 +386,12 @@ class OrderModel extends CI_Model
 
             // ===== CẬP NHẬT DATABASE =====
 
-            // --- BƯỚC 1: CẬP NHẬT KHO THÀNH PHẨM ---
-            if ($qty_from_stock > 0) {
-                $this->db->query(
-                    "UPDATE `finished_stock` SET `quantity_in_stock` = `quantity_in_stock` - ? WHERE `id_product` = ?",
-                    [$qty_from_stock, $order->id_product]
-                );
-            }
+            // NOTE: Không được sửa trực tiếp bảng kho ở bước tạo/cập nhật đơn hàng. Chỉ tính toán/phân tích để hiển thị cảnh báo
 
-            // --- BƯỚC 2: CẬP NHẬT KHO NGUYÊN VẬT LIỆU ---
-            if ($qty_for_production > 0) {
-                $this->_updateMaterialStock($order->id_product, $qty_for_production, '-');
-            }
+            // --- PHÂN TÍCH CẢNH BÁO (tóm tắt cho luồng đơn hàng) ---
+            $analysis = $this->_analyzeOrderFeasibility($order, $qty_from_stock, $qty_for_production, false);
 
-            // --- BƯỚC 3: PHÂN TÍCH CẢNH BÁO ---
-            $analysis = $this->_analyzeOrderFeasibility($order, $qty_from_stock, $qty_for_production);
-
-            // --- BƯỚC 4: LƯU TRỮ KẾT QUẢ VÀ CẢNH BÁO ---
+            // --- LƯU TRỮ KẾT QUẢ VÀ CẢNH BÁO (không thay đổi số liệu kho) ---
             $stock_allocation_data = [
                 'from_stock' => $qty_from_stock,
                 'for_production' => $qty_for_production,
@@ -371,7 +403,7 @@ class OrderModel extends CI_Model
                 'warning_flag'        => !empty($analysis['warnings']) ? 1 : 0,
                 'warning_details'     => json_encode($analysis['warnings'], JSON_UNESCAPED_UNICODE),
                 'capacity_level_used' => $analysis['capacity_level_used'],
-                'finished_stock_available' => $available_stock - $qty_from_stock, // ← SỬA: Stock còn lại sau phân bổ
+                'finished_stock_available' => $available_stock, // Không trừ trực tiếp
                 'stock_allocation'    => json_encode($stock_allocation_data)
             ];
 
@@ -431,6 +463,8 @@ class OrderModel extends CI_Model
             ", [$order->id_product, $order->id_project, $order->entry_date, $order->entry_date, $order->created_at]);
 
             $allocated_production = $allocated_query->row()->allocated_production_capacity ?? 0;
+            // Normalize via helper to centralize logic and avoid duplication
+            $allocated_production = $this->_getAllocatedProductionCapacity($order->id_product, $order->id_project, $order->entry_date, $order->created_at, true);
 
             // 3. Stock available = tổng stock - stock đã cam kết cho production của các đơn priority cao hơn
             $available_stock = max(0, $total_stock - $allocated_production);
@@ -441,20 +475,12 @@ class OrderModel extends CI_Model
 
             // ===== CẬP NHẬT DATABASE =====
 
-            // --- BƯỚC 1: CẬP NHẬT KHO THÀNH PHẨM ---
-            if ($qty_from_stock > 0) {
-                $this->db->query(
-                    "UPDATE `finished_stock` SET `quantity_in_stock` = `quantity_in_stock` - ? WHERE `id_product` = ?",
-                    [$qty_from_stock, $order->id_product]
-                );
-            }
+            // NOTE: Không được sửa trực tiếp bảng kho ở bước tạo/cập nhật đơn hàng. Chỉ tính toán/phân tích để hiển thị cảnh báo
 
-            // --- BƯỚC 2: CẬP NHẬT KHO NGUYÊN VẬT LIỆU ---
-            if ($qty_for_production > 0) {
-                $this->_updateMaterialStock($order->id_product, $qty_for_production, '-');
-            }
+            // --- PHÂN TÍCH CẢNH BÁO TÓM TẮT (nếu cần) ---
+            $analysis = $this->_analyzeOrderFeasibility($order, $qty_from_stock, $qty_for_production, false);
 
-            // --- BƯỚC 3: LƯU STOCK ALLOCATION (không cập nhật cảnh báo) ---
+            // --- LƯU STOCK ALLOCATION (không thay đổi số liệu kho) ---
             $stock_allocation_data = [
                 'from_stock' => $qty_from_stock,
                 'for_production' => $qty_for_production,
@@ -463,7 +489,7 @@ class OrderModel extends CI_Model
             ];
 
             $update_data = [
-                'finished_stock_available' => $available_stock - $qty_from_stock, // ← SỬA: Stock còn lại sau phân bổ
+                'finished_stock_available' => $available_stock, // Không trừ trực tiếp
                 'stock_allocation' => json_encode($stock_allocation_data)
             ];
 
@@ -499,22 +525,41 @@ class OrderModel extends CI_Model
         $qty_from_stock = (int)($allocation['from_stock'] ?? 0);
         $qty_for_production = (int)($allocation['for_production'] ?? 0);
 
-        // --- BƯỚC 1: HOÀN TRẢ KHO THÀNH PHẨM ---
-        if ($qty_from_stock > 0) {
-            $this->db->query(
-                "UPDATE `finished_stock` SET `quantity_in_stock` = `quantity_in_stock` + ? WHERE `id_product` = ?",
-                [$qty_from_stock, $order->id_product]
-            );
-        }
-
-        // --- BƯỚC 2: HOÀN TRẢ KHO NGUYÊN VẬT LIỆU ---
-        if ($qty_for_production > 0) {
-            $this->_updateMaterialStock($order->id_product, $qty_for_production, '+');
-        }
-
-        // --- BƯỚC 3: XÓA PHÂN BỔ SAU KHI HOÀN TRẢ ---
-        // Quan trọng: Set `stock_allocation` về NULL để tránh hoàn trả hai lần.
+        // NOTE: Không được sửa trực tiếp bảng kho tại bước hoàn trả trong luồng đơn hàng.
+        // Chỉ xóa thông tin phân bổ đã lưu để tránh hoàn trả hai lần và cho phép phân tích lại.
         $this->db->where('id_project', $order->id_project)->update('project', ['stock_allocation' => NULL]);
+    }
+
+    /**
+     * Helper: Tính tổng allocated_production_capacity cho 1 product
+     * @param int $id_product
+     * @param int|null $exclude_project_id
+     * @param string|null $entry_date
+     * @param string|null $created_at
+     * @param bool $use_tiebreaker  Use entry_date & created_at tie-break when true (like allocation order)
+     * @return int
+     */
+    private function _getAllocatedProductionCapacity($id_product, $exclude_project_id = null, $entry_date = null, $created_at = null, $use_tiebreaker = false)
+    {
+        if ($use_tiebreaker && $exclude_project_id !== null && $entry_date !== null && $created_at !== null) {
+            $allocated_query = $this->db->query("\n                SELECT COALESCE(SUM(\n                    CASE\n                        WHEN p.qty_request <= p.finished_stock_available THEN 0\n                        ELSE p.qty_request - p.finished_stock_available\n                    END\n                ), 0) as allocated_production_capacity\n                FROM project p\n                WHERE p.id_product = ?\n                  AND p.pr_status IN (1, 2)\n                  AND p.id_project != ?\n                  AND (\n                      p.entry_date < ?\n                      OR (p.entry_date = ? AND p.created_at < ?)\n                  )\n            ", [$id_product, $exclude_project_id, $entry_date, $entry_date, $created_at]);
+        } else {
+            $sql = "\n                SELECT COALESCE(SUM(\n                    CASE\n                        WHEN p.qty_request <= p.finished_stock_available THEN 0\n                        ELSE p.qty_request - p.finished_stock_available\n                    END\n                ), 0) as allocated_production_capacity\n                FROM project p\n                WHERE p.id_product = ?\n                  AND p.pr_status IN (1, 2)\n            ";
+
+            $params = [$id_product];
+            if ($exclude_project_id !== null) {
+                $sql .= "\n                  AND p.id_project != ?";
+                $params[] = $exclude_project_id;
+            }
+            if ($entry_date !== null) {
+                $sql .= "\n                  AND p.entry_date < ?";
+                $params[] = $entry_date;
+            }
+
+            $allocated_query = $this->db->query($sql, $params);
+        }
+
+        return (int)($allocated_query->row()->allocated_production_capacity ?? 0);
     }
 
     /**
@@ -546,19 +591,20 @@ class OrderModel extends CI_Model
     /**
      * Phân tích tính khả thi của đơn hàng và tạo cảnh báo (không thay đổi dữ liệu).
      */
-    private function _analyzeOrderFeasibility($order, $qty_from_stock, $qty_for_production)
+    private function _analyzeOrderFeasibility($order, $qty_from_stock, $qty_for_production, $summary = true)
     {
         $warnings = [];
         $qty_request = (int)$order->qty_request;
 
-        // --- PHÂN TÍCH TỒN KHO & SẢN XUẤT ---
+        // --- PHÂN TÍCH TỒN KHO & SẢN XUẤT (tóm tắt cho đơn hàng nếu $summary==false) ---
         if ($qty_for_production == 0) {
-            $warnings['stock_status'] = "✔️ Sẵn hàng, có thể giao ngay " . number_format($qty_request) . " sản phẩm từ tồn kho.";
+            $warnings['stock_status'] = "✔️ Sẵn hàng, có thể giao ngay ";
+            if ($summary) $warnings['stock_status'] .= number_format($qty_request) . " sản phẩm từ tồn kho.";
         } else {
             if ($qty_from_stock > 0) {
-                $warnings['stock_status'] = "⚠️ Lấy " . number_format($qty_from_stock) . " từ kho, cần sản xuất thêm " . number_format($qty_for_production) . " sản phẩm.";
+                $warnings['stock_status'] = $summary ? ("⚠️ Lấy " . number_format($qty_from_stock) . " từ kho, cần sản xuất thêm " . number_format($qty_for_production) . " sản phẩm.") : "⚠️ Cần lấy một phần từ kho và sản xuất thêm.";
             } else {
-                $warnings['stock_status'] = "🏭 Cần sản xuất " . number_format($qty_for_production) . " sản phẩm.";
+                $warnings['stock_status'] = $summary ? ("🏭 Cần sản xuất " . number_format($qty_for_production) . " sản phẩm.") : "🏭 Cần sản xuất (toàn bộ số lượng).";
             }
         }
 
@@ -575,15 +621,49 @@ class OrderModel extends CI_Model
                 $material_stock_map = array_column($materials_in_db, 'stock', 'id_material');
                 $material_name_map = array_column($materials_in_db, 'material_name', 'id_material');
 
+                $has_shortage = false;
+                $material_details = [];
+                $min_products_possible = PHP_INT_MAX;
                 foreach ($bom_materials as $item) {
                     $stock_available = $material_stock_map[$item['id_material']] ?? 0;
                     $needed = (float)$item['quantity_per_unit'] * $qty_for_production;
                     if ($stock_available < $needed) {
-                        $material_warnings[] = "Thiếu " . number_format($needed - $stock_available) . " đơn vị " . ($material_name_map[$item['id_material']] ?? "NVL ID: {$item['id_material']}");
+                        $has_shortage = true;
+                        if ($summary) {
+                            $material_warnings[] = "Thiếu " . number_format($needed - $stock_available) . " đơn vị " . ($material_name_map[$item['id_material']] ?? "NVL ID: {$item['id_material']}");
+                        }
+                    }
+
+                    // Nếu cần giữ chi tiết cho planner (verbose), tính tiếp
+                    if ($summary) {
+                        $material_details[] = [
+                            'id_material' => $item['id_material'],
+                            'quantity_per_unit' => $item['quantity_per_unit'],
+                            'stock_available' => $stock_available,
+                            'needed' => $needed
+                        ];
+                    }
+
+                    // dùng để tính bottleneck nếu cần
+                    if ($item['quantity_per_unit'] > 0) {
+                        $products_possible = floor($stock_available / $item['quantity_per_unit']);
+                        if ($products_possible < $min_products_possible) $min_products_possible = $products_possible;
                     }
                 }
-                if (!empty($material_warnings)) {
-                    $warnings['material_shortage'] = "Thiếu NVL: " . implode(', ', $material_warnings);
+
+                if ($summary) {
+                    if (!empty($material_warnings)) {
+                        $warnings['material_shortage'] = "Thiếu NVL: " . implode(', ', $material_warnings);
+                    }
+                    if (!empty($material_details)) $warnings['material_details'] = $material_details;
+                } else {
+                    // Chỉ báo trạng thái đủ/thiếu, không hiển thị chi tiết số
+                    if ($has_shortage) {
+                        $warnings['material_warning'] = "⚠️ Thiếu nguyên vật liệu";
+                        $warnings['material_status'] = "⚠️ NVL không đủ để sản xuất";
+                    } else {
+                        $warnings['material_status'] = "✅ NVL đủ";
+                    }
                 }
             } else {
                 $warnings['material_error'] = "❌ Sản phẩm chưa có Định Mức (BOM). Không thể kiểm tra và sản xuất.";
@@ -608,7 +688,7 @@ class OrderModel extends CI_Model
      * Always approve if Level 1 or Level 2 capacity is sufficient
      * Only reject if both levels are insufficient
      */
-    public function checkCapacity($id_product, $qty_request, $entry_date, $id_project = null)
+    public function checkCapacity($id_product, $qty_request, $entry_date, $id_project = null, $verbose = true)
     {
         // ===== 1. LẤY THÔNG TIN CƠ BẢN =====
         $product = $this->db->select('product_name, bom, diameter')->where('id_product', $id_product)->get('product')->row();
@@ -620,8 +700,19 @@ class OrderModel extends CI_Model
         $level1 = array_filter($capacity_config, fn($c) => $c['level'] == 1)[0] ?? ['hours_per_shift' => 8, 'shifts_per_day' => 2, 'efficiency_rate' => 0.8];
         $level2 = array_filter($capacity_config, fn($c) => $c['level'] == 2)[0] ?? ['hours_per_shift' => 12, 'shifts_per_day' => 2, 'efficiency_rate' => 0.85];
 
-        $products_per_shift_l1 = floor(500 * $level1['hours_per_shift'] * $level1['efficiency_rate']);
-        $products_per_shift_l2 = floor(500 * $level2['hours_per_shift'] * $level2['efficiency_rate']);
+        // Lấy tổng công suất máy (pieces/hour) từ bảng `machines` (chỉ máy production & active)
+        $machine_row = $this->db->select('COALESCE(SUM(capacity), 0) AS total_capacity')
+                                ->where('status', 'active')
+                                ->where('equipment_category', 'production')
+                                ->get('machines')->row();
+        $machine_capacity = $machine_row->total_capacity ?? 0;
+        if ($machine_capacity <= 0) {
+            // Fallback giữ tương thích nếu chưa có máy cấu hình
+            $machine_capacity = 500;
+        }
+
+        $products_per_shift_l1 = floor($machine_capacity * $level1['hours_per_shift'] * $level1['efficiency_rate']);
+        $products_per_shift_l2 = floor($machine_capacity * $level2['hours_per_shift'] * $level2['efficiency_rate']);
 
         // ===== 2. TÍNH SỐ NGÀY CÒN LẠI =====
         $days_remaining = (strtotime($entry_date) - strtotime(date('Y-m-d'))) / 86400;
@@ -631,21 +722,8 @@ class OrderModel extends CI_Model
         // ===== 3. TÍNH STOCK ALLOCATION =====
         $total_stock = $this->db->select('quantity_in_stock')->where('id_product', $id_product)->get('finished_stock')->row()->quantity_in_stock ?? 0;
 
-        $allocated_query = $this->db->query("
-            SELECT COALESCE(SUM(
-                CASE
-                    WHEN p.qty_request <= p.finished_stock_available THEN 0
-                ELSE p.qty_request - p.finished_stock_available
-                END
-            ), 0) as allocated_production_capacity
-            FROM project p
-            WHERE p.id_product = ?
-              AND p.pr_status IN (1, 2)
-              AND p.id_project != ?
-              AND p.entry_date < ?
-        ", [$id_product, $id_project, $entry_date]);
-
-        $allocated_production = $allocated_query->row()->allocated_production_capacity ?? 0;
+        // Compute allocated production capacity using helper (no tie-breaker)
+        $allocated_production = $this->_getAllocatedProductionCapacity($id_product, $id_project, $entry_date, null, false);
         $available_stock = max(0, $total_stock - $allocated_production);
 
         // ===== 4. CHECK DEADLINE FIRST =====
@@ -660,6 +738,21 @@ class OrderModel extends CI_Model
         // ===== 5. CHECK STOCK SUFFICIENCY =====
         if ($qty_request <= $available_stock) {
             // Scenario 1: Có sẵn kho (mang tính thông tin)
+            $capacity_info = ['level' => 0, 'products_per_shift_level1' => $products_per_shift_l1, 'products_per_shift_level2' => $products_per_shift_l2, 'total_machine_capacity' => $machine_capacity];
+            if (!$verbose) {
+                // Order-mode: trả về tóm tắt (chỉ báo đủ/thiếu)
+                return [
+                    'feasible' => true,
+                    'warning_type' => 'stock_available',
+                    'warning_flag' => 0,
+                    'warning_details' => json_encode(['stock_status' => 'sufficient', 'capacity_info' => $capacity_info]),
+                    'capacity_level_used' => 0,
+                    'finished_stock_available' => $available_stock,
+                    'nvl_sufficient_shifts' => null,
+                    'message' => 'Có sẵn kho'
+                ];
+            }
+
             return [
                 'feasible' => true,
                 'warning_type' => 'stock_available',
@@ -668,7 +761,7 @@ class OrderModel extends CI_Model
                 'warning_details' => json_encode([
                     'finished_stock_info' => "✓ Có {$total_stock} cái trong kho, đã phân bổ {$allocated_production}, còn {$available_stock} cái khả dụng, dùng {$qty_request} cho đơn này",
                     'stock_status' => 'sufficient',
-                    'capacity_info' => ['level' => 0, 'products_per_shift_level1' => $products_per_shift_l1, 'products_per_shift_level2' => $products_per_shift_l2]
+                    'capacity_info' => $capacity_info
                 ]),
                 'capacity_level_used' => 0,
                 'finished_stock_available' => $available_stock,
@@ -846,8 +939,40 @@ class OrderModel extends CI_Model
         $warnings['capacity_info'] = [
             'level' => $capacity_level_used,
             'products_per_shift_level1' => $products_per_shift_l1,
-            'products_per_shift_level2' => $products_per_shift_l2
+            'products_per_shift_level2' => $products_per_shift_l2,
+            'total_machine_capacity' => $machine_capacity
         ];
+
+        // Nếu không cần chi tiết (order-mode), trả về tóm tắt để UI chỉ hiển thị trạng thái đủ/thiếu
+        if (!$verbose) {
+            $compact = [
+                'stock_status' => $warnings['stock_status'] ?? ($available_stock > 0 ? 'partial' : 'depleted'),
+                'material_status' => $warnings['material_status'] ?? (empty($material_warnings) ? 'sufficient' : 'insufficient'),
+                'capacity_info' => [
+                    'level' => $capacity_level_used,
+                    'products_per_shift_level1' => $products_per_shift_l1,
+                    'products_per_shift_level2' => $products_per_shift_l2,
+                    'total_machine_capacity' => $machine_capacity
+                ]
+            ];
+
+            return [
+                'feasible' => true,
+                'warning_flag' => !empty($compact) ? 1 : 0,
+                'warning_type' => $warning_type,
+                'warning_details' => json_encode($compact),
+                'capacity_level_used' => $capacity_level_used,
+                'finished_stock_available' => $available_stock,
+                'material_shifts_available' => $material_shifts_available,
+                'stock_allocation' => json_encode([
+                    'from_stock' => $available_stock,
+                    'for_production' => $qty_to_produce,
+                    'total_allocated' => min($qty_request, $available_stock),
+                    'production_needed' => $qty_to_produce
+                ]),
+                'message' => $this->formatCapacityMessage($warnings, $capacity_level_used)
+            ];
+        }
 
         return [
             'feasible' => true,
@@ -916,11 +1041,13 @@ class OrderModel extends CI_Model
             }
 
             // Chạy lại kiểm tra năng lực với dữ liệu hiện tại
+            // Chạy kiểm tra ở chế độ tóm tắt (dùng cho flow ĐƠN HÀNG — chỉ cần thông báo thiếu/đủ)
             $capacity_check = $this->checkCapacity(
                 $project->id_product,
                 $project->qty_request,
                 $project->entry_date,
-                $id_project
+                $id_project,
+                false
             );
 
             // Cập nhật project với kết quả phân tích mới (dùng giá trị mặc định an toàn để tránh undefined index)

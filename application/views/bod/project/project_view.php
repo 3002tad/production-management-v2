@@ -39,7 +39,7 @@
                         'Chờ duyệt' => 'secondary',
                         'Đã duyệt' => 'info',
                         'Đang sản xuất' => 'warning',
-                        'Hoàn thành' => 'success',
+                        'Đã sản xuất' => 'primary',
                         'Hủy' => 'danger'
                     ];
                     $status_color = $status_colors[$order->status_text] ?? 'secondary';
@@ -144,6 +144,19 @@
                         <i class="material-icons-round" style="font-size: 16px;">refresh</i>
                         Cập nhật phân tích
                     </button>
+
+                    <?php if (intval($order->pr_status) === 2): ?>
+                        <button type="button" id="mark_produced_btn" class="btn btn-sm bg-gradient-success w-100 mb-2" style="font-family: 'Poppins', sans-serif;">
+                            <i class="material-icons-round" style="font-size: 16px;">check_circle</i>
+                            Đã sản xuất xong
+                        </button>
+                    <?php else: ?>
+                        <button type="button" id="mark_produced_btn" class="btn btn-sm btn-outline-secondary w-100 mb-2" style="font-family: 'Poppins', sans-serif;" disabled>
+                            <i class="material-icons-round" style="font-size: 16px;">check_circle</i>
+                            Đã sản xuất xong
+                        </button>
+                    <?php endif; ?>
+
                     <a href="<?= site_url('BOD/project'); ?>" 
                        class="btn btn-sm btn-outline-secondary w-100"
                        style="font-family: 'Poppins', sans-serif;">
@@ -475,3 +488,42 @@
         </div>
     </div>
 </div>
+
+<script>
+(function(){
+    var btn = document.getElementById('mark_produced_btn');
+    if (!btn) return;
+    btn.addEventListener('click', function(){
+        if (!confirm('Xác nhận đánh dấu đơn hàng là "Đã sản xuất"?')) return;
+        btn.disabled = true;
+        var form = new FormData();
+        form.append('id_project', '<?= $order->id_project ?>');
+
+        fetch('<?= site_url("BOD/markProduced") ?>', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: form,
+            credentials: 'same-origin'
+        }).then(function(resp){
+            if (!resp.ok) {
+                return resp.text().then(function(t){ throw new Error(t || ('HTTP ' + resp.status)); });
+            }
+            return resp.json();
+        }).then(function(resp){
+            if (resp && resp.success) {
+                alert(resp.message || 'Đã đánh dấu đơn hàng là Đã sản xuất');
+                window.location.reload();
+            } else {
+                alert((resp && resp.message) || 'Lỗi');
+                btn.disabled = false;
+            }
+        }).catch(function(err){
+            console.error(err);
+            alert('Lỗi hệ thống, vui lòng thử lại');
+            btn.disabled = false;
+        });
+    });
+})();
+</script>
