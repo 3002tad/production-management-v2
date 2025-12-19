@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class ShiftModel extends CI_Model
 {
     protected $table_shifts = 'production_shifts';
-    protected $table_staff_assignments = 'shift_staff_assignments';
+    protected $table_staff_assignments = 'shift_machine_staff';
     protected $table_machine_assignments = 'shift_machine_assignments';
     protected $table_breakdown_logs = 'machine_breakdown_logs';
     protected $table_machine_staff = 'shift_machine_staff'; // NEW: Phân công nhân sự vào máy
@@ -26,12 +26,11 @@ class ShiftModel extends CI_Model
             pl.line_code, pl.line_name,
             z.zone_code, z.zone_name,
             COUNT(DISTINCT ssa.staff_id) as assigned_staff_count,
-            COUNT(DISTINCT sma.machine_id) as assigned_machine_count');
+            COUNT(DISTINCT ssa.machine_id) as assigned_machine_count');
         $this->db->from($this->table_shifts);
         $this->db->join('production_lines pl', 'production_shifts.line_id = pl.id', 'left');
         $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
         $this->db->join($this->table_staff_assignments . ' ssa', 'ssa.shift_id = production_shifts.shift_id AND ssa.status = 1', 'left');
-        $this->db->join($this->table_machine_assignments . ' sma', 'sma.shift_id = production_shifts.shift_id AND sma.assignment_status = "active"', 'left');
 
         if (!empty($filters['line_id'])) {
             $this->db->where('production_shifts.line_id', $filters['line_id']);
@@ -267,43 +266,14 @@ class ShiftModel extends CI_Model
      */
     public function getAvailableMachines($line_id, $shift_date, $start_time, $end_time, $exclude_shift_id = null)
     {
-        // Get all active machines
+        // Machines are now permanently assigned to lines, so return all active machines of the line
         $this->db->select('machines.id as machine_id, machines.code as machine_code, machines.name as machine_name, machines.stage_type as machine_type, machines.status');
         $this->db->from('machines');
-        $this->db->where('machines.status', 'active'); // Only active machines
+        $this->db->where('machines.line_id', $line_id);
+        $this->db->where('machines.status', 'active');
+        $this->db->order_by('machines.code', 'ASC');
         
-        $all_machines = $this->db->get()->result();
-        
-        // Get machines already assigned to overlapping shifts
-        $datetime_start = $shift_date . ' ' . $start_time;
-        $datetime_end = $shift_date . ' ' . $end_time;
-        
-        $this->db->select('sma.machine_id');
-        $this->db->from($this->table_machine_assignments . ' sma');
-        $this->db->join($this->table_shifts . ' ps', 'ps.shift_id = sma.shift_id');
-        $this->db->where('sma.assignment_status', 'active');
-        $this->db->where('ps.shift_date', $shift_date);
-        $this->db->group_start();
-        $this->db->where("sma.start_at < '{$datetime_end}'", null, false);
-        $this->db->group_start();
-        $this->db->where('sma.end_at IS NULL', null, false);
-        $this->db->or_where("sma.end_at > '{$datetime_start}'", null, false);
-        $this->db->group_end();
-        $this->db->group_end();
-        
-        if ($exclude_shift_id) {
-            $this->db->where('sma.shift_id !=', $exclude_shift_id);
-        }
-        
-        $assigned_machines = $this->db->get()->result();
-        $assigned_ids = array_column($assigned_machines, 'machine_id');
-        
-        // Filter out assigned machines
-        $available_machines = array_filter($all_machines, function($machine) use ($assigned_ids) {
-            return !in_array($machine->machine_id, $assigned_ids);
-        });
-        
-        return array_values($available_machines); // Re-index array
+        return $this->db->get()->result();
     }
 
     /**
@@ -335,24 +305,16 @@ class ShiftModel extends CI_Model
     {
         $this->db->trans_start();
 
-        // 1. Đóng assignment máy cũ
+        // Since machines are fixed to lines, handle breakdown by reassigning staff from old machine to new machine
         $this->db->where('shift_id', $shift_id)
             ->where('machine_id', $old_machine_id)
-            ->where('assignment_status', 'active')
-            ->update($this->table_machine_assignments, [
-                'end_at' => $breakdown_time,
-                'assignment_status' => 'breakdown',
-                'breakdown_reason' => $reason
+            ->where('status', 1)
+            ->update($this->table_machine_staff, [
+                'machine_id' => $new_machine_id,
+                'assigned_at' => $breakdown_time,
+                'assigned_by' => $handled_by,
+                'notes' => 'Reassigned due to breakdown: ' . $reason
             ]);
-
-        // 2. Tạo assignment máy mới
-        $this->db->insert($this->table_machine_assignments, [
-            'shift_id' => $shift_id,
-            'machine_id' => $new_machine_id,
-            'start_at' => $breakdown_time,
-            'assignment_status' => 'active',
-            'assigned_by' => $handled_by
-        ]);
 
         // 3. Ghi log breakdown
         $this->db->insert($this->table_breakdown_logs, [
@@ -477,19 +439,47 @@ class ShiftModel extends CI_Model
     }
 
     /**
-     * Lấy nhân viên theo role (worker, qc, technical)
+     * Chọn máy cho ca
      */
-    public function getStaffByRole($role_names = ['worker', 'qc'])
+    public function assignMachineToShift($shift_id, $machine_id, $assigned_by)
     {
-        $this->db->select('user.user_id, user.username, user.email, 
-            staff.id_staff, staff.staff_name as full_name, 
-            staff.department, staff.position,
-            roles.role_name');
-        $this->db->from('user');
-        $this->db->join('staff', 'staff.id_staff = user.user_id', 'left');
-        $this->db->join('roles', 'roles.role_id = user.role_id');
-        $this->db->where_in('roles.role_name', $role_names);
-        $this->db->order_by('staff.staff_name', 'ASC');
+        // Check if already selected
+        $exists = $this->db->where([
+            'shift_id' => $shift_id,
+            'machine_id' => $machine_id
+        ])->get($this->table_selected_machines)->row();
+
+        if ($exists) {
+            return false; // Already selected
+        }
+
+        return $this->db->insert($this->table_selected_machines, [
+            'shift_id' => $shift_id,
+            'machine_id' => $machine_id,
+            'assigned_by' => $assigned_by,
+            'assigned_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    /**
+     * Bỏ chọn máy khỏi ca
+     */
+    public function removeMachineFromShift($shift_id, $machine_id)
+    {
+        $this->db->where('shift_id', $shift_id);
+        $this->db->where('machine_id', $machine_id);
+        return $this->db->delete($this->table_selected_machines);
+    }
+
+    /**
+     * Lấy danh sách máy đã chọn cho ca
+     */
+    public function getSelectedMachines($shift_id)
+    {
+        $this->db->select('shift_selected_machines.*, machines.code, machines.name, machines.stage_type, machines.machine_type');
+        $this->db->from($this->table_selected_machines);
+        $this->db->join('machines', 'machines.id = shift_selected_machines.machine_id');
+        $this->db->where('shift_selected_machines.shift_id', $shift_id);
         return $this->db->get()->result();
     }
 }

@@ -70,9 +70,22 @@ class UC15_BCSC extends CI_Controller
         if (!$this->check_permission('view')) {
             show_error('Access Denied - Insufficient Permissions', 403, 'Forbidden');
         }
+        
+        $user_id = $this->session->userdata('user_id');
+
+        // Get current shift for user
+        $current_shift = $this->get_current_shift_for_user($user_id);
+
+        // Get shift history for user (last 5)
+        $shift_history = $this->get_shift_history_for_user($user_id);
+        if (count($shift_history) > 5) {
+            $shift_history = array_slice($shift_history, 0, 5);
+        }
 
         $data = [
             'incidents' => $this->bcscModel->get_all(),
+            'current_shift' => $current_shift,
+            'shift_history' => $shift_history,
             'user_role' => $this->user_role,
             'content' => 'uc15_bcsc/list',
             'navlink' => 'beranda',
@@ -466,5 +479,82 @@ class UC15_BCSC extends CI_Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Display shift information for worker
+     */
+    public function shift()
+    {
+        if (!$this->check_permission('view')) {
+            show_error('Access Denied - Insufficient Permissions', 403, 'Forbidden');
+        }
+
+        $user_id = $this->session->userdata('user_id');
+
+        // Get current shift for user
+        $current_shift = $this->get_current_shift_for_user($user_id);
+
+        // Get shift history for user
+        $shift_history = $this->get_shift_history_for_user($user_id);
+
+        $data = [
+            'current_shift' => $current_shift,
+            'shift_history' => $shift_history,
+            'incidents' => $this->bcscModel->get_recent_incidents_for_user($user_id),
+            'user_role' => $this->user_role,
+            'content' => 'uc15_bcsc/shift',
+            'navlink' => 'shift',
+        ];
+
+        $this->load->view('uc15_bcsc/vbackend', $data);
+    }
+
+    /**
+     * Get current shift for user
+     */
+    private function get_current_shift_for_user($user_id)
+    {
+        $this->db->select('ps.*, pl.line_code, pl.line_name, z.zone_code, z.zone_name, m.code as machine_code, m.name as machine_name');
+        $this->db->from('shift_machine_staff sms');
+        $this->db->join('production_shifts ps', 'sms.shift_id = ps.shift_id');
+        $this->db->join('production_lines pl', 'ps.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->join('machines m', 'sms.machine_id = m.id', 'left');
+        $this->db->where('sms.staff_id', $user_id);
+        $this->db->where('sms.status', 1);
+        $this->db->where('ps.shift_status IN (1, 2)'); // 1=scheduled, 2=running
+        $this->db->order_by('ps.shift_date', 'DESC');
+        $this->db->order_by('ps.start_time', 'DESC');
+        $this->db->limit(1);
+        return $this->db->get()->row();
+    }
+
+    /**
+     * Get shift history for user
+     */
+    private function get_shift_history_for_user($user_id)
+    {
+        $this->db->select('ps.*, pl.line_code, pl.line_name, z.zone_code, z.zone_name, m.code as machine_code, m.name as machine_name');
+        $this->db->from('shift_machine_staff sms');
+        $this->db->join('production_shifts ps', 'sms.shift_id = ps.shift_id');
+        $this->db->join('production_lines pl', 'ps.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->join('machines m', 'sms.machine_id = m.id', 'left');
+        $this->db->where('sms.staff_id', $user_id);
+        $this->db->where('sms.status', 1);
+        $this->db->where('ps.shift_status IN (3, 4)'); // 3=ended, 4=closed
+        $this->db->order_by('ps.shift_date', 'DESC');
+        $this->db->order_by('ps.start_time', 'DESC');
+        $this->db->limit(10); // Last 10 shifts
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Display control page (redirect to shift for now)
+     */
+    public function control()
+    {
+        redirect('uc15_bcsc/uc15_bcsc/shift');
     }
 }

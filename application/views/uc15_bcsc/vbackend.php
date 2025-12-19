@@ -49,7 +49,14 @@
                         </a>
                     </li>
                     
-
+                    <li class="nav-item">
+                        <a class="nav-link text-white<?= ($navlink === 'shift') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc/shift'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">schedule</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Ca làm việc</span>
+                        </a>
+                    </li>
                     <!-- HÀNH ĐỘNG section hidden -->
                     <!-- 
                     <li class="navbar-vertical">
