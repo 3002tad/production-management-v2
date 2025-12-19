@@ -264,31 +264,35 @@
                                         <td>
                                             <div class="d-flex px-2 py-1">
                                                 <div class="d-flex flex-column justify-content-center">
-                                                    <h6 class="mb-0 text-sm"><?= $closure->code ?></h6>
-                                                    <p class="text-xs text-secondary mb-0">Lot: <?= $closure->lot_code ?></p>
+                                                    <h6 class="mb-0 text-sm"><?= isset($closure->code) ? $closure->code : (isset($closure->id) ? $closure->id : 'N/A') ?></h6>
+                                                    <p class="text-xs text-secondary mb-0">Lot: <?= isset($closure->lot_code) ? $closure->lot_code : 'N/A' ?></p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <p class="text-xs font-weight-bold mb-0"><?= $closure->line_code ?></p>
-                                            <p class="text-xs text-secondary mb-0">Ca: <?= $closure->shift_code ?></p>
+                                            <p class="text-xs font-weight-bold mb-0"><?= isset($closure->line_code) ? $closure->line_code : 'N/A' ?></p>
+                                            <p class="text-xs text-secondary mb-0">Ca: <?= isset($closure->shift_code) ? $closure->shift_code : 'N/A' ?></p>
                                         </td>
                                         <td>
-                                            <p class="text-xs font-weight-bold mb-0"><?= $closure->project_name ?? $closure->project_code ?></p>
-                                            <p class="text-xs text-secondary mb-0"><?= $closure->product_name ?? $closure->product_code ?></p>
-                                            <?php if ($closure->variant): ?>
+                                            <p class="text-xs font-weight-bold mb-0"><?= isset($closure->project_name) ? $closure->project_name : (isset($closure->project_code) ? $closure->project_code : 'N/A') ?></p>
+                                            <p class="text-xs text-secondary mb-0"><?= isset($closure->product_name) ? $closure->product_name : (isset($closure->product_code) ? $closure->product_code : 'N/A') ?></p>
+                                            <?php if (isset($closure->variant) && $closure->variant): ?>
                                             <p class="text-xs text-info mb-0"><i class="material-icons text-xs">style</i> <?= $closure->variant ?></p>
                                             <?php endif; ?>
                                         </td>
                                         <td class="align-middle text-center">
-                                            <span class="text-secondary text-xs font-weight-bold"><?= number_format($closure->qty_finished) ?></span>
+                                            <span class="text-secondary text-xs font-weight-bold"><?= isset($closure->qty_finished) ? number_format($closure->qty_finished) : 0 ?></span>
                                         </td>
                                         <td class="align-middle text-center">
-                                            <span class="text-secondary text-xs font-weight-bold"><?= number_format($closure->qty_waste) ?></span>
+                                            <span class="text-secondary text-xs font-weight-bold"><?= isset($closure->qty_waste) ? number_format($closure->qty_waste) : 0 ?></span>
                                         </td>
                                         <td class="align-middle text-center">
+                                            <?php if (isset($closure->closed_at)): ?>
                                             <span class="text-xs font-weight-bold"><?= date('d/m/Y H:i', strtotime($closure->closed_at)) ?></span>
-                                            <p class="text-xs text-secondary mb-0">Bởi: <?= $closure->closed_by ?></p>
+                                            <p class="text-xs text-secondary mb-0">Bởi: <?= isset($closure->closed_by) ? $closure->closed_by : 'N/A' ?></p>
+                                            <?php else: ?>
+                                            <span class="text-xs text-secondary">N/A</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td class="align-middle text-center text-sm">
                                             <span class="badge badge-sm badge-pending-qc">PENDING QC</span>
@@ -296,7 +300,7 @@
                                         <td class="align-middle text-center">
                                             <!-- Use Case - Bước 3: Vào bản ghi để kiểm tra -->
                                             <form method="POST" action="<?= site_url('qc/createSession'); ?>" style="display: inline;">
-                                                <input type="hidden" name="closure_id" value="<?= $closure->id ?>">
+                                                <input type="hidden" name="closure_id" value="<?= isset($closure->closure_id) ? $closure->closure_id : $closure->id ?>">
                                                 <button type="submit" class="btn btn-inspect btn-sm mb-0">
                                                     <i class="material-icons text-sm">fact_check</i> Kiểm tra
                                                 </button>

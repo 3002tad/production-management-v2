@@ -208,8 +208,21 @@ class ChecklistService
         }
         
         // 2. Check closure is still PENDING_QC
-        if ($session->closure_status !== 'PENDING_QC') {
-            $errors[] = 'Phiếu chốt ca không ở trạng thái PENDING_QC';
+        // Support multiple schema versions:
+        // - Newer flow: status is stored on warehouse_import_requests (pending_qc)
+        // - Older flow: some implementations may expose $session->closure_status
+        if (property_exists($session, 'closure_status')) {
+            if ($session->closure_status !== 'PENDING_QC') {
+                $errors[] = 'Phiếu chốt ca không ở trạng thái PENDING_QC';
+            }
+        } else {
+            // Fallback: look up warehouse import request by closure_id
+            if (!empty($session->closure_id)) {
+                $import_request = $this->CI->qcModel->getWarehouseImportRequest($session->closure_id);
+                if (!$import_request || $import_request->status !== 'pending_qc') {
+                    $errors[] = 'Phiếu chốt ca không ở trạng thái PENDING_QC';
+                }
+            }
         }
         
         // 3. Check checklist completeness (REQUIRED for both APPROVE and REJECT)

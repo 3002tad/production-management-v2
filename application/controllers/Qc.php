@@ -214,7 +214,12 @@ class Qc extends CI_Controller
         
         // Get checklist items (and use for sample_size/aql)
         $checklist = $this->checklistservice->getChecklist($session->product_code, $session->variant);
-        
+        // Debug: Nếu thiếu product_code hoặc variant hoặc checklist rỗng, hiển thị cảnh báo
+        if (empty($session->product_code) || empty($session->variant)) {
+            $this->session->set_flashdata('error', 'Thiếu mã sản phẩm hoặc variant! product_code: ' . ($session->product_code ?? 'NULL') . ', variant: ' . ($session->variant ?? 'NULL'));
+        } else if (empty($checklist)) {
+            $this->session->set_flashdata('error', 'Không tìm thấy checklist cho product_code: ' . $session->product_code . ', variant: ' . $session->variant);
+        }
         // Add sample_size and aql_threshold to session object from checklist
         if (!empty($checklist)) {
             // Use first checklist item's sample_size and aql as defaults
@@ -285,7 +290,7 @@ class Qc extends CI_Controller
         $data = [
             'title' => 'Kiểm tra QC: ' . $session->code,
             'session' => $session,
-            'closure' => $closure,
+            'closure' => $session,  // closure data comes from session object (it has all joined fields)
             'items' => $items,
             'attachments' => $attachments,
             'decision' => $decision,
@@ -319,7 +324,7 @@ class Qc extends CI_Controller
             return;
         }
         
-        // Validate closure exists and is PENDING_QC
+        // Validate closure exists
         $closure = $this->qcModel->getClosureById($closure_id);
         
         if (!$closure) {
@@ -327,8 +332,11 @@ class Qc extends CI_Controller
             return;
         }
         
-        if ($closure->status !== 'PENDING_QC') {
-            $this->session->set_flashdata('error', 'Phiếu chốt ca này không ở trạng thái PENDING_QC');
+        // Check if warehouse import request is PENDING_QC
+        $import_request = $this->qcModel->getWarehouseImportRequest($closure_id);
+        
+        if (!$import_request || $import_request->status !== 'pending_qc') {
+            $this->session->set_flashdata('error', 'Phiếu nhập kho này không ở trạng thái chờ QC');
             redirect('qc/');
             return;
         }

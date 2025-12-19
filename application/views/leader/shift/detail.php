@@ -128,6 +128,11 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab" aria-controls="materials" aria-selected="false">
+                                <i class="material-icons me-2">inventory_2</i>Nguyên Vật Liệu
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab" aria-controls="staff" aria-selected="false">
                                 <i class="material-icons me-2">people</i>Nhân Sự
                             </button>
@@ -166,6 +171,97 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Materials Tab - Hiển thị nhu cầu NVL theo BOM/kế hoạch -->
+                        <div class="tab-pane fade" id="materials" role="tabpanel" aria-labelledby="materials-tab">
+                            <div class="mb-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Nhu cầu Nguyên Vật Liệu cho ca</h6>
+                                    <?php $mc = isset($material_coverage) ? $material_coverage : null; ?>
+                                    <?php if (!empty($mc['_meta'])): ?>
+                                        <p class="text-sm text-secondary mb-0">
+                                            Kế hoạch: <strong><?= htmlspecialchars($mc['_meta']['plan_name'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                                            (ID: <?= (int) $mc['_meta']['plan_id']; ?>)
+                                            &mdash; Số lượng tính toán: <strong><?= number_format($mc['_meta']['qty_for_calc']); ?></strong>
+                                        </p>
+                                    <?php else: ?>
+                                        <p class="text-sm text-secondary mb-0">Không tìm thấy thông tin kế hoạch hoặc sản phẩm để tính NVL.</p>
+                                    <?php endif; ?>
+
+                                    <?php if (isset($material_confirm) && $material_confirm): ?>
+                                        <p class="text-xs text-success mb-0 mt-1">
+                                            <i class="material-icons" style="font-size: 16px;">check_circle</i>
+                                            <span class="ms-1">Đã xác nhận NVL lúc
+                                                <strong><?= date('H:i d/m/Y', strtotime($material_confirm->confirmed_at)); ?></strong>
+                                                <?php if (!empty($material_confirm->confirmed_username)): ?>
+                                                    bởi <strong><?= htmlspecialchars($material_confirm->confirmed_username, ENT_QUOTES, 'UTF-8'); ?></strong>
+                                                <?php endif; ?>
+                                            </span>
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
+                                <div>
+                                    <?php if (!empty($mc) && !empty($mc['details']) && (!isset($mc['ok']) || $mc['ok'])): ?>
+                                        <button type="button"
+                                                class="btn btn-sm btn-primary"
+                                                id="btn_confirm_material"
+                                                data-shift-id="<?= (int) $shift->shift_id; ?>">
+                                            <i class="material-icons text-sm me-1">done_all</i>
+                                            Xác nhận NVL
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <?php if (empty($mc) || empty($mc['details'])): ?>
+                                <div class="alert alert-secondary">
+                                    <i class="material-icons">info</i>
+                                    <span class="ms-2">Chưa có dữ liệu BOM hoặc không thể tính nhu cầu NVL cho ca này.</span>
+                                </div>
+                            <?php else: ?>
+                                <div class="table-responsive">
+                                    <table class="table align-items-center mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mã NVL</th>
+                                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tên NVL</th>
+                                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end">Nhu cầu</th>
+                                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end">Khả dụng</th>
+                                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end">Thiếu</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($mc['details'] as $row): ?>
+                                                <?php
+                                                    $required = isset($row['required_qty']) ? (float) $row['required_qty'] : 0;
+                                                    $available = isset($row['available_qty']) ? (float) $row['available_qty'] : 0;
+                                                    $shortage = isset($row['shortage']) ? (float) $row['shortage'] : 0;
+                                                    $unit = isset($row['unit']) ? $row['unit'] : '';
+                                                    $short_badge = $shortage > 0 ? 'text-danger font-weight-bold' : 'text-success';
+                                                ?>
+                                                <tr>
+                                                    <td>
+                                                        <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['id_material'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></p>
+                                                    </td>
+                                                    <td>
+                                                        <p class="text-xs mb-0"><?= htmlspecialchars($row['material_name'] ?? '-', ENT_QUOTES, 'UTF-8'); ?></p>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="text-xs font-weight-bold"><?= number_format($required, 2); ?> <?= htmlspecialchars($unit, ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="text-xs"><?= number_format($available, 2); ?> <?= htmlspecialchars($unit, ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="text-xs <?= $short_badge; ?>"><?= number_format($shortage, 2); ?> <?= htmlspecialchars($unit, ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <!-- Staff Tab (View Only) -->
@@ -1151,6 +1247,49 @@ document.addEventListener('DOMContentLoaded', function() {
     if (productionTab) {
         productionTab.addEventListener('shown.bs.tab', function() {
             loadProductionData();
+        });
+    }
+
+    // Xác nhận NVL cho ca
+    const confirmBtn = document.getElementById('btn_confirm_material');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function() {
+            const shiftId = this.getAttribute('data-shift-id');
+            if (!shiftId) return;
+
+            if (!confirm('Xác nhận nhu cầu Nguyên Vật Liệu cho ca này?')) {
+                return;
+            }
+
+            const btn = this;
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xác nhận...';
+
+            fetch('<?= site_url('leader/shift/confirm_material'); ?>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: 'shift_id=' + encodeURIComponent(shiftId)
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(res) {
+                if (res && res.success) {
+                    alert(res.message || 'Đã xác nhận NVL cho ca');
+                    window.location.reload();
+                } else {
+                    alert(res && res.message ? res.message : 'Không thể xác nhận NVL');
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            })
+            .catch(function(err) {
+                console.error(err);
+                alert('Có lỗi khi gửi yêu cầu xác nhận NVL');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
         });
     }
     

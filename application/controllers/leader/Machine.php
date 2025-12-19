@@ -520,7 +520,7 @@ class Machine extends CI_Controller
 
             // Check if machine is assigned to any shift
             $this->db->where('machine_id', $machine_id);
-            $shift_count = $this->db->count_all_results('shift_machine_assignments');
+            $shift_count = $this->db->count_all_results('shift_machine_staff');
             
             if ($shift_count > 0) {
                 echo json_encode([

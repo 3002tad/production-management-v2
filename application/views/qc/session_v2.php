@@ -159,12 +159,12 @@
                             <div class="col-lg-6">
                                 <h6>Thông tin phiếu chốt ca</h6>
                                 <p class="text-sm mb-0">
-                                    <strong>Mã phiếu:</strong> <?= $closure->code ?><br>
-                                    <strong>Line:</strong> <?= $closure->line_code ?> | 
-                                    <strong>Ca:</strong> <?= $closure->shift_code ?><br>
-                                    <strong>Dự án:</strong> <?= $closure->project_name ?? $closure->project_code ?><br>
-                                    <strong>Sản phẩm:</strong> <?= $closure->product_name ?? $closure->product_code ?>
-                                    <?php if ($closure->variant): ?>
+                                    <strong>Mã phiếu:</strong> <?= isset($closure->code) ? $closure->code : 'N/A' ?><br>
+                                    <strong>Line:</strong> <?= isset($closure->line_code) ? $closure->line_code : 'N/A' ?> | 
+                                    <strong>Ca:</strong> <?= isset($closure->shift_code) ? $closure->shift_code : 'N/A' ?><br>
+                                    <strong>Dự án:</strong> <?= isset($closure->project_name) ? $closure->project_name : (isset($closure->project_code) ? $closure->project_code : 'N/A') ?><br>
+                                    <strong>Sản phẩm:</strong> <?= isset($closure->product_name) ? $closure->product_name : (isset($closure->product_code) ? $closure->product_code : 'N/A') ?>
+                                    <?php if (isset($closure->variant) && $closure->variant): ?>
                                         <span class="badge bg-gradient-info"><?= $closure->variant ?></span>
                                     <?php endif; ?>
                                 </p>
@@ -172,8 +172,8 @@
                             <div class="col-lg-6 text-end">
                                 <h6>Số lượng sản xuất (Use Case - Bước 4: Tải checklist theo sản phẩm)</h6>
                                 <p class="text-sm mb-0">
-                                    <span class="badge bg-gradient-success">TP: <?= number_format($closure->qty_finished) ?></span>
-                                    <span class="badge bg-gradient-danger">PP: <?= number_format($closure->qty_waste) ?></span>
+                                    <span class="badge bg-gradient-success">TP: <?= number_format(isset($closure->qty_finished) ? $closure->qty_finished : 0) ?></span>
+                                    <span class="badge bg-gradient-danger">PP: <?= number_format(isset($closure->qty_waste) ? $closure->qty_waste : 0) ?></span>
                                 </p>
                                 <p class="text-xs text-secondary mb-0">
                                     AQL: <strong><?= $session->aql_threshold ?>%</strong> | 
@@ -240,12 +240,12 @@
                                 <div class="checklist-item mb-3 p-3 border rounded">
                                     <div class="row align-items-center">
                                         <div class="col-md-6">
-                                            <h6 class="mb-1"><?= $item->criteria_name ?></h6>
+                                            <h6 class="mb-1"><?= isset($item->criteria_name) ? $item->criteria_name : (isset($item->item_name) ? $item->item_name : '---') ?></h6>
                                             <p class="text-xs text-secondary mb-0">
                                                 <i class="material-icons text-xs">info</i> 
-                                                <?= $item->description ?? 'Kiểm tra chất lượng' ?>
+                                                <?= isset($item->description) ? $item->description : (isset($item->criteria) ? $item->criteria : 'Kiểm tra chất lượng') ?>
                                             </p>
-                                            <?php if ($item->test_method): ?>
+                                            <?php if (!empty($item->test_method)): ?>
                                             <p class="text-xs text-info mb-0">
                                                 <i class="material-icons text-xs">science</i> 
                                                 Phương pháp: <?= $item->test_method ?>
@@ -255,59 +255,24 @@
                                         <div class="col-md-3">
                                             <label class="form-label text-xs">Kết quả (pass/fail)</label>
                                             <select class="form-select form-select-sm result-select" 
-                                                    name="results[<?= $item->item_code ?>]" 
-                                                    data-item-id="<?= $item->id ?>"
+                                                    name="results[<?= isset($item->item_code) ? $item->item_code : (isset($item->code) ? $item->code : '') ?>]" 
+                                                    data-item-id="<?= isset($item->id) ? $item->id : '' ?>"
                                                     required>
                                                 <option value="">-- Chọn --</option>
-                                                <option value="PASS" <?= $item->result == 'PASS' ? 'selected' : '' ?>>
+                                                <option value="PASS" <?= (isset($item->result) && $item->result == 'PASS') ? 'selected' : '' ?>>
                                                     ✅ PASS
                                                 </option>
-                                                <option value="FAIL" <?= $item->result == 'FAIL' ? 'selected' : '' ?>>
+                                                <option value="FAIL" <?= (isset($item->result) && $item->result == 'FAIL') ? 'selected' : '' ?>>
                                                     ❌ FAIL
                                                 </option>
                                             </select>
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label text-xs">Số lỗi (theo loại)</label>
-                                            <input type="number" class="form-control form-control-sm" 
-                                                   name="defects[<?= $item->item_code ?>]" 
-                                                   value="<?= $item->defect_count ?? 0 ?>" 
-                                                   min="0" placeholder="0">
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Defect Severity -->
-                                    <div class="row mt-2 defect-details" style="display: <?= $item->result == 'FAIL' ? 'block' : 'none' ?>;">
-                                        <div class="col-md-6">
-                                            <label class="form-label text-xs">Mức độ nghiêm trọng</label>
-                                            <select class="form-select form-select-sm" name="severity[<?= $item->item_code ?>]">
-                                                <option value="">-- Chọn --</option>
-                                                <option value="CRITICAL" <?= $item->severity == 'CRITICAL' ? 'selected' : '' ?>>
-                                                    🔴 Critical (Nghiêm trọng)
-                                                </option>
-                                                <option value="MAJOR" <?= $item->severity == 'MAJOR' ? 'selected' : '' ?>>
-                                                    🟠 Major (Quan trọng)
-                                                </option>
-                                                <option value="MINOR" <?= $item->severity == 'MINOR' ? 'selected' : '' ?>>
-                                                    🟡 Minor (Nhỏ)
-                                                </option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label text-xs">Ghi chú</label>
-                                            <input type="text" class="form-control form-control-sm" 
-                                                   name="notes[<?= $item->item_code ?>]" 
-                                                   value="<?= $item->notes ?? '' ?>" 
-                                                   placeholder="Mô tả lỗi...">
-                                        </div>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="text-center py-4">
-                                    <i class="material-icons text-secondary" style="font-size: 48px;">assignment</i>
-                                    <p class="text-secondary">Checklist chưa được tải</p>
-                                </div>
+                                <div class="alert alert-warning text-center mt-3">Không có checklist hoặc dữ liệu kiểm tra để nhập kết quả. Vui lòng kiểm tra lại cấu hình checklist và dữ liệu ca sản xuất!</div>
                             <?php endif; ?>
                             
                             <?php if ($session->status != 'DECIDED'): ?>

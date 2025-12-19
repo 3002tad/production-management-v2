@@ -38,6 +38,58 @@ class UC15_BCSCModel extends CI_Model {
     }
 
     /**
+     * Get recent incident reports for a specific user
+     */
+    public function get_recent_incidents_for_user($user_id, $limit = 5)
+    {
+        return $this->db->select('ir.*, 
+            u.username as user_name, 
+            m.code as machine_code, m.name as machine_name,
+            pl.line_code, pl.line_name,
+            z.zone_code, z.zone_name,
+            ps.shift_code, ps.shift_name, ps.shift_date,
+            a.username as assignee_name')
+            ->from($this->table . ' ir')
+            ->join('user u', 'ir.user_id = u.user_id', 'left')
+            ->join('machines m', 'ir.id_machine = m.id', 'left')
+            ->join('production_lines pl', 'ir.line_id = pl.id OR m.line_id = pl.id', 'left')
+            ->join('zones z', 'pl.zone_id = z.zone_id', 'left')
+            ->join('production_shifts ps', 'ir.shift_id = ps.shift_id', 'left')
+            ->join('user a', 'ir.assignee_id = a.user_id', 'left')
+            ->where('ir.user_id', $user_id)
+            ->order_by('ir.created_at', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->result();
+    }
+
+    /**
+     * Get incidents by shift_id
+     */
+    public function get_incidents_by_shift_id($shift_id, $limit = 10)
+    {
+        return $this->db->select('ir.*, 
+            u.username as user_name, 
+            m.code as machine_code, m.name as machine_name,
+            pl.line_code, pl.line_name,
+            z.zone_code, z.zone_name,
+            ps.shift_code, ps.shift_name, ps.shift_date,
+            a.username as assignee_name')
+            ->from($this->table . ' ir')
+            ->join('user u', 'ir.user_id = u.user_id', 'left')
+            ->join('machines m', 'ir.id_machine = m.id', 'left')
+            ->join('production_lines pl', 'ir.line_id = pl.id OR m.line_id = pl.id', 'left')
+            ->join('zones z', 'pl.zone_id = z.zone_id', 'left')
+            ->join('production_shifts ps', 'ir.shift_id = ps.shift_id', 'left')
+            ->join('user a', 'ir.assignee_id = a.user_id', 'left')
+            ->where('ir.shift_id', $shift_id)
+            ->order_by('ir.created_at', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->result();
+    }
+
+    /**
      * Get incident by ID with details
      */
     public function get_by_id($id)

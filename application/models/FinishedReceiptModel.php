@@ -28,11 +28,21 @@ class FinishedReceiptModel extends CI_Model {
         $result = [];
         $shift_closures_exists = $this->db->table_exists('shift_closures');
 
+        // Pick a closure code column that exists to avoid missing-column errors
+        $closureCodeColumn = 'sc.id';
+        if ($shift_closures_exists) {
+            if ($this->db->field_exists('code', 'shift_closures')) {
+                $closureCodeColumn = 'sc.code';
+            } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
+                $closureCodeColumn = 'sc.closure_id';
+            }
+        }
+
         // Thử lấy từ QC Module trước (mới)
         if ($shift_closures_exists) {
             $sql = "SELECT 
                       sc.id AS id_finished,
-                      sc.code AS closure_code,
+                      {$closureCodeColumn} AS closure_code,
                       sc.project_code,
                       sc.product_code,
                       sc.qty_finished AS qty_passed,
@@ -270,10 +280,18 @@ class FinishedReceiptModel extends CI_Model {
             return $result;
         }
 
+        // Pick an existing closure code column to avoid missing-column errors
+        $closureCodeColumn = 'sc.id';
+        if ($this->db->field_exists('code', 'shift_closures')) {
+            $closureCodeColumn = 'sc.code';
+        } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
+            $closureCodeColumn = 'sc.closure_id';
+        }
+
         // Query: Check all conditions
         $sql = "SELECT 
                   sc.id,
-                  sc.code AS closure_code,
+                  {$closureCodeColumn} AS closure_code,
                   sc.can_receive_fg,
                   sc.status,
                   qd.result AS qc_result,

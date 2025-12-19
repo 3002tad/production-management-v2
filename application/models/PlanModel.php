@@ -91,23 +91,59 @@ class PlanModel extends CI_Model
      */
     public function computeMaterialRequirements($product_id, $qty_target)
     {
-        $product = $this->ProductModel->getProductById($product_id);
+        // Lấy sản phẩm kèm BOM đã decode (bom_data['materials'])
+        if (method_exists($this->ProductModel, 'getProductByIdWithBom')) {
+            $product = $this->ProductModel->getProductByIdWithBom($product_id);
+        } else {
+            $product = $this->ProductModel->getProductById($product_id);
+        }
         $result = [];
 
         if (!$product) {
             return $result;
         }
 
-        $materials = $product->bom_data['materials'] ?? [];
+        // Ưu tiên mảng bom_data['materials']; fallback decode trực tiếp từ cột product.bom (JSON)
+        $materials = [];
+        if (isset($product->bom_data['materials']) && is_array($product->bom_data['materials'])) {
+            $materials = $product->bom_data['materials'];
+            if (function_exists('log_message')) {
+                log_message('debug', 'PlanModel::computeMaterialRequirements using product.bom_data for product_id=' . $product_id . ' count=' . count($materials));
+            }
+        } elseif (!empty($product->bom)) {
+            $decoded = json_decode($product->bom, true);
+            if (is_array($decoded)) {
+                $materials = $decoded;
+                if (function_exists('log_message')) {
+                    log_message('debug', 'PlanModel::computeMaterialRequirements using raw product.bom JSON for product_id=' . $product_id . ' count=' . count($materials));
+                }
+            }
+        }
+
+        if (empty($materials)) {
+            if (function_exists('log_message')) {
+                log_message('debug', 'PlanModel::computeMaterialRequirements NO BOM found for product_id=' . $product_id);
+            }
+            return $result;
+        }
+
         foreach ($materials as $m) {
-            $per_unit = isset($m['quantity']) ? floatval($m['quantity']) : 0;
+            // Hỗ trợ cả key 'quantity_per_unit' (thiết kế mới) và 'quantity' (legacy)
+            if (isset($m['quantity_per_unit'])) {
+                $per_unit = floatval($m['quantity_per_unit']);
+            } elseif (isset($m['quantity'])) {
+                $per_unit = floatval($m['quantity']);
+            } else {
+                $per_unit = 0;
+            }
             $required = $per_unit * floatval($qty_target);
 
             $result[] = [
                 'id_material' => isset($m['id_material']) ? $m['id_material'] : null,
                 'material_name' => isset($m['material_name']) ? $m['material_name'] : ($m['name'] ?? null),
                 'required_qty' => $required,
-                'unit' => $m['unit'] ?? null,
+                // Ưu tiên 'unit', fallback 'uom' cho BOM lấy từ production/product
+                'unit' => $m['unit'] ?? ($m['uom'] ?? null),
                 'per_unit' => $per_unit
             ];
         }
@@ -634,6 +670,199 @@ class PlanModel extends CI_Model
         } catch (Exception $e) {
             $this->db->trans_rollback();
             return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Phân bổ NVL (tạo bản ghi p_material) cho 1 ca sản xuất (plan_shift)
+     *
+     * Chuỗi quan hệ:
+     *   planning -> project -> product (BOM) -> plan_shift (ca) -> p_material (NVL theo ca)
+     *
+     * Logic:
+     * - Lấy plan_shift theo id_planshift, suy ra kế hoạch (planning) và đơn hàng (project)
+     * - Từ project lấy product_id, đọc BOM và tính nhu cầu NVL cho qty_target của ca
+     * - Kiểm tra coverage NVL (so stock - đã phân bổ) đủ cho qty_target của ca
+     * - Nếu đủ, tạo bản ghi p_material cho từng NVL và trừ tồn kho trong material.stock
+     *
+     * Ghi chú an toàn:
+     * - Hàm này KHÔNG chạy tự động khi tạo kế hoạch; chỉ chạy khi được gọi rõ ràng.
+     * - Nếu ca đã có p_material thì mặc định không tạo lại, để tránh nhân đôi phân bổ.
+     *
+     * @param int   $id_planshift
+     * @param array $options (optional)
+     *        - 'allow_reallocate' => true cho phép phân bổ lại (hiện tại chỉ kiểm tra tồn tại và báo lỗi)
+     * @return array ['success'=>bool,'message'=>string,'details'=>array]
+     */
+    public function allocateMaterialsForShift($id_planshift, array $options = [])
+    {
+        if (empty($id_planshift)) {
+            return ['success' => false, 'message' => 'Thiếu id_planshift', 'details' => []];
+        }
+
+        // Kiểm tra các bảng cần thiết có tồn tại không
+        $requiredTables = ['plan_shift', 'planning', 'project', 'material', 'p_material'];
+        foreach ($requiredTables as $tbl) {
+            if (!$this->db->table_exists($tbl)) {
+                return [
+                    'success' => false,
+                    'message' => 'Thiếu bảng bắt buộc: ' . $tbl,
+                    'details' => []
+                ];
+            }
+        }
+
+        // Lấy thông tin ca
+        $ps = $this->db->get_where('plan_shift', ['id_planshift' => $id_planshift])->row();
+        if (!$ps) {
+            return ['success' => false, 'message' => 'Không tìm thấy ca sản xuất (plan_shift)', 'details' => []];
+        }
+
+        // Lấy kế hoạch
+        $plan = $this->db->get_where('planning', ['id_plan' => $ps->id_plan])->row();
+        if (!$plan) {
+            return ['success' => false, 'message' => 'Không tìm thấy kế hoạch (planning) cho ca này', 'details' => []];
+        }
+        if (empty($plan->id_project)) {
+            return ['success' => false, 'message' => 'Kế hoạch chưa gắn với đơn hàng (project)', 'details' => []];
+        }
+
+        // Lấy đơn hàng + product để đọc BOM
+        $project = $this->db->get_where('project', ['id_project' => $plan->id_project])->row();
+        if (!$project || empty($project->id_product)) {
+            return ['success' => false, 'message' => 'Đơn hàng không có thông tin sản phẩm (product)', 'details' => []];
+        }
+
+        // Xác định qty_target cho ca: ưu tiên plan_shift.target_qty nếu có, nếu không dùng planning.qty_target
+        $qty_target_shift = 0.0;
+        if ($this->db->field_exists('target_qty', 'plan_shift') && isset($ps->target_qty)) {
+            $qty_target_shift = floatval($ps->target_qty);
+        } else {
+            $qty_target_shift = floatval($plan->qty_target);
+        }
+
+        if ($qty_target_shift <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Ca không có qty_target hợp lệ để tính NVL',
+                'details' => []
+            ];
+        }
+
+        // Nếu ca đã có p_material thì không tạo lại (trừ khi sau này hỗ trợ allow_reallocate)
+        $existing = $this->db->where('id_planshift', $id_planshift)->count_all_results('p_material');
+        if ($existing > 0 && empty($options['allow_reallocate'])) {
+            return [
+                'success' => false,
+                'message' => 'Ca này đã có phân bổ NVL (p_material), không tạo lại',
+                'details' => []
+            ];
+        }
+
+        // Tính nhu cầu NVL theo BOM cho ca này
+        $requirements = $this->computeMaterialRequirements($project->id_product, $qty_target_shift);
+        if (empty($requirements)) {
+            return [
+                'success' => false,
+                'message' => 'Không tìm thấy BOM hoặc danh sách NVL cho sản phẩm',
+                'details' => []
+            ];
+        }
+
+        // Kiểm tra coverage NVL (dựa trên stock - tổng allocated hiện tại)
+        $coverage = $this->checkMaterialCoverage($project->id_product, $qty_target_shift);
+        if (!empty($coverage) && isset($coverage['ok']) && $coverage['ok'] === false) {
+            return [
+                'success' => false,
+                'message' => 'Thiếu NVL, không đủ để phân bổ cho ca này',
+                'details' => $coverage['details'] ?? []
+            ];
+        }
+
+        $details = [];
+
+        $this->db->trans_start();
+        try {
+            foreach ($requirements as $req) {
+                $id_material = $req['id_material'] ?? null;
+                $required_qty = isset($req['required_qty']) ? floatval($req['required_qty']) : 0.0;
+
+                if (empty($id_material) || $required_qty <= 0) {
+                    continue; // bỏ qua dòng không hợp lệ
+                }
+
+                // Lấy tồn kho hiện tại
+                $mat = $this->db->get_where('material', ['id_material' => $id_material])->row();
+                if (!$mat) {
+                    continue; // NVL không tồn tại trong master, bỏ qua
+                }
+
+                $current_stock = isset($mat->stock) ? floatval($mat->stock) : 0.0;
+                // Bảo vệ: nếu vì lý do gì đó stock không đủ (dù coverage đã check) thì không cho xuống âm
+                $new_stock = $current_stock - $required_qty;
+                if ($new_stock < 0) {
+                    $new_stock = 0.0;
+                }
+
+                // Tạo bản ghi p_material
+                $id_pmaterial = $this->CrudModel->generateCode(1, 'id_pmaterial', 'p_material');
+                $row = [
+                    'id_pmaterial' => $id_pmaterial,
+                    'id_planshift' => $id_planshift,
+                    'id_material' => $id_material,
+                    'used_stock' => $required_qty,
+                ];
+                $this->db->insert('p_material', $row);
+
+                // Cập nhật tồn kho
+                $this->db->where('id_material', $id_material)->update('material', ['stock' => $new_stock]);
+
+                $details[] = [
+                    'id_material' => $id_material,
+                    'material_name' => $req['material_name'] ?? ($mat->material_name ?? null),
+                    'allocated_qty' => $required_qty,
+                    'uom' => $req['unit'] ?? ($mat->uom ?? null),
+                    'stock_before' => $current_stock,
+                    'stock_after' => $new_stock,
+                ];
+            }
+
+            // Ghi log audit nếu có
+            if ($this->db->table_exists('audit_log')) {
+                $this->db->insert('audit_log', [
+                    'user_id' => $this->session->userdata('user_id'),
+                    'username' => $this->session->userdata('username'),
+                    'action' => 'allocate_materials_for_shift',
+                    'module' => 'planning',
+                    'record_id' => $id_planshift,
+                    'old_value' => null,
+                    'new_value' => json_encode([
+                        'id_planshift' => $id_planshift,
+                        'qty_target_shift' => $qty_target_shift,
+                        'materials' => $details,
+                    ], JSON_UNESCAPED_UNICODE),
+                    'ip_address' => $this->input->ip_address(),
+                    'user_agent' => $this->input->user_agent()
+                ]);
+            }
+
+            $this->db->trans_complete();
+            if ($this->db->trans_status() === false) {
+                throw new Exception('Lỗi khi ghi phân bổ NVL cho ca');
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Đã phân bổ NVL cho ca thành công',
+                'details' => $details,
+            ];
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'details' => []
+            ];
         }
     }
 
