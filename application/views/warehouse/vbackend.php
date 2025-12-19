@@ -137,7 +137,7 @@
                                         </li>
                                         <hr class="horizontal light mt-0 mb-2">
                                         <li class="nav-item navbar-expand-xs">
-                                                <a class="nav-link text-white<?= ($navlink === 'finished') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('warehouse/finished'); ?>">
+                                                <a class="nav-link text-white<?= ($navlink === 'finished' || $navlink === 'finished_receipt' || $navlink === 'delivery') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('warehouse/finished'); ?>">
                                                         <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                                                         <i class="material-icons opacity-10">room_preferences</i>
                                                         </div>

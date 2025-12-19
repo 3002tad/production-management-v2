@@ -18,19 +18,20 @@ class FinishedIssueModel extends CI_Model {
             return [];
         }
 
-        $sql = "SELECT 
-                  p.id_project,
-                  p.project_name,
-                  p.qty_request,
-                  COALESCE(fs.quantity_in_stock, 0) AS qty_available,
-                  COALESCE(SUM(CASE WHEN iss.status IN ('full', 'partial') THEN iss.quantity_issued ELSE 0 END), 0) AS qty_already_issued,
-                  (p.qty_request - COALESCE(SUM(CASE WHEN iss.status IN ('full', 'partial') THEN iss.quantity_issued ELSE 0 END), 0)) AS qty_remaining
-                FROM project p
-                LEFT JOIN finished_stock fs ON fs.id_product = 1
-                LEFT JOIN finished_issue iss ON p.id_project = iss.id_project
-                WHERE p.pr_status != 'completed'
-                GROUP BY p.id_project
-                ORDER BY p.id_project DESC";
+                $sql = "SELECT 
+                                    p.id_project,
+                                    p.project_name,
+                                    p.qty_request,
+                                    COALESCE(fs.quantity_in_stock, 0) AS qty_available,
+                                    COALESCE(SUM(CASE WHEN iss.status IN ('full', 'partial') THEN iss.quantity_issued ELSE 0 END), 0) AS qty_already_issued,
+                                    (p.qty_request - COALESCE(SUM(CASE WHEN iss.status IN ('full', 'partial') THEN iss.quantity_issued ELSE 0 END), 0)) AS qty_remaining
+                                FROM project p
+                                -- Link finished_stock by the project's product (use p.id_product so stock maps to the project's product)
+                                LEFT JOIN finished_stock fs ON fs.id_product = p.id_product
+                                LEFT JOIN finished_issue iss ON p.id_project = iss.id_project
+                                WHERE p.pr_status != 'completed'
+                                GROUP BY p.id_project
+                                ORDER BY p.id_project DESC";
 
         return $this->db->query($sql)->result();
     }

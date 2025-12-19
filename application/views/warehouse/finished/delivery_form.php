@@ -1,43 +1,15 @@
-<!-- Breadcrumb Navigation -->
-<nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" navbar-scroll="true">
-    <div class="container-fluid py-1 px-3">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                <li class="breadcrumb-item text-sm">
-                    <a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a>
-                </li>
-                <li class="breadcrumb-item text-sm">
-                    <a class="opacity-5 text-dark" href="<?= site_url('warehouse/finished'); ?>">Kho thành phẩm</a>
-                </li>
-                <li class="breadcrumb-item text-sm">
-                    <a class="opacity-5 text-dark" href="<?= site_url('warehouse/finished/delivery'); ?>">Danh sách phiếu xuất</a>
-                </li>
-                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Tạo phiếu xuất</li>
-            </ol>
-            <h6 class="font-weight-bolder mb-0">Tạo phiếu xuất</h6>
-        </nav>
-        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
-            <div class="ms-md-auto pe-md-3 d-flex align-items-center">
-                <h6 class="text-sm font-weight-bolder mb-0">Production System</h6>
-                <div class="col-6 d-flex text-end">
-                    <a href="<?= site_url('warehouse/logout'); ?>" class="btn gradient-dark mb-0">|  <?= lang('btn_logout'); ?>
-                    <i class="material-icons">arrow_forward</i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</nav>
-
-<div class="container-fluid">
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">Xuất Kho Thành Phẩm Giao Hàng</h5>
-          <a href="<?= site_url('warehouse/finished/delivery'); ?>" class="btn btn-sm btn-secondary">← Quay lại danh sách</a>
-        </div>
-        <div class="card-body">
+<!-- Form Tạo Phiếu Xuất Giao Hàng -->
+<div class="card">
+  <div class="card-header card-header-success py-3 px-4 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">
+      <i class="material-icons align-middle">note_add</i>
+      Tạo Phiếu Xuất Giao Hàng
+    </h5>
+    <button onclick="hideAllContainers()" class="btn btn-sm btn-secondary">
+      <i class="material-icons align-middle">close</i> Đóng
+    </button>
+  </div>
+  <div class="card-body pt-4 px-4">
 
           <?php if ($this->session->flashdata('error')): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -56,9 +28,9 @@
           <!-- Bảng đối chiếu tồn kho -->
           <div class="alert alert-info mb-4">
             <h6 class="alert-heading">Thông Tin Tồn Kho Hiện Tại</h6>
-            <p class="mb-0">
+              <p class="mb-0">
               <strong>Tồn Kho Thành Phẩm Khả Dụng:</strong> 
-              <span class="badge bg-success fs-5"><?= $current_stock; ?> cái</span>
+              <span id="badge_current_stock" class="badge bg-success fs-5"><?= $current_stock; ?> cái</span>
             </p>
           </div>
 
@@ -151,11 +123,19 @@ function updateProjectInfo() {
   const qtyAvail = parseInt(option.getAttribute('data-qty-avail')) || 0;
   const qtyIssued = parseInt(option.getAttribute('data-qty-issued')) || 0;
   const qtyRemaining = parseInt(option.getAttribute('data-qty-remaining')) || 0;
-  const currentStock = <?= $current_stock; ?>;
+  // Use per-project available quantity (provided in option data-qty-avail)
+  const currentStock = qtyAvail;
 
   document.getElementById('qty_request').value = qtyReq;
   document.getElementById('qty_issued').value = qtyIssued;
   document.getElementById('qty_remaining').value = qtyRemaining;
+  // Update displayed available badge and field
+  document.getElementById('qty_avail').value = qtyAvail;
+  const badge = document.getElementById('badge_current_stock');
+  if (badge) {
+    badge.innerText = qtyAvail + ' cái';
+  }
+
   document.getElementById('quantity_issued').value = Math.min(qtyRemaining, currentStock);
   document.getElementById('quantity_issued').max = currentStock;
   document.getElementById('quantity_issued').focus();
@@ -170,10 +150,13 @@ function updateProjectInfo() {
 
 // Validate quantity on input
 document.getElementById('quantity_issued')?.addEventListener('input', function() {
-  const max = <?= $current_stock; ?>;
+  // Read current max from qty_avail field (per selected project)
+  const max = parseInt(document.getElementById('qty_avail').value) || 0;
   const warning = document.getElementById('stock-warning');
   if (parseInt(this.value) > max) {
     warning.style.display = 'block';
+  } else {
+    warning.style.display = 'none';
   }
 });
 </script>
