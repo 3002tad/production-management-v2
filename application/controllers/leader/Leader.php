@@ -23,9 +23,9 @@ class Leader extends CI_Controller
         $role = strtolower(trim((string)$role));
         
         // Allowed roles for Leader page
-        // NOTE: adding 'technical' / 'technical_staff' allows technical users to access leader pages.
+        // NOTE: adding 'technical' / 'technical_staff' / 'worker' allows these users to access leader pages.
         // If you want to keep leader pages strictly for leadership, remove these.
-        $allowed_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin', 'technical', 'technical_staff'];
+        $allowed_roles = ['leader', 'line_manager', 'admin', 'bod', 'system_admin', 'technical', 'technical_staff', 'worker'];
         
         if (!in_array($role, $allowed_roles, true)) {
             log_message('error', 'Leader access denied for user ' . $this->session->userdata('username') . ' with role=' . $role);

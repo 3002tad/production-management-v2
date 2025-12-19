@@ -149,12 +149,9 @@ class Login extends CI_Controller
                 }
                 break;
             case 'worker':
-                // Check if Worker controller exists, otherwise fallback to leader
-                if (file_exists(APPPATH . 'controllers/Worker.php')) {
-                    redirect(site_url('worker/?msg=success'));
-                } else {
-                    redirect(site_url('leader/?msg=success')); // Fallback tạm thời
-                }
+                // Worker: chuyển thẳng vào UC15 - Báo cáo sự cố
+                // Sử dụng route đã khai báo cho UC15_BCSC
+                redirect(site_url('uc15_qlns/uc15_bcsc?msg=success'));
                 break;
             default:
                 redirect('login/');

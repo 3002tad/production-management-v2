@@ -26,12 +26,14 @@ class Qc extends CI_Controller
             exit();
         }
         
-        // Check QC role permission - backward compatible
-        $role = strtolower(trim((string)$this->session->userdata('role')));
-        
+        // Check QC role permission - support new RBAC `role_name` and legacy `role`
+        $role_name = strtolower(trim((string)$this->session->userdata('role_name')));
+        $legacy_role = strtolower(trim((string)$this->session->userdata('role')));
+        $role = $role_name ?: $legacy_role;
+
         // Allowed roles for QC module
         $allowed_roles = ['qc_staff', 'admin', 'bod'];
-        
+
         if (!in_array($role, $allowed_roles, true)) {
             $this->session->set_flashdata('error', 'Bạn không có quyền truy cập module QC.');
             redirect('login/');
