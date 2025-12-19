@@ -10,7 +10,7 @@
             <div class="form-row">
                 <div class="form-group col-md-4">
                     <label>Kế hoạch (tuỳ chọn)</label>
-                    <select name="id_plan" class="form-control">
+                    <select name="id_plan" id="id_plan" class="form-control">
                         <option value="">-- Chọn kế hoạch --</option>
                         <?php foreach (($plans ?? []) as $p): ?>
                             <option value="<?= (int)$p->id_plan ?>"><?= htmlspecialchars($p->plan_name) ?></option>
@@ -19,7 +19,7 @@
                 </div>
                 <div class="form-group col-md-4">
                     <label>Ca sản xuất (tuỳ chọn)</label>
-                    <select name="id_planshift" class="form-control">
+                    <select name="id_planshift" id="id_planshift" class="form-control">
                         <option value="">-- Chọn ca --</option>
                         <?php foreach (($shifts ?? []) as $s): ?>
                             <option value="<?= (int)$s->id_planshift ?>"><?= htmlspecialchars($s->id_planshift.' - '.$s->ps_name ?? '') ?></option>
@@ -41,7 +41,7 @@
             </div>
             <hr>
             <div class="table-responsive">
-                <table class="table table-sm table-center align-items-center mb-0">
+                <table class="table table-sm table-center align-items-center mb-0" id="materials_table">
                     <thead>
                         <tr>
                             <th>NVL</th>
@@ -49,7 +49,7 @@
                             <th>Số lượng xuất</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="materials_tbody">
                         <?php foreach (($materials ?? []) as $m): ?>
                         <tr>
                             <td>
@@ -83,3 +83,70 @@
         </form>
     </div>
 </div>
+
+<script>
+document.getElementById('id_planshift').addEventListener('change', function() {
+    const id_planshift = this.value;
+    
+    if (!id_planshift) {
+        console.log('Không có ca được chọn');
+        return;
+    }
+    
+    // Gửi AJAX request để lấy dữ liệu nguyên liệu theo ca
+    fetch('<?= site_url('warehouse/get_materials_by_shift') ?>', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            id_planshift: id_planshift
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateMaterialsTable(data.materials);
+        } else {
+            console.error('Lỗi:', data.message);
+            alert('Lỗi khi tải dữ liệu: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Lỗi AJAX:', error);
+        alert('Lỗi kết nối server');
+    });
+});
+
+function updateMaterialsTable(materials) {
+    const tbody = document.getElementById('materials_tbody');
+    tbody.innerHTML = ''; // Xóa dữ liệu cũ
+    
+    if (!materials || materials.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center">Không có nguyên liệu cho ca này</td></tr>';
+        return;
+    }
+    
+    materials.forEach(material => {
+        const stock = parseInt(material.stock) || 0;
+        const materialId = material.id_material || material.id;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${material.material_name || material.name || ''}</td>
+            <td>${stock}</td>
+            <td>
+                <input type="number"
+                       min="0"
+                       max="${stock}"
+                       name="items[${materialId}]"
+                       class="form-control form-control-sm"
+                       placeholder="0"
+                       />
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+</script>

@@ -435,159 +435,292 @@
                     .modal .form-row .form-group { margin-bottom: 10px; }
                 </style>
                 <script>
-                    (function(){
-                        var btnIn = document.getElementById('btnToggleIn');
-                        var btnOut = document.getElementById('btnToggleOut');
-                        function showModal(id){
-                            var el = document.getElementById(id);
-                            if(!el) return;
-                            if (window.bootstrap && bootstrap.Modal) { new bootstrap.Modal(el).show(); }
-                            else { el.classList.add('show'); el.style.display = 'block'; }
-                        }
-                        if(btnIn){ btnIn.addEventListener('click', function(){ showModal('modalStockIn'); }); }
-                        if(btnOut){ btnOut.addEventListener('click', function(){ showModal('modalStockOut'); }); }
-                        // Auto open by query ?open=stock_out or ?open=stock_in
-                        var params = new URLSearchParams(window.location.search);
-                        var open = params.get('open');
-                        if(open === 'stock_out'){ showModal('modalStockOut'); }
-                        if(open === 'stock_in'){ showModal('modalStockIn'); }
+                    // Wait for DOM to be fully loaded
+                    document.addEventListener('DOMContentLoaded', function(){
+                        (function(){
+                            var btnIn = document.getElementById('btnToggleIn');
+                            var btnOut = document.getElementById('btnToggleOut');
+                            function showModal(id){
+                                var el = document.getElementById(id);
+                                if(!el) return;
+                                if (window.bootstrap && bootstrap.Modal) { new bootstrap.Modal(el).show(); }
+                                else { el.classList.add('show'); el.style.display = 'block'; }
+                            }
+                            if(btnIn){ btnIn.addEventListener('click', function(){ showModal('modalStockIn'); }); }
+                            if(btnOut){ btnOut.addEventListener('click', function(){ showModal('modalStockOut'); }); }
+                            // Auto open by query ?open=stock_out or ?open=stock_in
+                            var params = new URLSearchParams(window.location.search);
+                            var open = params.get('open');
+                            if(open === 'stock_out'){ showModal('modalStockOut'); }
+                            if(open === 'stock_in'){ showModal('modalStockIn'); }
 
-                        // Plan -> auto populate remaining items
-                        var planSelect = document.querySelector('#modalStockOut select[name="id_plan"]');
-                        var dateOutInput = document.getElementById('dateOutInput');
-                        var shiftSelect = document.getElementById('shiftSelect');
-                        var tablePlan = document.getElementById('tablePlanItems');
-                        var tbodyPlan = document.getElementById('tbodyPlanItems');
-                        var tableAll = document.getElementById('tableAllMaterials');
-                        function setDisabledInputs(container, disabled){
-                            if(!container) return;
-                            var inputs = container.querySelectorAll('input[name^="items["]');
-                            inputs.forEach(function(inp){ inp.disabled = !!disabled; });
-                        }
-                        function setTableMode(usePlan){
-                            if(usePlan){
-                                if(tablePlan){ tablePlan.classList.remove('d-none'); setDisabledInputs(tablePlan, false); }
-                                if(tableAll){ tableAll.classList.add('d-none'); setDisabledInputs(tableAll, true); }
-                            }else{
-                                if(tablePlan){ tablePlan.classList.add('d-none'); setDisabledInputs(tablePlan, true); }
-                                if(tableAll){ tableAll.classList.remove('d-none'); setDisabledInputs(tableAll, false); }
+                            // Plan -> auto populate remaining items
+                            // Use a function to get planSelect since it might be in a modal that gets created dynamically
+                            function getPlanSelect(){
+                                return document.querySelector('#modalStockOut select[name="id_plan"]');
                             }
-                        }
-                        
-                        // Load shifts filtered by selected date
-                        async function loadShiftsByDate(date){
-                            if(!date){
-                                // Reset shifts to all available
-                                if(shiftSelect){
-                                    shiftSelect.innerHTML = '<option value="">-- Chọn ca --</option>';
-                                }
-                                return;
+                            
+                            var dateOutInput = document.getElementById('dateOutInput');
+                            var shiftSelect = document.getElementById('shiftSelect');
+                            var tablePlan = document.getElementById('tablePlanItems');
+                            var tbodyPlan = document.getElementById('tbodyPlanItems');
+                            var tableAll = document.getElementById('tableAllMaterials');
+                            
+                            function setDisabledInputs(container, disabled){
+                                if(!container) return;
+                                var inputs = container.querySelectorAll('input[name^="items["]');
+                                inputs.forEach(function(inp){ inp.disabled = !!disabled; });
                             }
-                            try{
-                                const res = await fetch('<?= site_url('warehouse/get_shifts_by_date'); ?>?date=' + encodeURIComponent(date));
-                                const data = await res.json();
-                                if(!data || !Array.isArray(data.shifts)) throw new Error('Bad response');
-                                
-                                // Build shift options
-                                let html = '<option value="">-- Chọn ca --</option>';
-                                data.shifts.forEach(function(shift){
-                                    const shiftId = parseInt(shift.id_planshift||0);
-                                    const shiftName = shift.id_planshift + ' - ' + (shift.ps_name || '');
-                                    html += '<option value="' + shiftId + '">' + shiftName + '</option>';
-                                });
-                                
-                                if(shiftSelect){
-                                    shiftSelect.innerHTML = html;
-                                }
-                            }catch(e){
-                                console.error('Error loading shifts:', e);
-                                if(shiftSelect){
-                                    shiftSelect.innerHTML = '<option value="">-- Chọn ca --</option>';
+                            function setTableMode(usePlan){
+                                if(usePlan){
+                                    if(tablePlan){ tablePlan.classList.remove('d-none'); setDisabledInputs(tablePlan, false); }
+                                    if(tableAll){ tableAll.classList.add('d-none'); setDisabledInputs(tableAll, true); }
+                                }else{
+                                    if(tablePlan){ tablePlan.classList.add('d-none'); setDisabledInputs(tablePlan, true); }
+                                    if(tableAll){ tableAll.classList.remove('d-none'); setDisabledInputs(tableAll, false); }
                                 }
                             }
-                        }
-                        
-                        // Listen for date change and load shifts
-                        if(dateOutInput){
-                            dateOutInput.addEventListener('change', function(){
-                                loadShiftsByDate(this.value);
-                            });
-                        }
-                        
-                        async function loadPlanItems(planId){
-                            if(!planId){
-                                // show all materials
-                                if(tbodyPlan) tbodyPlan.innerHTML = '';
-                                setTableMode(false);
-                                return;
-                            }
-                            try{
-                                const res = await fetch('<?= site_url('warehouse/plan_remaining_materials'); ?>?id_plan=' + encodeURIComponent(planId));
-                                const data = await res.json();
-                                if(!data || !Array.isArray(data.items)) throw new Error('Bad response');
-                                // Build rows
-                                let html = '';
-                                data.items.forEach(function(item){
-                                    const u = item.uom || '';
-                                    const stock = parseInt(item.stock||0);
-                                    const planned = parseInt(item.planned||0);
-                                    const exported = parseInt(item.exported||0);
-                                    const remaining = Math.max(0, parseInt(item.remaining||0));
-                                    const mid = parseInt(item.id_material||0);
-                                    if(mid <= 0) return; // skip unmapped
-                                    // Default export qty suggestion: min(stock, remaining)
-                                    const suggest = Math.max(0, Math.min(stock, remaining));
-                                    const maxAllow = Math.max(0, Math.min(stock, remaining));
-                                    html += '<tr>'+
-                                        '<td>' + (item.material_name||('#'+mid)) + '</td>'+
-                                        '<td>' + stock + ' ' + u + '</td>'+
-                                        '<td>' + planned + ' ' + u + '</td>'+
-                                        '<td>' + exported + ' ' + u + '</td>'+
-                                        '<td>' + remaining + ' ' + u + '</td>'+
-                                        '<td style=\"max-width:140px;\"><input type=\"number\" min=\"0\" max=\"'+maxAllow+'\" value=\"'+suggest+'\" class=\"form-control form-control-sm plan-export-input\" name=\"items['+mid+']\" /></td>'+
-                                    '</tr>';
-                                });
-                                if(tbodyPlan) tbodyPlan.innerHTML = html;
-                                setTableMode(true);
-                            }catch(e){
-                                // On error, show all as fallback
-                                if(tbodyPlan) tbodyPlan.innerHTML = '';
-                                setTableMode(false);
-                            }
-                        }
-                        if(planSelect){
-                            planSelect.addEventListener('change', function(){ loadPlanItems(this.value); });
-                            // If opened by query with a chosen plan, you can pre-load here later
-                        }
-                        // init mode: all materials enabled
-                        setTableMode(false);
-
-                        // Auto-fill quantity when material is selected in stock-in modal
-                        var materialSelect = document.querySelector('#modalStockIn select[name="id_material"]');
-                        var quantityInput = document.querySelector('#modalStockIn input[name="quantity"]');
-                        
-                        if (materialSelect && quantityInput) {
-                            materialSelect.addEventListener('change', function() {
-                                var materialId = this.value;
-                                if (!materialId || materialId === '') {
-                                    quantityInput.value = '';
+                            
+                            // Load shifts filtered by selected date
+                            async function loadShiftsByDate(date){
+                                if(!date){
+                                    // Reset shifts to all available
+                                    if(shiftSelect){
+                                        shiftSelect.innerHTML = '<option value="">-- Chọn ca --</option>';
+                                    }
                                     return;
                                 }
-
-                                // Fetch material info and auto-fill quantity
-                                fetch('<?= site_url('warehouse/get_material_info'); ?>?id_material=' + encodeURIComponent(materialId))
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        if (data && data.qty_to_import !== undefined) {
-                                            quantityInput.value = data.qty_to_import;
-                                        }
-                                    })
-                                    .catch(error => {
-                                        console.error('Error fetching material info:', error);
+                                try{
+                                    const res = await fetch('<?= site_url('warehouse/get_shifts_by_date'); ?>?date=' + encodeURIComponent(date));
+                                    const data = await res.json();
+                                    if(!data || !Array.isArray(data.shifts)) throw new Error('Bad response');
+                                    
+                                    // Build shift options
+                                    let html = '<option value="">-- Chọn ca --</option>';
+                                    data.shifts.forEach(function(shift){
+                                        const shiftId = parseInt(shift.id_planshift||0);
+                                        const shiftName = shift.id_planshift + ' - ' + (shift.ps_name || '');
+                                        html += '<option value="' + shiftId + '">' + shiftName + '</option>';
                                     });
-                            });
-                        }
-                    })();
+                                    
+                                    if(shiftSelect){
+                                        shiftSelect.innerHTML = html;
+                                    }
+                                }catch(e){
+                                    console.error('Error loading shifts:', e);
+                                    if(shiftSelect){
+                                        shiftSelect.innerHTML = '<option value="">-- Chọn ca --</option>';
+                                    }
+                                }
+                            }
+                            
+                            // Listen for date change and load shifts
+                            if(dateOutInput){
+                                dateOutInput.addEventListener('change', function(){
+                                    loadShiftsByDate(this.value);
+                                });
+                            }
+                            
+                            async function loadPlanItems(planId, shiftId){
+                                console.log('loadPlanItems called with planId:', planId, 'shiftId:', shiftId);
+                                if(!planId){
+                                    // show all materials
+                                    if(tbodyPlan) tbodyPlan.innerHTML = '';
+                                    setTableMode(false);
+                                    return;
+                                }
+                                try{
+                                    let url = '<?= site_url('warehouse/plan_remaining_materials'); ?>?id_plan=' + encodeURIComponent(planId);
+                                    if(shiftId) {
+                                        url += '&shift_id=' + encodeURIComponent(shiftId);
+                                    }
+                                    console.log('Fetching from URL:', url);
+                                    const res = await fetch(url);
+                                    console.log('Response status:', res.status);
+                                    const data = await res.json();
+                                    console.log('Response data:', data);
+                                    if(!data || !Array.isArray(data.items)) throw new Error('Bad response - data or items array missing');
+                                    console.log('Number of items:', data.items.length);
+                                    // Build rows
+                                    let html = '';
+                                    data.items.forEach(function(item){
+                                        const u = item.uom || '';
+                                        const stock = parseInt(item.stock||0);
+                                        const planned = parseInt(item.planned||0);
+                                        const exported = parseInt(item.exported||0);
+                                        const remaining = Math.max(0, parseInt(item.remaining||0));
+                                        const shiftRequired = parseInt(item.shift_required||0);
+                                        const canExport = item.can_export !== false;
+                                        const exportRemaining = parseInt(item.export_remaining||0);
+                                        const mid = parseInt(item.id_material||0);
+                                        console.log('Processing item:', item.material_name, 'id:', mid, 'can_export:', canExport);
+                                        if(mid <= 0) {
+                                            console.log('Skipping unmapped item');
+                                            return; // skip unmapped
+                                        }
+                                        // Default export qty suggestion
+                                        let suggest = 0;
+                                        let maxAllow = 0;
+                                        let isDisabled = false;
+                                        
+                                        if (!canExport) {
+                                            // Already exported enough
+                                            suggest = 0;
+                                            maxAllow = 0;
+                                            isDisabled = true;
+                                        } else if (shiftRequired > 0) {
+                                            // Use shift_required as suggestion
+                                            suggest = exportRemaining;
+                                            maxAllow = Math.min(stock, exportRemaining);
+                                        } else {
+                                            // Use remaining as suggestion
+                                            suggest = Math.max(0, Math.min(stock, remaining));
+                                            maxAllow = Math.max(0, Math.min(stock, remaining));
+                                        }
+                                        
+                                        let inputHTML = '<input type="number" min="0" max="'+maxAllow+'" value="'+suggest+'" class="form-control form-control-sm plan-export-input" name="items['+mid+']"';
+                                        if (isDisabled) {
+                                            inputHTML += ' disabled title="Đã xuất đủ yêu cầu của ca"';
+                                        }
+                                        inputHTML += ' />';
+                                        
+                                        html += '<tr>';
+                                        if (isDisabled) {
+                                            html += '<td style="opacity: 0.6;">' + (item.material_name||('#'+mid)) + '</td>'+
+                                                '<td style="opacity: 0.6;">' + stock + ' ' + u + '</td>'+
+                                                '<td style="opacity: 0.6;">' + planned + ' ' + u + '</td>'+
+                                                '<td style="opacity: 0.6;">' + exported + ' ' + u + '</td>'+
+                                                '<td style="opacity: 0.6;">' + remaining + ' ' + u + '</td>'+
+                                                '<td style="max-width:140px; opacity: 0.6;"><span class="badge bg-secondary">Đã đủ</span></td>';
+                                        } else {
+                                            html += '<td>' + (item.material_name||('#'+mid)) + '</td>'+
+                                                '<td>' + stock + ' ' + u + '</td>'+
+                                                '<td>' + planned + ' ' + u + '</td>'+
+                                                '<td>' + exported + ' ' + u + '</td>'+
+                                                '<td>' + remaining + ' ' + u + '</td>'+
+                                                '<td style="max-width:140px;">' + inputHTML + '</td>';
+                                        }
+                                        html += '</tr>';
+                                    });
+                                    console.log('HTML generated:', html);
+                                    if(tbodyPlan) {
+                                        tbodyPlan.innerHTML = html;
+                                        console.log('tbody updated');
+                                    }
+                                    setTableMode(true);
+                                    console.log('Table mode set to plan mode');
+                                }catch(e){
+                                    console.error('Error loading plan items:', e);
+                                    console.error('Stack:', e.stack);
+                                    // On error, show all as fallback
+                                    if(tbodyPlan) tbodyPlan.innerHTML = '';
+                                    setTableMode(false);
+                                }
+                            }
+                            
+                            // Use delegation to handle plan select change event
+                            // This ensures the handler works even if the select is created dynamically
+                            var planSelect = getPlanSelect();
+                            if(planSelect){
+                                planSelect.addEventListener('change', function(){ 
+                                    loadPlanItems(this.value, shiftSelect ? shiftSelect.value : null); 
+                                });
+                            } else {
+                                // Fallback: Try to find and attach to any dynamically added plan select
+                                document.addEventListener('change', function(e){
+                                    if(e.target && e.target.matches('#modalStockOut select[name="id_plan"]')){
+                                        loadPlanItems(e.target.value, shiftSelect ? shiftSelect.value : null);
+                                    }
+                                });
+                            }
+                            
+                            // Also reload plan items when shift is changed
+                            if(shiftSelect){
+                                shiftSelect.addEventListener('change', function(){
+                                    var planSelect = getPlanSelect();
+                                    if(planSelect && planSelect.value) {
+                                        loadPlanItems(planSelect.value, this.value);
+                                    }
+                                });
+                            }
+                            
+                            // init mode: all materials enabled
+                            setTableMode(false);
+
+                            // Auto-fill quantity when material is selected in stock-in modal
+                            var materialSelect = document.querySelector('#modalStockIn select[name="id_material"]');
+                            var quantityInput = document.querySelector('#modalStockIn input[name="quantity"]');
+                            
+                            console.log('Material select found:', !!materialSelect);
+                            console.log('Quantity input found:', !!quantityInput);
+                            
+                            if (materialSelect && quantityInput) {
+                                materialSelect.addEventListener('change', function() {
+                                    var materialId = this.value;
+                                    console.log('Material selected:', materialId);
+                                    if (!materialId || materialId === '') {
+                                        quantityInput.value = '';
+                                        return;
+                                    }
+
+                                    // Fetch material info and auto-fill quantity
+                                    var url = '<?= site_url('warehouse/get_material_info'); ?>?id_material=' + encodeURIComponent(materialId);
+                                    console.log('Fetching from:', url);
+                                    
+                                    fetch(url)
+                                        .then(response => {
+                                            console.log('Response status:', response.status);
+                                            if (!response.ok) {
+                                                throw new Error('HTTP ' + response.status);
+                                            }
+                                            return response.json();
+                                        })
+                                        .then(data => {
+                                            console.log('Response data:', data);
+                                            if (data && data.qty_to_import !== undefined) {
+                                                console.log('Setting quantity to:', data.qty_to_import);
+                                                quantityInput.value = data.qty_to_import;
+                                            } else {
+                                                console.log('No qty_to_import in response');
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error fetching material info:', error);
+                                        });
+                                });
+                            }
+                            
+                            // Validate stock-out form: check if all items have enough stock
+                            var stockOutForm = document.querySelector('#modalStockOut form');
+                            if (stockOutForm) {
+                                stockOutForm.addEventListener('submit', function(e) {
+                                    var disabledInputs = this.querySelectorAll('input[name^="items["][disabled]');
+                                    var enabledInputs = this.querySelectorAll('input[name^="items["]:not([disabled])');
+                                    var hasValidExports = enabledInputs.length > 0;
+                                    
+                                    if (!hasValidExports && disabledInputs.length > 0) {
+                                        e.preventDefault();
+                                        alert('⚠️ Không có nguyên liệu nào đủ để xuất cho ca này.\n\nCác nguyên liệu đã được xuất đủ yêu cầu của ca.');
+                                        return false;
+                                    }
+                                    
+                                    // Check if any enabled input has quantity > 0
+                                    var hasQuantity = false;
+                                    enabledInputs.forEach(function(inp) {
+                                        if (parseInt(inp.value || 0) > 0) {
+                                            hasQuantity = true;
+                                        }
+                                    });
+                                    
+                                    if (!hasQuantity) {
+                                        e.preventDefault();
+                                        alert('⚠️ Vui lòng nhập số lượng xuất cho ít nhất một nguyên liệu.');
+                                        return false;
+                                    }
+                                });
+                            }
+                        })();
+                    });
                 </script>
     </div>
 </div>

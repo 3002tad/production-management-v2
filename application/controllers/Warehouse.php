@@ -62,14 +62,27 @@ class Warehouse extends CI_Controller
                 }
             }
             foreach ($arr as $line) {
-                // Expect pattern: "Name — number" (em dash)
+                // Expect pattern: "Name — number" (em dash) or "Name — Yêu cầu: XXX — Thiếu: YYY"
                 if (!is_string($line)) continue;
                 $parts = preg_split('/\s+—\s+/u', $line);
                 if (!$parts || count($parts) < 2) continue;
                 $name = trim($parts[0]);
-                $qty_str = trim($parts[1]);
-                // Remove thousand separators
-                $qty = (int)str_replace([',', '.'], '', $qty_str);
+                
+                // Try to extract quantity from remaining parts
+                $qty = 0;
+                for ($i = 1; $i < count($parts); $i++) {
+                    $part = trim($parts[$i]);
+                    // Look for "Yêu cầu: XXX" pattern
+                    if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                        $qty = (int)str_replace([',', '.'], '', $m[1]);
+                        break;
+                    } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                        // If just a number, use it
+                        $qty = (int)str_replace([',', '.'], '', $part);
+                        break;
+                    }
+                }
+                
                 if (!isset($need_by_name[$name])) $need_by_name[$name] = 0;
                 $need_by_name[$name] += max(0, $qty);
             }
@@ -92,8 +105,19 @@ class Warehouse extends CI_Controller
         // Load active shifts and plans for inline stock-out modal
         $shifts = [];
         $plans = [];
-        if ($this->db->table_exists('plan_shift')) {
-            $shifts = $this->db->query('SELECT * FROM plan_shift WHERE ps_status = 1 ORDER BY id_planshift DESC')->result();
+        if ($this->db->table_exists('shift_material_confirmations')) {
+            // Get shifts from today and previous days based on confirmed_at
+            $shifts = $this->db->query('
+                SELECT DISTINCT
+                    smc.shift_id as id_planshift,
+                    smc.shift_id,
+                    smc.plan_id as id_plan,
+                    DATE(smc.confirmed_at) as confirmed_date,
+                    CONCAT(smc.shift_id, \' - Shift \', smc.shift_id) as ps_name
+                FROM shift_material_confirmations smc
+                WHERE smc.status = \'confirmed\'
+                ORDER BY smc.confirmed_at DESC, smc.shift_id DESC
+            ')->result();
         }
         if ($this->db->table_exists('planning')) {
             $plans = $this->db->query('SELECT id_plan, plan_name, materials FROM planning WHERE pl_status = 1 ORDER BY id_plan DESC')->result();
@@ -134,8 +158,22 @@ class Warehouse extends CI_Controller
                     $parts = preg_split('/\s+—\s+/u', $line);
                     if (!$parts || count($parts) < 2) continue;
                     $name = mb_strtolower(trim($parts[0]));
-                    $qty_str = trim($parts[1]);
-                    $planned = (int)str_replace([',', '.'], '', $qty_str);
+                    
+                    // Extract quantity from remaining parts
+                    $planned = 0;
+                    for ($i = 1; $i < count($parts); $i++) {
+                        $part = trim($parts[$i]);
+                        // Look for "Yêu cầu: XXX" pattern
+                        if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                            $planned = (int)str_replace([',', '.'], '', $m[1]);
+                            break;
+                        } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                            // If just a number, use it
+                            $planned = (int)str_replace([',', '.'], '', $part);
+                            break;
+                        }
+                    }
+                    
                     $mid = isset($material_by_name[$name]) ? (int)$material_by_name[$name] : 0;
                     if ($mid <= 0) continue;
                     $exported = isset($exports_sums[$plan_id][$mid]) ? (int)$exports_sums[$plan_id][$mid] : 0;
@@ -231,8 +269,9 @@ class Warehouse extends CI_Controller
         }
         if (!empty($shifts)) {
             $plan_shift = count($shifts);
-        } elseif ($this->db->table_exists('plan_shift')) {
-            $plan_shift = (int)$this->db->where('ps_status', 1)->from('plan_shift')->count_all_results();
+        } elseif ($this->db->table_exists('shift_material_confirmations')) {
+            // Count distinct shifts from shift_material_confirmations
+            $plan_shift = (int)$this->db->where('status', 'confirmed')->select('DISTINCT shift_id')->from('shift_material_confirmations')->count_all_results();
         }
 
         // Recent history for quick view sections with names attached
@@ -289,9 +328,24 @@ class Warehouse extends CI_Controller
         // Support sub-actions in URL like 'warehouse/material/addnewmaterial' or 'warehouse/material/addmaterial'
         $seg3 = $this->uri->segment(3);
         if ($seg3 === 'addmaterial') {
+            // Load shifts from shift_material_confirmations instead of plan_shift
+            $shifts = [];
+            if ($this->db->table_exists('shift_material_confirmations')) {
+                $shifts = $this->db->query('
+                    SELECT DISTINCT
+                        smc.shift_id as id_planshift,
+                        smc.shift_id,
+                        DATE(smc.confirmed_at) as confirmed_date,
+                        CONCAT(smc.shift_id, \' - Shift \', smc.shift_id) as ps_name
+                    FROM shift_material_confirmations smc
+                    WHERE smc.status = \'confirmed\'
+                    ORDER BY smc.confirmed_at DESC, smc.shift_id DESC
+                ')->result();
+            }
+            
             $data = [
-                'planshift' => $this->db->query('SELECT * FROM plan_shift JOIN staff WHERE plan_shift.id_staff=staff.id_staff AND ps_status = 1 AND staff.st_status=2')->result(),
-                'material' => $this->db->query('SELECT * FROM material')->result(),
+                'shifts' => $shifts,
+                'materials' => $this->db->query('SELECT * FROM material')->result(),
                 'content' => 'warehouse/material/AddMaterial',
                 'navlink' => 'material',
             ];
@@ -766,7 +820,7 @@ class Warehouse extends CI_Controller
      */
     public function save_stock_out()
     {
-        $id_planshift = trim($this->input->post('id_planshift'));
+        $id_planshift = trim($this->input->post('id_planshift')); // This will be shift_id from shift_material_confirmations
         $items = $this->input->post('items'); // associative: id_material => qty
         $date_out = $this->input->post('date_out');
         $note = trim($this->input->post('note'));
@@ -778,6 +832,9 @@ class Warehouse extends CI_Controller
             redirect(site_url('warehouse/stock_out'));
             return;
         }
+
+        // Convert id_planshift (shift_id from shift_material_confirmations) to integer
+        $shift_id = !empty($id_planshift) ? (int)$id_planshift : 0;
 
         // Upload attachment if present
         $attachment_path = null;
@@ -807,7 +864,7 @@ class Warehouse extends CI_Controller
         if ($this->db->table_exists('material_out') === false) {
             $this->db->query("CREATE TABLE IF NOT EXISTS material_out (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                id_planshift INT NULL,
+                shift_id INT NULL COMMENT 'Reference to shift_material_confirmations.shift_id',
                 id_plan INT NULL,
                 id_material INT NOT NULL,
                 quantity INT NOT NULL,
@@ -816,7 +873,7 @@ class Warehouse extends CI_Controller
                 attachment VARCHAR(512) NULL,
                 created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
-            $this->db->query("CREATE INDEX idx_material_out_planshift ON material_out(id_planshift);");
+            $this->db->query("CREATE INDEX idx_material_out_shift ON material_out(shift_id);");
             $this->db->query("CREATE INDEX idx_material_out_material ON material_out(id_material);");
         } else {
             // Ensure id_plan column exists for linking to planning
@@ -826,11 +883,16 @@ class Warehouse extends CI_Controller
             if (!$has_id_plan) {
                 $this->db->query("ALTER TABLE material_out ADD COLUMN id_plan INT NULL");
             }
-            // Make id_planshift nullable to support exports without shift (only if not already NULL)
-            $id_planshift_nullable = true; // default
-            foreach ($cols as $c) { if (isset($c->Field) && $c->Field === 'id_planshift') { $id_planshift_nullable = (strpos(strtolower($c->Null), 'yes') !== false); break; } }
-            if (!$id_planshift_nullable) {
-                $this->db->query("ALTER TABLE material_out MODIFY COLUMN id_planshift INT NULL");
+            // Check if table has old id_planshift column and migrate to shift_id if needed
+            $has_shift_id = false;
+            $has_id_planshift = false;
+            foreach ($cols as $c) { 
+                if (isset($c->Field) && $c->Field === 'shift_id') { $has_shift_id = true; }
+                if (isset($c->Field) && $c->Field === 'id_planshift') { $has_id_planshift = true; }
+            }
+            if (!$has_shift_id && $has_id_planshift) {
+                $this->db->query("ALTER TABLE material_out ADD COLUMN shift_id INT NULL");
+                // Optional: migrate data from id_planshift to shift_id if needed
             }
         }
 
@@ -847,6 +909,69 @@ class Warehouse extends CI_Controller
             $this->session->set_flashdata('error', 'Vui lòng chọn nguyên liệu và nhập số lượng hợp lệ.');
             redirect(site_url('warehouse'));
             return;
+        }
+
+        // Validate: if exporting for a plan/shift, check if each material has enough stock
+        if ($id_plan > 0) {
+            $plan = $this->crudModel->getDataWhere('planning', 'id_plan', $id_plan)->row();
+            if ($plan && !empty($plan->materials)) {
+                $decoded = json_decode($plan->materials, true);
+                if (is_array($decoded)) {
+                    foreach ($clean_items as $id_material => $qty_to_export) {
+                        // Find this material in plan
+                        $material_found = false;
+                        $planned_qty = 0;
+                        foreach ($decoded as $line) {
+                            if (!is_string($line)) continue;
+                            $parts = preg_split('/\s+—\s+/u', $line);
+                            if (!$parts || count($parts) < 2) continue;
+                            $name = trim($parts[0]);
+                            
+                            // Parse new format: "Material Name — Yêu cầu: 100 — Thiếu: 50"
+                            $planned = 0;
+                            for ($i = 1; $i < count($parts); $i++) {
+                                $part = trim($parts[$i]);
+                                if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                                    $planned = (int)str_replace([',', '.'], '', $m[1]);
+                                    break;
+                                } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                                    $planned = (int)str_replace([',', '.'], '', $part);
+                                    break;
+                                }
+                            }
+                            
+                            // Check if this is the material we're exporting
+                            $key = mb_strtolower(trim($name));
+                            $mat = $this->crudModel->getDataWhere('material', 'id_material', $id_material)->row();
+                            if ($mat) {
+                                $mat_name_lower = mb_strtolower(trim($mat->material_name ?? $mat->name ?? ''));
+                                if ($key === $mat_name_lower) {
+                                    $material_found = true;
+                                    $planned_qty = $planned;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if ($material_found && $planned_qty > 0) {
+                            // Get already exported
+                            $exported = 0;
+                            if ($this->db->table_exists('material_out')) {
+                                $result = $this->db->query('SELECT COALESCE(SUM(quantity), 0) as total FROM material_out WHERE id_plan = ? AND id_material = ?', [$id_plan, $id_material])->row();
+                                $exported = (int)($result->total ?? 0);
+                            }
+                            
+                            // Check if exporting more than available (planned - already exported)
+                            $remaining = max(0, $planned_qty - $exported);
+                            if ($qty_to_export > $remaining) {
+                                $this->session->set_flashdata('error', 'Xuất quá số lượng yêu cầu cho NVL. Kế hoạch: '.$planned_qty.', đã xuất: '.$exported.', còn lại: '.$remaining.'.');
+                                redirect(site_url('warehouse?open=stock_out'));
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Begin transaction
@@ -872,7 +997,7 @@ class Warehouse extends CI_Controller
             ]);
 
             $insert = [
-                'id_planshift' => !empty($id_planshift) ? (int)$id_planshift : 0,
+                'shift_id'     => $shift_id > 0 ? $shift_id : null,
                 'id_plan'      => $id_plan ?: null,
                 'id_material'  => (int)$id_material,
                 'quantity'     => (int)$qty,
@@ -955,6 +1080,8 @@ class Warehouse extends CI_Controller
     public function plan_remaining_materials()
     {
         $id_plan = (int)($this->input->get('id_plan') ?? 0);
+        $shift_id = (int)($this->input->get('shift_id') ?? 0);
+        
         if ($id_plan <= 0) {
             return $this->output->set_status_header(400)->set_output(json_encode(['error' => 'Invalid plan id']));
         }
@@ -978,12 +1105,45 @@ class Warehouse extends CI_Controller
             if ($mid > 0) { $material_row_by_id[$mid] = $m; }
         }
 
-        // Sum exported for this plan per material
+        // Get exported qty for this plan from material_out table
         $exported = [];
         if ($this->db->table_exists('material_out')) {
-            $rows = $this->db->query('SELECT id_material, SUM(quantity) as total_qty FROM material_out WHERE id_plan = ? GROUP BY id_material', [$id_plan])->result();
-            foreach ($rows as $r) {
-                $exported[(int)$r->id_material] = (int)$r->total_qty;
+            $query = $this->db->select('id_material, SUM(quantity) as total_qty')
+                ->from('material_out')
+                ->where('id_plan', $id_plan);
+            $query = $query->group_by('id_material');
+            $rows = $query->get()->result();
+            
+            foreach ($rows as $row) {
+                $mid = (int)($row->id_material ?? 0);
+                $qty = (int)($row->total_qty ?? 0);
+                if ($mid > 0 && $qty > 0) {
+                    $exported[$mid] = $qty;
+                }
+            }
+        }
+
+        // Get required_qty from shift_material_confirmations for suggestion
+        // This is used to suggest default quantity when user selects a shift
+        $shift_required = [];
+        if ($this->db->table_exists('shift_material_confirmations') && $shift_id > 0) {
+            $rows = $this->db->where('plan_id', $id_plan)
+                ->where('shift_id', $shift_id)
+                ->get('shift_material_confirmations')->result();
+            
+            foreach ($rows as $row) {
+                if (!empty($row->snapshot_json)) {
+                    $snapshot = json_decode($row->snapshot_json, true);
+                    if (isset($snapshot['details']) && is_array($snapshot['details'])) {
+                        foreach ($snapshot['details'] as $detail) {
+                            $mid = (int)($detail['id_material'] ?? 0);
+                            $required = (int)($detail['required_qty'] ?? 0);
+                            if ($mid > 0 && $required > 0) {
+                                $shift_required[$mid] = $required;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -996,11 +1156,31 @@ class Warehouse extends CI_Controller
         }
         foreach ($materials_arr as $line) {
             if (!is_string($line)) continue;
+            // Expected format: "Material Name — Yêu cầu: 60,000 — Thiếu: 118,000"
+            // Extract material name and quantity
             $parts = preg_split('/\s+—\s+/u', $line);
             if (!$parts || count($parts) < 2) continue;
+            
             $name = trim($parts[0]);
-            $qty_str = trim($parts[1]);
-            $planned = (int)str_replace([',', '.'], '', $qty_str);
+            
+            // Try to extract quantity from parts
+            // Could be in format: "Yêu cầu: 60,000" or just "60,000"
+            $planned = 0;
+            
+            // Look for "Yêu cầu: XXX" pattern in remaining parts
+            for ($i = 1; $i < count($parts); $i++) {
+                $part = trim($parts[$i]);
+                if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                    $qty_str = $m[1];
+                    $planned = (int)str_replace([',', '.'], '', $qty_str);
+                    break;
+                } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                    // If just a number, use it
+                    $planned = (int)str_replace([',', '.'], '', $part);
+                    break;
+                }
+            }
+            
             $key = mb_strtolower($name);
             $mid = isset($material_by_name[$key]) ? (int)$material_by_name[$key] : 0;
             $exp = isset($exported[$mid]) ? (int)$exported[$mid] : 0;
@@ -1012,6 +1192,16 @@ class Warehouse extends CI_Controller
                 $uom = isset($row->uom) ? $row->uom : '';
                 $stock = (int)($row->stock ?? 0);
             }
+            $shift_req = isset($shift_required[$mid]) ? (int)$shift_required[$mid] : 0;
+            // Check if already exported enough for this shift
+            $can_export = true;
+            $export_remaining = $shift_req;
+            if ($shift_id > 0 && $shift_req > 0 && $exp >= $shift_req) {
+                $can_export = false;
+                $export_remaining = 0;
+            } else if ($shift_id > 0 && $shift_req > 0) {
+                $export_remaining = max(0, $shift_req - $exp);
+            }
             $planned_items[] = [
                 'id_material' => $mid,
                 'material_name' => $name,
@@ -1020,6 +1210,9 @@ class Warehouse extends CI_Controller
                 'planned' => (int)$planned,
                 'exported' => $exp,
                 'remaining' => $remaining,
+                'shift_required' => $shift_req,
+                'can_export' => $can_export,
+                'export_remaining' => $export_remaining,
             ];
         }
 
@@ -1044,31 +1237,23 @@ class Warehouse extends CI_Controller
         }
 
         // Query shifts that match the selected date
-        // Try with shift table first, fallback without if table doesn't exist
+        // Use shift_material_confirmations table instead of plan_shift
+        // Filter by confirmed_at date matching the selected date
         $shifts = [];
-        $shift_table_exists = $this->db->table_exists('shift');
         
-        if ($shift_table_exists) {
+        if ($this->db->table_exists('shift_material_confirmations')) {
             $shifts = $this->db->query('
-                SELECT ps.*, s.shift_name as ps_name 
-                FROM plan_shift ps 
-                LEFT JOIN shift s ON ps.id_shift = s.id_shift 
-                WHERE ps.start_date = ? AND ps.ps_status = 1 
-                ORDER BY ps.id_planshift DESC
+                SELECT DISTINCT
+                    smc.shift_id as id_planshift,
+                    smc.shift_id,
+                    smc.plan_id as id_plan,
+                    DATE(smc.confirmed_at) as confirmed_date,
+                    CONCAT(smc.shift_id, \' - Shift \', smc.shift_id) as ps_name
+                FROM shift_material_confirmations smc
+                WHERE smc.status = \'confirmed\'
+                AND DATE(smc.confirmed_at) = ?
+                ORDER BY smc.shift_id DESC
             ', [$date])->result();
-        } else {
-            // Fallback: without shift table
-            $shifts = $this->db->query('
-                SELECT ps.* 
-                FROM plan_shift ps 
-                WHERE ps.start_date = ? AND ps.ps_status = 1 
-                ORDER BY ps.id_planshift DESC
-            ', [$date])->result();
-            
-            // Add ps_name manually from id_shift if available
-            foreach ($shifts as $s) {
-                $s->ps_name = 'Shift ' . (int)$s->id_shift;
-            }
         }
 
         return $this->output
@@ -1144,8 +1329,20 @@ class Warehouse extends CI_Controller
                 $parts = preg_split('/\s+—\s+/u', $line);
                 if (!$parts || count($parts) < 2) continue;
                 $name = trim($parts[0]);
-                $qty_str = trim($parts[1]);
-                $planned = (int)str_replace([',', '.'], '', $qty_str);
+                
+                // Parse new format: "Material Name — Yêu cầu: 100 — Thiếu: 50"
+                $planned = 0;
+                for ($i = 1; $i < count($parts); $i++) {
+                    $part = trim($parts[$i]);
+                    if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                        $planned = (int)str_replace([',', '.'], '', $m[1]);
+                        break;
+                    } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                        // Fallback to old format: plain number
+                        $planned = (int)str_replace([',', '.'], '', $part);
+                        break;
+                    }
+                }
                 $key = mb_strtolower($name);
                 $mid = isset($material_by_name[$key]) ? (int)$material_by_name[$key] : 0;
                 $exported = ($mid && isset($exports_sums[$plan_id][$mid])) ? (int)$exports_sums[$plan_id][$mid] : 0;
@@ -1264,8 +1461,20 @@ class Warehouse extends CI_Controller
                 $parts = preg_split('/\s+—\s+/u', $line);
                 if (!$parts || count($parts) < 2) continue;
                 $name = trim($parts[0]);
-                $qty_str = trim($parts[1]);
-                $planned = (int)str_replace([',', '.'], '', $qty_str);
+                
+                // Parse new format: "Material Name — Yêu cầu: 100 — Thiếu: 50"
+                $planned = 0;
+                for ($i = 1; $i < count($parts); $i++) {
+                    $part = trim($parts[$i]);
+                    if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                        $planned = (int)str_replace([',', '.'], '', $m[1]);
+                        break;
+                    } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                        // Fallback to old format: plain number
+                        $planned = (int)str_replace([',', '.'], '', $part);
+                        break;
+                    }
+                }
                 $key = mb_strtolower($name);
                 $mid = isset($material_by_name[$key]) ? (int)$material_by_name[$key] : 0;
                 $exported = ($mid && isset($exports_sums[$plan_id][$mid])) ? (int)$exports_sums[$plan_id][$mid] : 0;
@@ -1811,8 +2020,22 @@ class Warehouse extends CI_Controller
                 $parts = preg_split('/\s+—\s+/u', $line);
                 if (!$parts || count($parts) < 2) continue;
                 $name = trim($parts[0]);
-                $qty_str = trim($parts[1]);
-                $qty = (int)str_replace([',', '.'], '', $qty_str);
+                
+                // Try to extract quantity from remaining parts
+                $qty = 0;
+                for ($i = 1; $i < count($parts); $i++) {
+                    $part = trim($parts[$i]);
+                    // Look for "Yêu cầu: XXX" pattern
+                    if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                        $qty = (int)str_replace([',', '.'], '', $m[1]);
+                        break;
+                    } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                        // If just a number, use it
+                        $qty = (int)str_replace([',', '.'], '', $part);
+                        break;
+                    }
+                }
+                
                 if (!isset($need_by_name[$name])) $need_by_name[$name] = 0;
                 $need_by_name[$name] += max(0, $qty);
             }
