@@ -39,6 +39,7 @@ class QcModel extends CI_Model
             'has_project_code' => false,
             'has_product_code' => false,
             'has_status' => false,
+            'has_can_receive_fg' => false,
             'has_lot_code' => false,
             'has_variant' => false,
             'has_qty_finished' => false,
@@ -57,6 +58,7 @@ class QcModel extends CI_Model
         $schema['has_project_code'] = $this->db->field_exists('project_code', $table);
         $schema['has_product_code'] = $this->db->field_exists('product_code', $table);
         $schema['has_status'] = $this->db->field_exists('status', $table);
+        $schema['has_can_receive_fg'] = $this->db->field_exists('can_receive_fg', $table);
         $schema['has_lot_code'] = $this->db->field_exists('lot_code', $table);
         $schema['has_variant'] = $this->db->field_exists('variant', $table);
         $schema['has_qty_finished'] = $this->db->field_exists('qty_finished', $table);
@@ -219,12 +221,29 @@ class QcModel extends CI_Model
      */
     public function updateClosureStatus($closure_id, $status, $can_receive_fg = false)
     {
+        $schema = $this->_getShiftClosureSchema();
+
+        // Determine primary key column (id vs closure_id) based on actual schema
+        $pk = 'id';
+        if ($schema['exists']) {
+            if ($schema['has_id']) {
+                $pk = 'id';
+            } elseif ($schema['has_closure_id']) {
+                $pk = 'closure_id';
+            }
+        }
+
         $data = [
             'status' => $status,
-            'can_receive_fg' => $can_receive_fg ? 1 : 0
         ];
-        
-        return $this->db->update('shift_closures', $data, ['id' => $closure_id]);
+
+        // Only set can_receive_fg flag if the column exists in this schema
+        if ($schema['exists'] && !empty($schema['has_can_receive_fg']) && $schema['has_can_receive_fg']) {
+            $data['can_receive_fg'] = $can_receive_fg ? 1 : 0;
+        }
+
+        // Note: we update the base table without alias here
+        return $this->db->update('shift_closures', $data, [$pk => $closure_id]);
     }
     
     // ========================================
@@ -775,10 +794,7 @@ class QcModel extends CI_Model
         $this->db->update('qc_sessions', ['status' => 'DECIDED'], ['id' => $session_id]);
         
         // 4. Update closure status to VERIFIED with can_receive_fg flag
-        $this->db->update('shift_closures', [
-            'status' => 'VERIFIED',
-            'can_receive_fg' => 1
-        ], ['id' => $session->closure_id]);
+        $this->updateClosureStatus($session->closure_id, 'VERIFIED', true);
         
         $this->db->trans_complete();
         
@@ -819,10 +835,7 @@ class QcModel extends CI_Model
         $this->db->update('qc_sessions', ['status' => 'DECIDED'], ['id' => $session_id]);
         
         // 4. Update closure status to REJECTED
-        $this->db->update('shift_closures', [
-            'status' => 'REJECTED',
-            'can_receive_fg' => 0
-        ], ['id' => $session->closure_id]);
+        $this->updateClosureStatus($session->closure_id, 'REJECTED', false);
         
         // 5. Create adjustment request
         $adj_request = [
