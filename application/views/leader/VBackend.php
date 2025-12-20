@@ -492,14 +492,66 @@
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="./assets/js/material-dashboard.min.js?v=3.0.0"></script>
-  <?php if (!empty($this->session->flashdata('success')) || (isset($_GET['msg']) && $_GET['msg'] === 'success')): ?>
-    <div id="loginSuccessToast" class="alert alert-success" style="position: fixed; top: 16px; right: 16px; z-index: 1080; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.15);">
-      <strong>Thành công!</strong> <?= htmlspecialchars($this->session->flashdata('success') ?: 'Đăng nhập thành công!'); ?>
-    </div>
-    <script>
-      setTimeout(function(){ var el = document.getElementById('loginSuccessToast'); if(el){ el.style.opacity = '0'; setTimeout(function(){ if(el && el.parentNode){ el.parentNode.removeChild(el); } }, 500); } }, 2500);
-    </script>
-  <?php endif; ?>
+  <script>
+    // Toast notification system (similar to BOD vbackend)
+    var urlParams = new URLSearchParams(window.location.search);
+    var msgType = urlParams.get('msg');
+    var pathToastKey = 'toast_shown_' + window.location.pathname;
+    var toastShown = sessionStorage.getItem('toast_shown') || sessionStorage.getItem(pathToastKey);
+
+    function markToastShown() {
+      try {
+        sessionStorage.setItem('toast_shown', 'true');
+        sessionStorage.setItem(pathToastKey, 'true');
+      } catch (e) { /* ignore */ }
+    }
+
+    function removeMsgParam() {
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) { /* ignore */ }
+    }
+
+    function attemptShowFlashToasts() {
+      var pathToastShown = sessionStorage.getItem(pathToastKey);
+      var globalToastShown = sessionStorage.getItem('toast_shown');
+      
+      // If this path already showed a toast, don't show again unless ?msg param present
+      if (pathToastShown && !msgType) {
+        return;
+      }
+      
+      // If global toast was shown and no fresh ?msg param, skip
+      if (globalToastShown && !msgType) {
+        return;
+      }
+      
+      // If we have ?msg=success, show the toast
+      if (msgType === 'success') {
+        var toastEl = document.getElementById('loginSuccessToast');
+        if (toastEl) {
+          toastEl.style.display = 'block';
+          markToastShown();
+          removeMsgParam();
+          setTimeout(function() {
+            toastEl.style.opacity = '0';
+            toastEl.style.transition = 'opacity 0.5s';
+            setTimeout(function() {
+              if (toastEl && toastEl.parentNode) {
+                toastEl.parentNode.removeChild(toastEl);
+              }
+            }, 500);
+          }, 2500);
+        }
+      }
+    }
+
+    // Run after DOM is ready
+    document.addEventListener('DOMContentLoaded', attemptShowFlashToasts);
+  </script>
+  <div id="loginSuccessToast" class="alert alert-success" style="position: fixed; top: 16px; right: 16px; z-index: 1080; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.15); display: none;">
+    <strong>Thành công!</strong> Đăng nhập thành công!
+  </div>
 </body>
 
 </html>
