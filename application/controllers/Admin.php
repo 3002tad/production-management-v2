@@ -625,6 +625,9 @@ class Admin extends CI_Controller
                     'staff_name' => $tampil->staff_name,
                     'phone' => $tampil->phone,
                     'email' => $tampil->email,
+                    'department' => $tampil->department,
+                    'position' => $tampil->position,
+                    'st_status' => $tampil->st_status,
                 ],
 
                 'content' => 'admin/staff/updatestaff',

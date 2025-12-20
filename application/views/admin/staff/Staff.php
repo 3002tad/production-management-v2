@@ -191,13 +191,13 @@
                     <thead>
                         <tr>
                         <th class="text-center">STT</th>
+                        <th class="text-center">Thao tác</th>
                         <th>Tên nhân viên</th>
                         <th>Bộ phận</th>
                         <th>Chức vụ</th>
                         <th>Số điện thoại</th>
                         <th>Email</th>
                         <th>Trạng thái</th>
-                        <th class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
