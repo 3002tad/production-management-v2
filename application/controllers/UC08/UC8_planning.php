@@ -1042,6 +1042,16 @@ class UC8_planning extends CI_Controller
             }
             $data['plan'] = $plan;
 
+            // expose suggested shifts value (be resilient to column name differences)
+            $data['suggested_shifts'] = null;
+            if (!empty($plan)) {
+                if (isset($plan->suggested_shifts)) {
+                    $data['suggested_shifts'] = intval($plan->suggested_shifts);
+                } elseif (isset($plan->suggested_shift)) {
+                    $data['suggested_shifts'] = intval($plan->suggested_shift);
+                }
+            }
+
             // plan shifts + attach production shift info when available
             $plan_shifts = [];
             $production_shifts_map = [];

@@ -63,7 +63,7 @@
                         <tr><th>Ghi chú</th><td><?= htmlspecialchars($plan->note ?? '-', ENT_QUOTES) ?></td></tr>
                     </table>
                     <div class="mt-2">
-                        <strong>Số ca gợi ý:</strong> <?= count($plan_shifts ?? []) ?>
+                        <strong>Số ca gợi ý:</strong> <?= number_format((isset($suggested_shifts) && $suggested_shifts !== null) ? $suggested_shifts : (count($plan_shifts ?? []))) ?>
                     </div>
                 <?php else: ?>
                     <p>Không có kế hoạch liên kết cho đơn hàng này.</p>
