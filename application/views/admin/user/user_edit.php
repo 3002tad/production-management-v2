@@ -35,6 +35,8 @@
                 <div class="card-body p-3">
                     <form action="<?= base_url('admin/user_edit_process') ?>" method="POST" id="userEditForm" class="multisteps-form__form">
                         <input type="hidden" name="user_id" value="<?= $user->user_id ?>">
+                        <!-- Hidden username field so server-side validation sees the username (input is readonly/disabled) -->
+                        <input type="hidden" name="username" value="<?= htmlspecialchars($user->username) ?>">
 
                         <div class="row mt-3">
                             <div class="col-md-6">

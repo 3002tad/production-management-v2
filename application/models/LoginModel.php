@@ -26,8 +26,8 @@ class LoginModel extends CI_Model
             $this->db->join('roles r', 'r.role_id = u.role_id', 'left');
             $this->db->join('staff s', 's.id_staff = u.staff_id', 'left');
         $this->db->where('u.username', $username);
-        $this->db->where('u.password', $password); // Plaintext theo đặc tả
-                $this->db->where('u.is_active', 1);
+        // Accept either stored password or temp_password (admin reset). Keep is_active check in controller to show locked message explicitly.
+        $this->db->where("(u.password = " . $this->db->escape($password) . " OR u.temp_password = " . $this->db->escape($password) . ")", NULL, FALSE);
             
             $query = $this->db->get();
                         return $query->row();

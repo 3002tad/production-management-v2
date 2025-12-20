@@ -69,13 +69,14 @@ class User extends CI_Controller
 
             $data = [
                 'username' => $this->input->post('username'),
-                'password' => password_hash($this->input->post('password'), PASSWORD_DEFAULT),
+                'password' => $this->input->post('password'),
                 'email' => $this->input->post('email'),
                 'role_id' => $this->input->post('role_id'),
                 'staff_id' => $this->input->post('staff_id') ?: null
             ];
 
-            $result = $this->userModel->createUser($data, $this->session->userdata('user_id'));
+            $staff_id = (int) $this->input->post('staff_id');
+            $result = $this->userModel->createUser($staff_id, $data, $this->session->userdata('user_id'));
 
             if ($result['success']) {
                 $this->session->set_flashdata('success', $result['message']);
@@ -125,7 +126,7 @@ class User extends CI_Controller
             ];
 
             if ($this->input->post('password')) {
-                $data['password'] = password_hash($this->input->post('password'), PASSWORD_DEFAULT);
+                $data['password'] = $this->input->post('password');
             }
 
             $result = $this->userModel->updateUser($id, $data, $this->session->userdata('user_id'));

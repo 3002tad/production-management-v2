@@ -48,7 +48,7 @@ class Login extends CI_Controller
                                         // Check if user is locked
                     if ($data->is_active == 0) {
                         $this->session->set_flashdata('login_error', 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.');
-                        $this->load->view('login');
+                        redirect('login');
                         return;
                     }
 
@@ -95,7 +95,7 @@ class Login extends CI_Controller
                 } else {
                     log_message('debug', 'Login failed for username: ' . $username);
                     $this->session->set_flashdata('login_error', 'Tên đăng nhập hoặc mật khẩu không đúng!');
-                    $this->load->view('login');
+                    redirect('login');
                 }
             } else {
                 $this->load->view('login');

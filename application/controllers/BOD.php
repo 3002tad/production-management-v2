@@ -298,6 +298,9 @@ class BOD extends CI_Controller
         $id = $this->input->post('id_cust');
         try {
             $data = $this->input->post(null, TRUE);
+            // If the is_active checkbox is unchecked it won't be present in POST;
+            // ensure we store an explicit 0 in that case so the DB is updated.
+            $data['is_active'] = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
             $result = $this->CustomerModel->updateCustomer($id, $data);
             
             if ($result['success']) {
@@ -462,6 +465,9 @@ class BOD extends CI_Controller
                 'application'  => trim($this->input->post('application', TRUE)),
                 'diameter'     => floatval($this->input->post('diameter', TRUE)),
             ];
+
+            // Ensure is_active is set explicitly (unchecked checkbox is not sent in POST)
+            $productData['is_active'] = $this->input->post('is_active') ? 1 : 0;
 
             // Server-side validation for update
             if (empty($productData['product_name']) || strlen($productData['product_name']) > 50) {

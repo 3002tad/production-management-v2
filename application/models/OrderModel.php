@@ -226,6 +226,27 @@ class OrderModel extends CI_Model
         if (empty($data['qty_request']) || !is_numeric($data['qty_request']) || $data['qty_request'] <= 0) return ['valid' => false, 'message' => 'Số lượng phải là một số lớn hơn 0'];
         if (empty($data['entry_date'])) return ['valid' => false, 'message' => 'Vui lòng nhập hạn giao'];
         if (strtotime($data['entry_date']) < strtotime(date('Y-m-d'))) return ['valid' => false, 'message' => 'Hạn giao phải từ hôm nay trở đi'];
+
+        // Extra business validation: customer & product status and product BOM
+        // Check customer exists and is active
+        $customer = $this->db->get_where('customer', ['id_cust' => $data['id_cust']])->row();
+        if (!$customer) return ['valid' => false, 'message' => 'Khách hàng không tồn tại'];
+        if ((int) $customer->is_active !== 1) return ['valid' => false, 'message' => 'Khách hàng đang ngừng hợp tác. Không thể tạo đơn hàng.'];
+
+        // Check product exists and is active
+        $product = $this->db->get_where('product', ['id_product' => $data['id_product']])->row();
+        if (!$product) return ['valid' => false, 'message' => 'Sản phẩm không tồn tại'];
+        if ((int) $product->is_active !== 1) return ['valid' => false, 'message' => 'Sản phẩm đang ngừng hoạt động. Không thể tạo đơn hàng.'];
+
+        // Check product has BOM (định mức)
+        $bom = null;
+        if (!empty($product->bom)) {
+            $bom = json_decode($product->bom, true);
+        }
+        if (empty($bom) || !is_array($bom) || count($bom) === 0) {
+            return ['valid' => false, 'message' => 'Sản phẩm chưa có định mức (BOM). Vui lòng thêm BOM trước khi tạo đơn hàng.'];
+        }
+
         return ['valid' => true, 'message' => 'OK'];
     }
 
@@ -721,6 +742,12 @@ class OrderModel extends CI_Model
         $product = $this->db->select('product_name, bom, diameter')->where('id_product', $id_product)->get('product')->row();
         if (!$product) {
             return ['feasible' => false, 'message' => 'Sản phẩm không tồn tại'];
+        }
+
+        // Disallow capacity check / order creation when product has no BOM defined
+        $bom = json_decode($product->bom, true) ?? [];
+        if (empty($bom)) {
+            return ['feasible' => false, 'message' => 'Sản phẩm chưa có định mức (BOM). Vui lòng thêm BOM trước khi tạo đơn hàng.'];
         }
 
         $capacity_config = $this->db->get('capacity_config')->result_array();

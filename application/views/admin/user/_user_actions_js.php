@@ -3,13 +3,26 @@
 function _adminHandleAjaxAction(url, successMsgFallback) {
   fetch(url, {
     method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    credentials: 'same-origin'
   })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
+    .then(function (res) { return res.text(); })
+    .then(function (text) {
+      var data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('AJAX parse error, response:', text);
+        alert('Lỗi server: ' + (text || 'Không thể phân tích phản hồi JSON'));
+        return;
+      }
+
       if (data && data.success) {
-        // prefer server message if present
-        alert(data.message || successMsgFallback || 'Thành công');
+        var msg = data.message || successMsgFallback || 'Thành công';
+        if (data.temp_password) {
+          msg = 'Mật khẩu tạm: ' + data.temp_password + '\n' + msg;
+        }
+        alert(msg);
         window.location.reload();
       } else {
         alert('Lỗi: ' + (data && data.message ? data.message : 'Không thành công'));

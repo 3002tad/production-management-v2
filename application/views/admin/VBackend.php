@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="apple-touch-icon" sizes="76x76" href="./assets/img/apple-icon.png">
-  <link rel="icon" type="image/png" href="./assets/img/favicon.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="<?= site_url('asset/backend/assets/img/apple-icon.png'); ?>">
+  <link rel="icon" type="image/png" href="<?= site_url('asset/backend/assets/img/favicon.png'); ?>">
   <title>
     Production System 
   </title>
@@ -24,6 +24,10 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <!-- CSS Files -->
   <link id="pagestyle" href="<?= site_url('asset/backend/assets/css/material-dashboard.css?v=3.0.0'); ?>" rel="stylesheet" />
+  <!-- jQuery available early so view scripts can use $ -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <!-- SweetAlert2 for nicer alerts -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="g-sidenav-show bg-gray-200">
@@ -239,6 +243,9 @@
     <script src="<?= site_url('asset/backend/assets/js/plugins/perfect-scrollbar.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/plugins/smooth-scrollbar.min.js'); ?>"></script>
     <script src="<?= site_url('asset/backend/assets/js/plugins/chartjs.min.js'); ?>"></script>
+    <!-- jQuery (MUST LOAD FIRST) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script>if (typeof jQuery === 'undefined') { var s=document.createElement('script'); s.src='https://code.jquery.com/jquery-3.6.0.min.js'; s.onload=function(){console.info('jQuery fallback loaded');}; document.head.appendChild(s); }</script>
     <!-- Forms Validations Plugin -->
     <script src="<?= site_url('asset/backend/assets/js/plugins/jquery.validate.min.js'); ?>"></script>
     <!-- Plugin for the Wizard, full documentation here: https://github.com/VinceG/twitter-bootstrap-wizard -->

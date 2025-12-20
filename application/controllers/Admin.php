@@ -1309,7 +1309,8 @@ class Admin extends CI_Controller
         $this->load->helper(array('form','url'));
         $this->load->library('form_validation');
         
-        $id = $this->uri->segment(3);
+        // Accept id from POST (form with hidden user_id) or URI segment (link)
+        $id = $this->input->post('user_id') ?: $this->uri->segment(3);
         $user = $this->userModel->getUserById($id);
         
         if (!$user) {
@@ -1340,7 +1341,8 @@ class Admin extends CI_Controller
             ];
 
             if ($this->input->post('password')) {
-                $userData['password'] = password_hash($this->input->post('password'), PASSWORD_DEFAULT);
+                // UC6 specification stores password in plaintext (used by login logic)
+                $userData['password'] = $this->input->post('password');
             }
 
             $result = $this->userModel->updateUser($id, $userData, $this->session->userdata('user_id'));
@@ -1394,10 +1396,11 @@ class Admin extends CI_Controller
         ];
 
         if ($this->input->is_ajax_request()) {
-            $this->output
-                ->set_content_type('application/json')
-                ->set_output(json_encode($response));
-            return;
+            // Ensure no previous output (warnings/HTML) pollute the JSON response
+            if (ob_get_length()) { @ob_end_clean(); }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($response);
+            exit;
         }
 
         if ($response['success']) {
@@ -1420,6 +1423,7 @@ class Admin extends CI_Controller
 
         $data = [
             'user' => $user,
+            'audit_logs' => $this->userModel->getUserAuditLog($id),
             'content' => 'admin/user/user_detail',
             'navlink' => 'user',
         ];
@@ -1436,13 +1440,15 @@ class Admin extends CI_Controller
         $response = [
             'success' => (bool) ($result['success'] ?? false),
             'message' => $result['message'] ?? '',
+            'temp_password' => $result['temp_password'] ?? null,
         ];
 
         if ($this->input->is_ajax_request()) {
-            $this->output
-                ->set_content_type('application/json')
-                ->set_output(json_encode($response));
-            return;
+            // Ensure no previous output (warnings/HTML) pollute the JSON response
+            if (ob_get_length()) { @ob_end_clean(); }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($response);
+            exit;
         }
 
         if ($response['success']) {

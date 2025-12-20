@@ -232,25 +232,55 @@ $(document).ready(function() {
         'Leader': '2' // line_manager
     };
 
-    // Xử lý khi chọn nhân viên
-    $('#staff_id').on('change', function() {
-        var selectedOption = $(this).find('option:selected');
-        var staffId = $(this).val();
-        
+    // Normalize string (remove diacritics, lowercase) for robust matching
+    function normalizeText(str) {
+        if (!str) return '';
+        try {
+            return str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+        } catch (e) {
+            // Fallback if normalize with Unicode property escapes isn't supported
+            return str.replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        }
+    }
+
+    // Build normalized map for faster lookup
+    const normalizedPositionMap = {};
+    Object.keys(positionToRoleMap).forEach(function(k) {
+        normalizedPositionMap[normalizeText(k)] = positionToRoleMap[k];
+    });
+
+    // Xử lý khi chọn nhân viên - hỗ trợ cả select gốc và plugin (bootstrap-select)
+    function handleStaffChange(el) {
+        var $sel = $(el);
+        var val = $sel.val();
+        var selectedOption = $sel.find('option[value="' + val + '"]');
+        var staffId = val;
+
         if (staffId) {
-            // Hiển thị thông tin nhân viên
             var department = selectedOption.data('department') || 'Chưa Phân Loại';
-            var position = selectedOption.data('position') || 'Chưa Phân Loại';
+            var position = selectedOption.data('position') || '';
             var email = selectedOption.data('email') || '';
             var phone = selectedOption.data('phone') || '';
-            
-            $('#staffDepartment').text(department);
-            $('#staffPosition').text(position);
+
+            $('#staffDepartment').text(department || 'Chưa Phân Loại');
+            $('#staffPosition').text(position || 'Chưa Phân Loại');
             $('#staffEmail').text(email);
             $('#staffPhone').text(phone);
-            
-            // Tự động gợi ý role dựa trên position
-            var suggestedRoleId = positionToRoleMap[position] || '';
+
+            var normPosition = normalizeText(position);
+            var suggestedRoleId = '';
+            if (normalizedPositionMap[normPosition]) {
+                suggestedRoleId = normalizedPositionMap[normPosition];
+            } else {
+                Object.keys(normalizedPositionMap).some(function(k) {
+                    if (k && normPosition.indexOf(k) !== -1) {
+                        suggestedRoleId = normalizedPositionMap[k];
+                        return true;
+                    }
+                    return false;
+                });
+            }
+
             if (suggestedRoleId) {
                 $('#role_id').val(suggestedRoleId);
                 var roleText = $('#role_id option:selected').text();
@@ -258,13 +288,23 @@ $(document).ready(function() {
             } else {
                 $('#suggestedRole').text('Vui lòng chọn vai trò phù hợp');
             }
-            
+
             $('#staffInfo').show();
         } else {
             $('#staffInfo').hide();
             $('#suggestedRole').text('');
         }
-    });
+    }
+
+    var $staffSelect = $('#staff_id');
+    $staffSelect.on('change', function() { handleStaffChange(this); });
+    // If bootstrap-select is used, it fires changed.bs.select - handle it too
+    $staffSelect.on('changed.bs.select', function (e, clickedIndex, isSelected, previousValue) { handleStaffChange(this); });
+
+    // If a selectpicker plugin already initialized and has a selected value on load, trigger handler
+    if ($staffSelect.val()) {
+        handleStaffChange($staffSelect);
+    }
 
     // Toggle password visibility
     $('#togglePassword').on('click', function() {
@@ -343,5 +383,40 @@ $(document).ready(function() {
             return false;
         }
     });
+
+    // Safety: if jQuery/plugins load late, ensure handlers attached
+    (function ensureInit() {
+        if (typeof jQuery === 'undefined') {
+            setTimeout(ensureInit, 200);
+            return;
+        }
+        // Ensure password strength handler attached
+        if ($('#password').length && !$('#password').data('strength-attached')) {
+            $('#password').on('input', function() {
+                var password = $(this).val();
+                var strength = 0;
+                var feedback = [];
+
+                if (password.length >= 6) strength++; else feedback.push('ít nhất 6 ký tự');
+                if (/[a-z]/.test(password)) strength++; else feedback.push('chữ thường');
+                if (/[A-Z]/.test(password)) strength++; else feedback.push('chữ hoa');
+                if (/[0-9]/.test(password)) strength++; else feedback.push('số');
+
+                var strengthBar = $('#passwordStrength');
+                strengthBar.removeClass('bg-danger bg-warning bg-info bg-success');
+
+                if (strength <= 2) {
+                    strengthBar.html('<div class="progress mt-1"><div class="progress-bar bg-danger" style="width: 25%"></div></div><small class="text-danger">Yếu: ' + feedback.join(', ') + '</small>');
+                } else if (strength <= 3) {
+                    strengthBar.html('<div class="progress mt-1"><div class="progress-bar bg-warning" style="width: 50%"></div></div><small class="text-warning">Trung bình: ' + feedback.join(', ') + '</small>');
+                } else if (strength <= 4) {
+                    strengthBar.html('<div class="progress mt-1"><div class="progress-bar bg-info" style="width: 75%"></div></div><small class="text-info">Khá: ' + feedback.join(', ') + '</small>');
+                } else {
+                    strengthBar.html('<div class="progress mt-1"><div class="progress-bar bg-success" style="width: 100%"></div></div><small class="text-success">Mạnh</small>');
+                }
+            });
+            $('#password').data('strength-attached', true);
+        }
+    })();
 });
 </script>

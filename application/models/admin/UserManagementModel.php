@@ -417,6 +417,52 @@ class UserManagementModel extends CI_Model
         }
     }
 
+    // Toggle user status (wrapper used by controllers) ------------------------------------------------
+    public function toggleUserStatus($user_id, $acted_by)
+    {
+        $user = $this->getUserById($user_id);
+        if (!$user) {
+            return ['success' => false, 'message' => 'Không tìm thấy user.'];
+        }
+
+        if ((int)$user->is_active === 1) {
+            // currently active -> lock
+            return $this->lockUser($user_id, 'Locked by admin', $acted_by);
+        }
+
+        // currently inactive -> unlock
+        return $this->unlockUser($user_id, $acted_by);
+    }
+
+    // Delete user safely (protect last admin) ---------------------------------------------------------
+    public function deleteUser($user_id, $deleted_by)
+    {
+        $user = $this->getUserById($user_id);
+        if (!$user) {
+            return ['success' => false, 'message' => 'Không tìm thấy user.'];
+        }
+
+        if ($user->role_name === 'system_admin' && $this->checkLastAdmin($user_id)) {
+            return ['success' => false, 'message' => 'Không thể xóa admin duy nhất trong hệ thống.'];
+        }
+
+        $this->db->trans_start();
+        $this->db->where('user_id', $user_id);
+        $deleted = $this->db->delete('user');
+
+        if ($deleted) {
+            $this->logAudit($deleted_by, 'delete', 'user', $user_id, $user, null);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE || !$deleted) {
+            return ['success' => false, 'message' => 'Lỗi kỹ thuật khi xóa user. Vui lòng thử lại.'];
+        }
+
+        return ['success' => true, 'message' => 'Đã xóa tài khoản.'];
+    }
+
     // ========================================================================
     // RESET PASSWORD OPERATION
     // ========================================================================

@@ -282,7 +282,11 @@
 
                 if (newPassword !== confirmPassword) {
                     e.preventDefault();
-                    Swal.fire({icon: 'error', title: 'Lỗi', text: 'Mật khẩu xác nhận không khớp!', confirmButtonText: 'Đóng'});
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({icon: 'error', title: 'Lỗi', text: 'Mật khẩu xác nhận không khớp!', confirmButtonText: 'Đóng'});
+                    } else {
+                        alert('Lỗi: Mật khẩu xác nhận không khớp!');
+                    }
                     return false;
                 }
 
@@ -293,12 +297,16 @@
                 var hasSpecial = /[^a-zA-Z0-9]/.test(newPassword);
                 if (newPassword.length < 8 || !hasUpper || !hasLower || !hasDigit || !hasSpecial) {
                     e.preventDefault();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Mật khẩu yếu',
-                        html: 'Mật khẩu phải tối thiểu 8 ký tự và bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.',
-                        confirmButtonText: 'Đóng'
-                    });
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Mật khẩu yếu',
+                            html: 'Mật khẩu phải tối thiểu 8 ký tự và bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.',
+                            confirmButtonText: 'Đóng'
+                        });
+                    } else {
+                        alert('Mật khẩu yếu: Mật khẩu phải tối thiểu 8 ký tự và bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.');
+                    }
                     return false;
                 }
             });
