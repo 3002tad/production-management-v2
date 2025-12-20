@@ -98,7 +98,22 @@ class Leader extends CI_Controller
 
         $finished = $this->db->query("SELECT fr.id_finished, fr.total_finished, fr.fdate, p.id_project, p.project_name, p.qty_request, c.cust_name FROM finished_report fr JOIN project p ON fr.id_project = p.id_project LEFT JOIN customer c ON p.id_cust = c.id_cust ORDER BY fr.id_finished DESC LIMIT 10")->result();
 
-        $sorting = $this->db->query("SELECT sr.id_sorting, sr.finished, sr.waste, (sr.finished + sr.waste) as qty_output, ps.id_plan, pl.plan_name, p.project_name, s.staff_name FROM sorting_report sr JOIN plan_shift ps ON sr.id_planshift = ps.id_planshift JOIN staff s ON ps.id_staff = s.id_staff LEFT JOIN planning pl ON ps.id_plan = pl.id_plan LEFT JOIN project p ON pl.id_project = p.id_project ORDER BY sr.id_sorting DESC LIMIT 10")->result();
+        // Updated: Use production_shifts + shift_closures instead of plan_shift
+        $sorting = $this->db->query("SELECT 
+            sc.closure_id as id_sorting, 
+            sc.total_good as finished, 
+            sc.total_defect as waste, 
+            (sc.total_good + sc.total_defect) as qty_output, 
+            ps.id_plan, 
+            pl.plan_name, 
+            p.project_name,
+            NULL as staff_name
+            FROM shift_closures sc 
+            JOIN production_shifts ps ON sc.shift_id = ps.shift_id
+            LEFT JOIN planning pl ON ps.id_plan = pl.id_plan 
+            LEFT JOIN project p ON pl.id_project = p.id_project 
+            ORDER BY sc.closure_id DESC 
+            LIMIT 10")->result();
 
         $data = [
             'finished' => $finished,
@@ -106,8 +121,13 @@ class Leader extends CI_Controller
 
             'project' => $this->crudModel->getData('project')->num_rows(),
             'planning' => $this->crudModel->getData('planning')->num_rows(),
-            'plan_shift' => $this->crudModel->getData('plan_shift')->num_rows(),
-            'finished_report' => $this->crudModel->getData('shift_closures')->num_rows(),
+            'plan_shift' => $this->db->where('shift_status', 3)->count_all_results('production_shifts'), // Count completed shifts (status=3)
+            // Get total good quantity from shift_closures today
+            'finished_report' => $this->db->select('COALESCE(SUM(total_good), 0) as total_good')
+                                          ->where('DATE(closure_date)', date('Y-m-d'))
+                                          ->get('shift_closures')
+                                          ->row()
+                                          ->total_good ?? 0,
 
             // New card data: capacity per machine for active shifts
             'machine_capacity' => $machine_capacity,

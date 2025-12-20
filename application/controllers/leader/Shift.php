@@ -61,7 +61,8 @@ class Shift extends CI_Controller
             planning.plan_name, 
             planning.pl_status,
             planning.qty_target,
-            planning.end_date
+            planning.end_date,
+            planning.suggested_shifts
         ');
         $this->db->from('planning');
 
@@ -75,8 +76,8 @@ class Shift extends CI_Controller
         
         // Calculate shift counts for each plan
         foreach ($plans as $plan) {
-            // Count suggested shifts from plan_shift
-            $plan->suggested_shift_count = $this->db->where('id_plan', $plan->id_plan)->count_all_results('plan_shift');
+            // Get suggested shift count from planning table
+            $plan->suggested_shift_count = intval($plan->suggested_shifts ?? 0);
             
             // Count actual shifts
             $plan->actual_shift_count = $this->db->where('id_plan', $plan->id_plan)->count_all_results('production_shifts');
@@ -952,39 +953,70 @@ class Shift extends CI_Controller
     /**
      * Xóa ca
      */
-    public function delete($shift_id)
+    public function delete($shift_id = null)
     {
         header('Content-Type: application/json');
 
-        $shift = $this->shiftModel->getShiftById($shift_id);
-        
-        if (!$shift) {
-            echo json_encode(['success' => false, 'message' => 'Không tìm thấy ca làm việc']);
+        log_message('debug', 'Shift::delete called with shift_id=' . var_export($shift_id, true));
+
+        if (empty($shift_id)) {
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy ID ca']);
             return;
         }
 
-        // Check if shift has started
-        $shift_datetime = strtotime($shift->shift_date . ' ' . $shift->start_time);
-        if (time() >= $shift_datetime) {
-            echo json_encode(['success' => false, 'message' => 'Không thể xóa ca đã bắt đầu hoặc đã qua']);
-            return;
-        }
+        try {
+            $shift = $this->shiftModel->getShiftById($shift_id);
+            log_message('debug', 'Shift::delete getShiftById result: ' . var_export($shift, true));
+            
+            if (!$shift) {
+                echo json_encode(['success' => false, 'message' => 'Không tìm thấy ca làm việc']);
+                return;
+            }
 
-        // Delete assignments first
-        $this->db->where('shift_id', $shift_id);
-        $this->db->delete('shift_staff_assignments');
+            // Check if shift has started
+            $shift_datetime = strtotime($shift->shift_date . ' ' . $shift->start_time);
+            if (time() >= $shift_datetime) {
+                echo json_encode(['success' => false, 'message' => 'Không thể xóa ca đã bắt đầu hoặc đã qua']);
+                return;
+            }
 
-        $this->db->where('shift_id', $shift_id);
-        $this->db->delete('shift_machine_assignments');
+            // Delete related records in correct order (reverse dependency)
+            // 1. Get all closure IDs for this shift
+            $closures = $this->db->where('shift_id', $shift_id)->get('shift_closures')->result();
+            foreach ($closures as $closure) {
+                // 2. Get all closure_machine IDs for this closure
+                $closure_machines = $this->db->where('closure_id', $closure->closure_id)->get('shift_closure_machines')->result();
+                foreach ($closure_machines as $cm) {
+                    // 3. Delete defects for this closure_machine
+                    $this->db->where('closure_machine_id', $cm->id);
+                    $this->db->delete('shift_closure_defects');
+                }
+                // 4. Delete closure_machines for this closure
+                $this->db->where('closure_id', $closure->closure_id);
+                $this->db->delete('shift_closure_machines');
+            }
+            // 5. Delete closures for this shift
+            $this->db->where('shift_id', $shift_id);
+            $this->db->delete('shift_closures');
 
-        $this->db->where('shift_id', $shift_id);
-        $this->db->delete('machine_breakdown_logs');
+            // 6. Delete shift_machine_staff assignments
+            $this->db->where('shift_id', $shift_id);
+            $this->db->delete('shift_machine_staff');
 
-        // Delete shift
-        $this->db->where('id', $shift_id);
-        if ($this->db->delete('production_shifts')) {
-            echo json_encode(['success' => true, 'message' => 'Xóa ca thành công']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Xóa ca thất bại']);
+            // 7. Delete shift
+            $this->db->where('shift_id', $shift_id);
+            $deleted = $this->db->delete('production_shifts');
+            log_message('debug', 'Shift::delete result: ' . var_export($deleted, true) . ' - Affected rows: ' . $this->db->affected_rows());
+            
+            if ($deleted) {
+                echo json_encode(['success' => true, 'message' => 'Xóa ca thành công']);
+            } else {
+                $db_error = $this->db->error();
+                echo json_encode(['success' => false, 'message' => 'Xóa ca thất bại: ' . $db_error['message']]);
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Shift::delete exception: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()]);
         }
     }}
