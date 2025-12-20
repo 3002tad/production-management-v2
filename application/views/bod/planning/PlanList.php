@@ -22,6 +22,24 @@
             </div>
 
             <div class="card-body px-0 pb-2">
+                <div class="px-3 pb-2">
+                    <form method="get" action="" class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <input type="text" name="q" class="form-control form-control-sm" placeholder="Tìm theo tên kế hoạch hoặc đơn hàng" value="<?= htmlspecialchars($this->input->get('q') ?? '', ENT_QUOTES); ?>">
+                        </div>
+                        <div class="col-auto">
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="approved" <?= $this->input->get('status') === 'approved' ? 'selected' : ''; ?>>Đã duyệt</option>
+                                <option value="pending" <?= $this->input->get('status') === 'pending' ? 'selected' : ''; ?>>Chờ duyệt</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-primary">Tìm</button>
+                            <a href="" class="btn btn-sm btn-outline-secondary">Đặt lại</a>
+                        </div>
+                    </form>
+                </div>
                 <div class="table-responsive p-3">
                     <table id="table-plans" class="table align-items-center justify-content-center mb-0">
                         <thead>

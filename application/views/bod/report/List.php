@@ -62,7 +62,7 @@
 						<span class="text-sm font-weight-bold pl-3"><?= htmlspecialchars($value->product_name ?? '-', ENT_QUOTES) ?></span>
 					</td>
 					<td>
-						<a href="<?= site_url('leader/detail_report/'.$value->id_project); ?>" rel="tooltip" title="<?= lang('label_view_report'); ?>" class="btn btn-outline-info text-info btn-link btn-sm">
+						<a href="<?= site_url('BOD/report/'.$value->id_project); ?>" rel="tooltip" title="<?= lang('label_view_report'); ?>" class="btn btn-outline-info text-info btn-link btn-sm">
 							<i class="material-icons text-info text-sm">visibility</i> <?= lang('btn_view'); ?>
 						</a>
 					</td>

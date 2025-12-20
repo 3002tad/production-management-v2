@@ -74,6 +74,9 @@
                         <span class="text-sm font-weight-bold pl-3"><?= $value->entry_date; ?></span>
                     </td>
                     <td>
+                        <a href="<?= site_url('UC08/UC8_planning/report/' . $value->id_project); ?>" rel="tooltip" title="Xem báo cáo" class="btn btn-outline-secondary text-secondary btn-link btn-sm" target="_blank">
+                            <i class="material-icons text-secondary text-sm">assessment</i> Báo cáo
+                        </a>
                         <a href="<?= site_url('admin/project/'.$value->id_project.'/view'); ?>" rel="tooltip" title="<?= lang('label_edit_task'); ?>" class="btn btn-outline-info text-info btn-link btn-sm">
                             <i class="material-icons text-info text-sm">edit</i> <?= lang('btn_update'); ?>
                         </a>

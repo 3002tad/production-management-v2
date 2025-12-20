@@ -938,6 +938,31 @@ class UC8_planning extends CI_Controller
      */
     public function plans()
     {
+        // Support filtering via GET: ?q=... (plan or project name), ?status=approved|pending|needs_review
+        $q = trim((string)$this->input->get('q'));
+        $status = trim((string)$this->input->get('status'));
+
+        $whereClauses = [];
+        if (!empty($q)) {
+            $q_esc = $this->db->escape_like_str($q);
+            $whereClauses[] = "(pl.plan_name LIKE '%" . $q_esc . "%' OR p.project_name LIKE '%" . $q_esc . "%')";
+        }
+
+        if (!empty($status)) {
+            if ($status === 'approved') {
+                $whereClauses[] = "pl.pl_status = 1";
+            } elseif ($status === 'pending') {
+                $whereClauses[] = "(pl.pl_status = 0 OR pl.pl_status IS NULL)";
+            } elseif ($status === 'needs_review') {
+                $whereClauses[] = "(COALESCE(pl.needs_review,0) = 1 OR EXISTS (SELECT 1 FROM audit_log al WHERE al.module = 'planning' AND al.action = 'mark_plan_needs_review' AND al.record_id = pl.id_plan))";
+            }
+        }
+
+        $whereSql = '';
+        if (!empty($whereClauses)) {
+            $whereSql = 'WHERE ' . implode(' AND ', $whereClauses);
+        }
+
         $sql = "
             SELECT pl.*, p.project_name,
                 CASE
@@ -951,6 +976,7 @@ class UC8_planning extends CI_Controller
                 END AS needs_review
             FROM planning pl
             LEFT JOIN project p ON pl.id_project = p.id_project
+            " . $whereSql . "
             ORDER BY pl.end_date ASC, pl.id_plan DESC
         ";
 
@@ -982,11 +1008,20 @@ class UC8_planning extends CI_Controller
         $id_project = $this->input->get('id_project') ?: $this->uri->segment(3);
 
         $data = [
-            'content' => 'bod/report/Report',
             'navlink' => 'report',
             'projects' => $projects,
             'selected_project_id' => $id_project,
         ];
+
+        // If no specific project requested, show the projects list view
+        if (empty($id_project)) {
+            $data['content'] = 'bod/report/List';
+            $this->load->view('bod/vbackend', $data);
+            return;
+        }
+
+        // Otherwise prepare detail report for the requested project
+        $data['content'] = 'bod/report/Report';
 
         if (!empty($id_project)) {
             $this->load->model('OrderModel');

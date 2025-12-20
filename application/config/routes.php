@@ -106,6 +106,7 @@ $route['BOD/approvePlan'] = 'UC08/UC8_planning/approvePlan';
 $route['BOD/approvePlan/(:num)'] = 'UC08/UC8_planning/approvePlan/$1';
 $route['BOD/plans'] = 'UC08/UC8_planning/plans';
 $route['BOD/report'] = 'UC08/UC8_planning/report';
+$route['BOD/report/(:any)'] = 'UC08/UC8_planning/report/$1';
 $route['BOD/getProductBom'] = 'UC08/UC8_planning/getProductBom';
 
 // =====================================================
@@ -135,6 +136,12 @@ $route['leader/machine/(:any)'] = 'leader/Machine/$1';
 $route['leader/machine'] = 'leader/Machine/index';
 
 // Leader dashboard and functions - This is catch-all, must be LAST
+$route['leader/detail_report/(:num)'] = 'leader/Leader/detail_report/$1';
+$route['leader/detail_report'] = 'leader/Leader/detail_report';
+// Explicit detail_sorting routes to avoid case-sensitivity and support extra segment (view/print)
+$route['leader/detail_sorting/(:num)/(:any)'] = 'leader/Leader/detail_sorting/$1/$2';
+$route['leader/detail_sorting/(:num)'] = 'leader/Leader/detail_sorting/$1';
+$route['leader/Detail_sorting/(:num)'] = 'leader/Leader/detail_sorting/$1';
 $route['leader/(:any)'] = 'leader/Leader/$1';
 $route['leader'] = 'leader/Leader/index';
 
