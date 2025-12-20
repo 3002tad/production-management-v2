@@ -71,7 +71,9 @@
     <script src="<?= site_url('asset/backend/assets/js/script.js'); ?>"></script>
 
   <script>
-    var ctx = document.getElementById("chart-bars").getContext("2d");
+    var chartElement = document.getElementById("chart-bars");
+    if (!chartElement) { return; }
+    var ctx = chartElement.getContext("2d");
 
     new Chart(ctx, {
       type: "bar",
@@ -329,7 +331,7 @@
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
-  <script src="./assets/js/material-dashboard.min.js?v=3.0.0"></script>
+  
 </body>
 
 </html>
