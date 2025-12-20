@@ -14,16 +14,59 @@
         </div>
     </nav>
 </br>
-<div class="container-fluid py-4 pt-0">
-    <div class="card-header p-0 w-75 position-fixed mt-n4 mx-2 z-index-2">
-        <div class="shadow-dark border-radius-lg d-flex px-5 pt-4 pb-3">
-            <div class="col-8 d-flex align-items-center">
-                <h6 class="mb-0"><?= lang('label_data_staff'); ?></h6>
-            </div>
-            <div class="col-4 text-end">
-                <span class="badge bg-warning text-dark">View Only</span>
+<style>
+    .metric-card{border-radius:16px; box-shadow:0 8px 24px rgba(15,23,42,.1); background:#fff}
+    .metric-card .icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff}
+    .grad-green{background:linear-gradient(135deg,#22c55e,#16a34a)}
+    .grad-blue{background:linear-gradient(135deg,#3b82f6,#2563eb)}
+    .grad-red{background:linear-gradient(135deg,#ef4444,#f97316)}
+    .grad-orange{background:linear-gradient(135deg,#f59e0b,#f97316)}
+    .section-header{background:#d81b60;color:#fff;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+</style>
+<div class="container-fluid py-2">
+    <div class="row g-3">
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-xs text-secondary">Tổng Nhân Viên</div>
+                    <div class="h4 mb-0"><?php echo isset($statistics['total']) ? $statistics['total'] : 0; ?></div>
+                </div>
+                <div class="icon grad-blue"><span class="material-icons-round">groups</span></div>
             </div>
         </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-xs text-secondary">Đang hoạt động</div>
+                    <div class="h4 mb-0"><?php echo isset($statistics['active']) ? $statistics['active'] : 0; ?></div>
+                </div>
+                <div class="icon grad-green"><span class="material-icons-round">verified</span></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-xs text-secondary">Có tài khoản</div>
+                    <div class="h4 mb-0"><?php echo isset($statistics['with_user']) ? $statistics['with_user'] : 0; ?></div>
+                </div>
+                <div class="icon grad-orange"><span class="material-icons-round">key</span></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-xs text-secondary">Chưa có tài khoản</div>
+                    <div class="h4 mb-0"><?php echo isset($statistics['without_user']) ? $statistics['without_user'] : 0; ?></div>
+                </div>
+                <div class="icon grad-red"><span class="material-icons-round">person_off</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="section-header mt-3">
+        <div class="h6 mb-0">Danh Sách Nhân Viên</div>
+        <a href="<?= site_url('admin/staff/addstaff'); ?>" class="btn btn-light btn-sm" style="color:#d81b60">
+            + THÊM NHÂN VIÊN
+        </a>
     </div>
 </div>
 <div class="container py-4 pl-5 pr-5">
@@ -103,12 +146,12 @@
                         </select>
                     </div>
                     <div class="col-12 mt-3">
-                        <label class="form-label">Tìm theo mã NV:</label>
-                        <input type="text" name="search_code" class="form-control" placeholder="Nhập mã nhân viên" value="<?php echo isset($_GET['search_code']) ? $_GET['search_code'] : ''; ?>">
+                        <label class="form-label">Tìm kiếm:</label>
+                        <input type="text" name="search_code" class="form-control" placeholder="Nhập tên/mã/email/điện thoại" value="<?php echo isset($_GET['search_code']) ? $_GET['search_code'] : ''; ?>">
                     </div>
                     <div class="col-12 mt-2">
-                        <button class="btn btn-sm btn-primary" type="submit">Lọc</button>
-                        <a href="<?= site_url('admin/staff'); ?>" class="btn btn-sm btn-secondary ml-2">Xóa lọc</a>
+                        <button class="btn btn-primary" type="submit">Lọc</button>
+                        <a href="<?= site_url('admin/staff'); ?>" class="btn btn-secondary ml-2">Reset</a>
                     </div>
                 </form>
             </div>
@@ -154,6 +197,7 @@
                         <th>Số điện thoại</th>
                         <th>Email</th>
                         <th>Trạng thái</th>
+                        <th class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody class="pl-3">
@@ -161,6 +205,14 @@
                         <tr>
                         <td class="text-center">
                             <?= $i++; ?>
+                        </td>
+                        <td class="text-center">
+                            <a href="<?= site_url('admin/staff/'.$value->id_staff.'/update'); ?>" class="btn btn-sm btn-warning" title="Sửa">
+                                <span class="material-icons-round" style="font-size:16px;">edit</span>
+                            </a>
+                            <a href="<?= site_url('admin/deleteStaff/'.$value->id_staff); ?>" class="btn btn-sm btn-danger" onclick="return confirm('Bạn có chắc muốn xóa nhân viên này?');" title="Xóa">
+                                <span class="material-icons-round" style="font-size:16px;">delete</span>
+                            </a>
                         </td>
                         <td>
                             <?= $value->staff_name; ?>

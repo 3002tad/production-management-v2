@@ -77,19 +77,19 @@
                       <td><?= $issue->created_by_name; ?></td>
                       <td><?= date('d/m/Y H:i', strtotime($issue->created_date)); ?></td>
                       <td>
-                        <?php 
-                          $status_class = match($issue->status) {
+                        <?php
+                          $status_map = [
                             'full' => 'bg-success',
                             'partial' => 'bg-warning',
                             'cancelled' => 'bg-danger',
-                            default => 'bg-secondary'
-                          };
-                          $status_text = match($issue->status) {
+                          ];
+                          $status_text_map = [
                             'full' => 'Giao Đủ',
                             'partial' => 'Giao Một Phần',
                             'cancelled' => 'Hủy',
-                            default => 'Không Xác Định'
-                          };
+                          ];
+                          $status_class = isset($status_map[$issue->status]) ? $status_map[$issue->status] : 'bg-secondary';
+                          $status_text = isset($status_text_map[$issue->status]) ? $status_text_map[$issue->status] : 'Không Xác Định';
                         ?>
                         <span class="badge <?= $status_class; ?>"><?= $status_text; ?></span>
                       </td>

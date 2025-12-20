@@ -521,6 +521,14 @@
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="./assets/js/material-dashboard.min.js?v=3.0.0"></script>
+  <?php if (!empty($this->session->flashdata('success')) || (isset($_GET['msg']) && $_GET['msg'] === 'success')): ?>
+    <div id="loginSuccessToast" class="alert alert-success" style="position: fixed; top: 16px; right: 16px; z-index: 1080; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.15);">
+      <strong>Thành công!</strong> <?= htmlspecialchars($this->session->flashdata('success') ?: 'Đăng nhập thành công!'); ?>
+    </div>
+    <script>
+      setTimeout(function(){ var el = document.getElementById('loginSuccessToast'); if(el){ el.style.opacity = '0'; setTimeout(function(){ if(el && el.parentNode){ el.parentNode.removeChild(el); } }, 500); } }, 2500);
+    </script>
+  <?php endif; ?>
 </body>
 
 </html>

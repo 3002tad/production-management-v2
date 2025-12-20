@@ -135,13 +135,16 @@ $route['leader/shift'] = 'leader/shift/index';
 $route['leader/machine/(:any)'] = 'leader/Machine/$1';
 $route['leader/machine'] = 'leader/Machine/index';
 
-// Leader dashboard and functions - This is catch-all, must be LAST
 $route['leader/detail_report/(:num)'] = 'leader/Leader/detail_report/$1';
 $route['leader/detail_report'] = 'leader/Leader/detail_report';
 // Explicit detail_sorting routes to avoid case-sensitivity and support extra segment (view/print)
 $route['leader/detail_sorting/(:num)/(:any)'] = 'leader/Leader/detail_sorting/$1/$2';
 $route['leader/detail_sorting/(:num)'] = 'leader/Leader/detail_sorting/$1';
 $route['leader/Detail_sorting/(:num)'] = 'leader/Leader/detail_sorting/$1';
+
+// Additional leader routes (orders)
+$route['leader/orders'] = 'leader/Leader/orders';
+$route['leader/order/(:num)'] = 'leader/Leader/order/$1';
 $route['leader/(:any)'] = 'leader/Leader/$1';
 $route['leader'] = 'leader/Leader/index';
 

@@ -61,6 +61,16 @@
                     </div>
                     </li>
 
+                    <!-- Orders (read-only) - placed above Planning per request -->
+                    <li class="nav-item navbar-expand-xs">
+                      <a class="nav-link text-white<?= ($navlink === 'orders') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/orders'); ?>">
+                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">shopping_cart</i>
+                        </div>
+                        <span class="nav-link-text ms-1">Đơn hàng</span>
+                      </a>
+                    </li>
+
                     <li class="nav-item navbar-expand-xs">
                       <a class="nav-link text-white<?= ($navlink === 'planning') ? ' active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/planning'); ?>">
                         <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -76,14 +86,6 @@
                     </div>
                     </li>
                     <hr class="horizontal light mt-0 mb-2">
-                    <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'production') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/production'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">settings_input_component</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_production'); ?></span>
-                        </a>
-                    </li>
                     <li class="nav-item navbar-expand-xs">
                         <a class="nav-link text-white<?= ($navlink === 'shift') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/shift'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -108,6 +110,15 @@
                             <span class="nav-link-text ms-1"><?= lang('menu_raw_materials'); ?></span>
                         </a>
                     </li>
+                    <li class="nav-item navbar-expand-xs">
+                        <a class="nav-link text-white<?= ($navlink === 'finished_inventory') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/finished_inventory'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">inventory</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Tồn kho thành phẩm</span>
+                        </a>
+                    </li>
+                    
           <!-- Human Resources / Staff management (visible to leader) -->
           <li class="nav-item navbar-expand-xs">
             <a class="nav-link text-white<?= ($navlink === 'staff') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/staff'); ?>">
@@ -133,11 +144,26 @@
                         </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'incident') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
+                      <a class="nav-link text-white<?= ($navlink === 'incident') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc16_gn_dp'); ?>">
                         <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="material-icons opacity-10">report_problem</i>
                         </div>
                         <span class="nav-link-text ms-1">Sự cố</span>
+                      </a>
+                    </li>
+
+                    <li class="navbar-vertical">
+                    <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
+                    <span class="nav-link-text ms-1 p-2">Hệ thống</span>
+                    </div>
+                    </li>
+                    <hr class="horizontal light mt-0 mb-2">
+                    <li class="nav-item navbar-expand-xs">
+                      <a class="nav-link text-white" href="<?= site_url('leader/logout'); ?>" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
+                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">logout</i>
+                        </div>
+                        <span class="nav-link-text ms-1">Đăng xuất</span>
                       </a>
                     </li>
                 </ul>
@@ -466,6 +492,14 @@
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
   <script src="./assets/js/material-dashboard.min.js?v=3.0.0"></script>
+  <?php if (!empty($this->session->flashdata('success')) || (isset($_GET['msg']) && $_GET['msg'] === 'success')): ?>
+    <div id="loginSuccessToast" class="alert alert-success" style="position: fixed; top: 16px; right: 16px; z-index: 1080; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.15);">
+      <strong>Thành công!</strong> <?= htmlspecialchars($this->session->flashdata('success') ?: 'Đăng nhập thành công!'); ?>
+    </div>
+    <script>
+      setTimeout(function(){ var el = document.getElementById('loginSuccessToast'); if(el){ el.style.opacity = '0'; setTimeout(function(){ if(el && el.parentNode){ el.parentNode.removeChild(el); } }, 500); } }, 2500);
+    </script>
+  <?php endif; ?>
 </body>
 
 </html>
