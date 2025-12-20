@@ -435,12 +435,225 @@ class Leader extends CI_Controller
                 'staff' => 'plan_shift.id_staff=staff.id_staff',
             ];
 
-            $data = [
-                'sorting' => $this->crudModel->getDataJoin($table, $onjoin),
-                'content' => 'leader/sorting/sorting',
-                'navlink' => 'sorting',
+            $sorting = $this->crudModel->getDataJoin($table, $onjoin);
+
+            $id_project = $this->input->get('id_project', true);
+            $id_project = $id_project ? (int)$id_project : null;
+
+            // Projects list for dropdown
+            $projects = $this->db->query("SELECT p.*, c.cust_name, pr.product_name FROM project p LEFT JOIN customer c ON p.id_cust = c.id_cust LEFT JOIN product pr ON p.id_product = pr.id_product")->result();
+
+            if ($id_project) {
+                $project = $this->db->query('SELECT p.*, c.cust_name, pr.product_name FROM project p LEFT JOIN customer c ON p.id_cust = c.id_cust LEFT JOIN product pr ON p.id_product = pr.id_product WHERE p.id_project = ?', [$id_project])->row();
+
+                $total_finished = 0;
+                if ($this->db->table_exists('finished_report')) {
+                    $total_finished = (int)($this->db->select_sum('total_finished')->where('id_project', $id_project)->get('finished_report')->row()->total_finished ?? 0);
+                }
+
+                // Build plan and shift information using robust UC8 logic
+                $plan = null;
+                $plan_shifts = [];
+                $production_shifts_map = [];
+                $shiftIds = [];
+
+                // Load plan for project if exists
+                if ($this->db->table_exists('planning')) {
+                    $plan = $this->db->where('id_project', $id_project)->get('planning')->row();
+                }
+
+                // Load plan_shift from multiple possible table names / schemas
+                $planShiftTableCandidates = ['plan_shift', 'plan_shifts', 'planshift', 'planshifts'];
+                foreach ($planShiftTableCandidates as $tbl) {
+                    if ($this->db->table_exists($tbl)) {
+                        if (!empty($plan) && $this->db->field_exists('id_plan', $tbl)) {
+                            $plan_shifts = $this->db->get_where($tbl, ['id_plan' => $plan->id_plan])->result();
+                        } else {
+                            // fallback: try to find by project id columns if available
+                            $found = false;
+                            $projectCols = ['id_project', 'project_id', 'id_project_ref'];
+                            foreach ($projectCols as $pc) {
+                                if ($this->db->field_exists($pc, $tbl)) {
+                                    $rows = $this->db->get_where($tbl, [$pc => $id_project])->result();
+                                    if (!empty($rows)) { $plan_shifts = $rows; $found = true; break; }
+                                }
+                            }
+                            if (!$found) {
+                                $plan_shifts = $this->db->get($tbl)->result();
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                // normalize plan_shifts properties to use shift_id and id_planshift
+                if (!empty($plan_shifts)) {
+                    foreach ($plan_shifts as &$pps_norm) {
+                        if (!isset($pps_norm->shift_id) && isset($pps_norm->id_shift)) $pps_norm->shift_id = $pps_norm->id_shift;
+                        if (!isset($pps_norm->id_planshift) && isset($pps_norm->id)) $pps_norm->id_planshift = $pps_norm->id;
+                    }
+                    unset($pps_norm);
+                }
+
+                // totals: keep total_received if available but don't load details
+                $total_received = 0;
+                if ($this->db->table_exists('finished_receipt')) {
+                    $total_received = (int)($this->db->select_sum('quantity_received')->where('id_project', $id_project)->get('finished_receipt')->row()->quantity_received ?? 0);
+                }
+
+                // issues
+                $issues = [];
+                $total_issued = 0;
+                if ($this->db->table_exists('finished_issue')) {
+                    $issues = $this->db->where('id_project', $id_project)->get('finished_issue')->result();
+                    $total_issued = (int)($this->db->select_sum('quantity_issued')->where('id_project', $id_project)->get('finished_issue')->row()->quantity_issued ?? 0);
+                }
+
+                // Attempt to load production_shifts and map them by shift_id/id
+                if ($this->db->table_exists('production_shifts')) {
+                    $ps_rows = [];
+                    if (!empty($plan->id_plan) && ($this->db->field_exists('id_plan', 'production_shifts') || $this->db->field_exists('plan_id', 'production_shifts'))) {
+                        $field = $this->db->field_exists('id_plan', 'production_shifts') ? 'id_plan' : 'plan_id';
+                        $ps_rows = $this->db->where($field, $plan->id_plan)->get('production_shifts')->result();
+                    } else {
+                        $shiftIdsTmp = array_map(function($ps) { return isset($ps->shift_id) ? $ps->shift_id : (isset($ps->id_shift) ? $ps->id_shift : null); }, $plan_shifts);
+                        $shiftIdsTmp = array_filter($shiftIdsTmp, function($v) { return !is_null($v) && $v !== ''; });
+                        if (!empty($shiftIdsTmp)) {
+                            $ps_rows = $this->db->where_in('shift_id', $shiftIdsTmp)->get('production_shifts')->result();
+                        }
+                    }
+
+                    if (!empty($ps_rows)) {
+                        foreach ($ps_rows as $r) {
+                            $key = isset($r->shift_id) ? $r->shift_id : (isset($r->id) ? $r->id : null);
+                            if ($key !== null) $production_shifts_map[$key] = $r;
+                        }
+                        if (empty($shiftIds)) { $shiftIds = array_keys($production_shifts_map); }
+
+                        // attach production shift details into plan_shift entries when possible
+                        if (!empty($plan_shifts)) {
+                            foreach ($plan_shifts as &$pps) {
+                                $key = isset($pps->shift_id) ? $pps->shift_id : ($pps->id_shift ?? null);
+                                $pps->production_shift = ($key !== null) ? ($production_shifts_map[$key] ?? null) : null;
+                            }
+                            unset($pps);
+                        }
+                    } else {
+                        // fallback: try locate production_shifts by project id columns
+                        $projCols = ['id_project', 'project_id', 'id_project_ref'];
+                        foreach ($projCols as $pc) {
+                            if ($this->db->field_exists($pc, 'production_shifts')) {
+                                $rows = $this->db->get_where('production_shifts', [$pc => $id_project])->result();
+                                if (!empty($rows)) {
+                                    foreach ($rows as $r) {
+                                        $key = isset($r->shift_id) ? $r->shift_id : (isset($r->id) ? $r->id : null);
+                                        if ($key !== null) $production_shifts_map[$key] = $r;
+                                    }
+                                    $shiftIds = array_keys($production_shifts_map);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // If there are production shifts but no plan_shifts, convert production_shifts into plan_shifts-like objects
+                    if (empty($plan_shifts) && !empty($production_shifts_map)) {
+                        $plan_shifts = [];
+                        foreach ($production_shifts_map as $key => $r) {
+                            $obj = new stdClass();
+                            $obj->id_planshift = $r->shift_id ?? ($r->id ?? null);
+                            $obj->shift_id = $r->shift_id ?? ($r->id ?? null);
+                            $obj->id_staff = $r->id_staff ?? ($r->staff_id ?? null);
+                            $obj->shift_date = $r->shift_date ?? $r->start_date ?? null;
+                            $obj->start_time = $r->start_time ?? null;
+                            $obj->end_time = $r->end_time ?? null;
+                            $obj->start_date = $r->start_date ?? $r->shift_date ?? ($r->start_time ?? null);
+                            $obj->end_date = $r->end_date ?? $r->end_time ?? null;
+                            if (isset($r->shift_name) && $r->shift_name !== '') {
+                                $obj->shift_name = $r->shift_name;
+                            } elseif (isset($r->shift_code) && $r->shift_code !== '') {
+                                $obj->shift_name = $r->shift_code;
+                            } else {
+                                $obj->shift_name = 'Shift ' . ($obj->shift_id ?? '');
+                            }
+                            $plan_shifts[] = $obj;
+                        }
+                    }
+                }
+
+                // attach production_shifts_map into data so view can use it if needed
+                $data_production_shifts_map = $production_shifts_map;
+
+                // find shift closures related to this project using production shift IDs first, then fallback
+                $shift_closures = [];
+                if ($this->db->table_exists('shift_closures')) {
+                    if (!empty($shiftIds)) {
+                        $rows = $this->db->where_in('shift_id', $shiftIds)->get('shift_closures')->result();
+                        if (!empty($rows)) $shift_closures = $rows;
+                    }
+                    if (empty($shift_closures)) {
+                        $rows = $this->db->query('SELECT sc.* FROM shift_closures sc LEFT JOIN finished_report fr ON sc.warehouse_request_id = fr.id_finished WHERE fr.id_project = ?', [$id_project])->result();
+                        if (!empty($rows)) $shift_closures = $rows;
+                    }
+                }
+
+                // Filter closures by known shiftIds
+                if (!empty($shift_closures) && !empty($shiftIds)) {
+                    $shiftIdsStr = array_map('strval', $shiftIds);
+                    $shift_closures = array_values(array_filter($shift_closures, function($sc) use ($shiftIdsStr) {
+                        $sid = isset($sc->shift_id) ? $sc->shift_id : (isset($sc->shiftId) ? $sc->shiftId : null);
+                        if ($sid === null) return false;
+                        return in_array((string)$sid, $shiftIdsStr, true);
+                    }));
+                }
+
+                // attach production shift details to closures when available
+                if (!empty($shift_closures) && !empty($production_shifts_map)) {
+                    foreach ($shift_closures as &$sc) {
+                        $sc->production_shift = $production_shifts_map[$sc->shift_id] ?? null;
+                    }
+                    unset($sc);
+                }
+
+                $data = [
+                    'sorting' => $sorting,
+                    'projects' => $projects,
+                    'selected_project_id' => $id_project,
+                    'project' => $project,
+                    'total_finished' => $total_finished,
+                    'plan' => $plan,
+                    'plan_shifts' => $plan_shifts,
+                    'issues' => $issues,
+                    'total_received' => $total_received,
+                    'total_issued' => $total_issued,
+                    'shift_closures' => $shift_closures,
+                    'production_shifts_map' => $data_production_shifts_map ?? [],
+                    'content' => 'leader/sorting/sorting',
+                    'navlink' => 'sorting',
                 ];
+            } else {
+                $data = [
+                    'sorting' => $sorting,
+                    'projects' => $projects,
+                    'selected_project_id' => null,
+                    'project' => null,
+                    'total_finished' => 0,
+                    'plan' => null,
+                    'plan_shifts' => [],
+                    'issues' => [],
+                    'total_received' => 0,
+                    'total_issued' => 0,
+                    'shift_closures' => [],
+                    'content' => 'leader/sorting/sorting',
+                    'navlink' => 'sorting',
+                ];
+            }
         }
+
+        // Add incident notifications (used across leader views)
+        $new_incidents = $this->db->where('status', 0)->order_by('created_at', 'DESC')->get('incident_reports')->result();
+        $data['new_incidents'] = $new_incidents;
+        $data['new_incident_count'] = count($new_incidents);
 
         $this->load->view('leader/vbackend', $data);
     }

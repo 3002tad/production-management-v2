@@ -971,11 +971,207 @@ class UC8_planning extends CI_Controller
      */
     public function report()
     {
+        // load project list for selector
+        $projects = $this->db->select('p.id_project, p.project_name, c.cust_name, pr.product_name')
+                              ->from('project p')
+                              ->join('customer c', 'p.id_cust = c.id_cust', 'left')
+                              ->join('product pr', 'p.id_product = pr.id_product', 'left')
+                              ->order_by('p.entry_date', 'DESC')
+                              ->get()->result();
+
+        $id_project = $this->input->get('id_project') ?: $this->uri->segment(3);
+
         $data = [
             'content' => 'bod/report/Report',
             'navlink' => 'report',
+            'projects' => $projects,
+            'selected_project_id' => $id_project,
         ];
-        
+
+        if (!empty($id_project)) {
+            $this->load->model('OrderModel');
+            $this->load->model('PlanModel');
+
+            $order = $this->OrderModel->getOrderById($id_project);
+            $data['project'] = $order;
+
+            // latest plan
+            // Allow caller to request a specific plan via ?id_plan=.. so the UI can
+            // link directly from a plan to its report/shift closures.
+            $requested_plan = $this->input->get('id_plan') ?: null;
+            if (!empty($requested_plan)) {
+                $plan = $this->PlanModel->getPlanById($requested_plan);
+            } else {
+            $plan_row = $this->db->order_by('id_plan', 'DESC')->get_where('planning', ['id_project' => $id_project])->row();
+            $plan = $plan_row ? $this->PlanModel->getPlanById($plan_row->id_plan) : null;
+            }
+            $data['plan'] = $plan;
+
+            // plan shifts + attach production shift info when available
+            $plan_shifts = [];
+            $production_shifts_map = [];
+            $shiftIds = [];
+
+            // load suggested plan shifts if table exists — try multiple possible table names to be resilient
+            $plan_shifts = [];
+            $planShiftTableCandidates = ['plan_shift', 'plan_shifts', 'planshift', 'planshifts'];
+            foreach ($planShiftTableCandidates as $tbl) {
+                if ($this->db->table_exists($tbl)) {
+                    if ($plan && $this->db->field_exists('id_plan', $tbl)) {
+                        $plan_shifts = $this->db->get_where($tbl, ['id_plan' => $plan->id_plan])->result();
+                    } else {
+                        // fallback: try to find by project id columns if available
+                        $found = false;
+                        $projectCols = ['id_project', 'project_id', 'id_project_ref'];
+                        foreach ($projectCols as $pc) {
+                            if ($this->db->field_exists($pc, $tbl)) {
+                                $rows = $this->db->get_where($tbl, [$pc => $id_project])->result();
+                                if (!empty($rows)) { $plan_shifts = $rows; $found = true; break; }
+                            }
+                        }
+                        if (!$found) {
+                            // final fallback: return all rows so admin can inspect
+                            $plan_shifts = $this->db->get($tbl)->result();
+                        }
+                    }
+                    break;
+                }
+            }
+            // normalize property name so views/controllers can use `shift_id` and `id_planshift`
+            if (!empty($plan_shifts)) {
+                foreach ($plan_shifts as &$pps_norm) {
+                    if (!isset($pps_norm->shift_id) && isset($pps_norm->id_shift)) $pps_norm->shift_id = $pps_norm->id_shift;
+                    if (!isset($pps_norm->id_planshift) && isset($pps_norm->id_planshift)) $pps_norm->id_planshift = $pps_norm->id_planshift;
+                    if (!isset($pps_norm->id_planshift) && isset($pps_norm->id)) $pps_norm->id_planshift = $pps_norm->id;
+                }
+                unset($pps_norm);
+            }
+
+            // Prefer loading actual production shifts by plan_id when available
+            if ($this->db->table_exists('production_shifts')) {
+                $ps_rows = [];
+                if (!empty($plan->id_plan) && ($this->db->field_exists('id_plan', 'production_shifts') || $this->db->field_exists('plan_id', 'production_shifts'))) {
+                    $field = $this->db->field_exists('id_plan', 'production_shifts') ? 'id_plan' : 'plan_id';
+                    $ps_rows = $this->db->where($field, $plan->id_plan)->get('production_shifts')->result();
+                } else {
+                    // fallback to using shift IDs referenced by plan_shift
+                    $shiftIds = array_map(function($ps) { return isset($ps->shift_id) ? $ps->shift_id : (isset($ps->id_shift) ? $ps->id_shift : null); }, $plan_shifts);
+                    $shiftIds = array_filter($shiftIds, function($v) { return !is_null($v) && $v !== ''; });
+                    if (!empty($shiftIds)) {
+                        $ps_rows = $this->db->where_in('shift_id', $shiftIds)->get('production_shifts')->result();
+                    }
+                }
+
+                if (!empty($ps_rows)) {
+                    foreach ($ps_rows as $r) {
+                            $key = isset($r->shift_id) ? $r->shift_id : (isset($r->id) ? $r->id : null);
+                            if ($key !== null) $production_shifts_map[$key] = $r;
+                    }
+                    // populate shiftIds from actual production_shifts when loaded by plan
+                    if (empty($shiftIds)) {
+                            $shiftIds = array_keys($production_shifts_map);
+                    }
+
+                    // attach production shift details into plan_shift entries when possible
+                    if (!empty($plan_shifts)) {
+                        foreach ($plan_shifts as &$pps) {
+                            $key = isset($pps->shift_id) ? $pps->shift_id : ($pps->id_shift ?? null);
+                            $pps->production_shift = ($key !== null) ? ($production_shifts_map[$key] ?? null) : null;
+                        }
+                        unset($pps);
+                    }
+                }
+                // If we couldn't find plan_shifts but production shifts exist, try locate production_shifts by project id
+                if (empty($ps_rows)) {
+                    $projCols = ['id_project', 'project_id', 'id_project_ref'];
+                    foreach ($projCols as $pc) {
+                        if ($this->db->field_exists($pc, 'production_shifts')) {
+                            $rows = $this->db->get_where('production_shifts', [$pc => $id_project])->result();
+                            if (!empty($rows)) {
+                                foreach ($rows as $r) {
+                                    $key = isset($r->shift_id) ? $r->shift_id : (isset($r->id) ? $r->id : null);
+                                    if ($key !== null) $production_shifts_map[$key] = $r;
+                                }
+                                $shiftIds = array_keys($production_shifts_map);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // If there are production shifts but no plan_shifts, convert production_shifts into plan_shifts-like objects
+                if (empty($plan_shifts) && !empty($production_shifts_map)) {
+                    $plan_shifts = [];
+                    foreach ($production_shifts_map as $key => $r) {
+                        $obj = new stdClass();
+                        $obj->id_planshift = $r->shift_id ?? ($r->id ?? null);
+                        $obj->shift_id = $r->shift_id ?? ($r->id ?? null);
+                        $obj->id_staff = $r->id_staff ?? ($r->staff_id ?? null);
+                        // Prefer explicit shift_date (date) for the day, then any start_date fallback
+                        $obj->shift_date = $r->shift_date ?? $r->start_date ?? null;
+                        // Keep separate time fields and also provide start_date/end_date as date-first values
+                        $obj->start_time = $r->start_time ?? null;
+                        $obj->end_time = $r->end_time ?? null;
+                        $obj->start_date = $r->start_date ?? $r->shift_date ?? ($r->start_time ?? null);
+                        $obj->end_date = $r->end_date ?? $r->end_time ?? null;
+                        // prefer explicit shift_name, fallback to shift_code or constructed label
+                        if (isset($r->shift_name) && $r->shift_name !== '') {
+                            $obj->shift_name = $r->shift_name;
+                        } elseif (isset($r->shift_code) && $r->shift_code !== '') {
+                            $obj->shift_name = $r->shift_code;
+                        } else {
+                            $obj->shift_name = 'Shift ' . ($obj->shift_id ?? '');
+                        }
+                        $plan_shifts[] = $obj;
+                    }
+                }
+            }
+
+            $data['plan_shifts'] = $plan_shifts;
+            $data['production_shifts_map'] = $production_shifts_map;
+
+            // totals: finished_report, finished_receipt (received), finished_issue (issued), finished_stock
+            $data['total_finished'] = (int)($this->db->select_sum('total_finished')->where('id_project', $id_project)->get('finished_report')->row()->total_finished ?? 0);
+            $data['total_received'] = (int)($this->db->select_sum('quantity_received')->where('id_project', $id_project)->get('finished_receipt')->row()->quantity_received ?? 0);
+            $data['total_issued'] = (int)($this->db->select_sum('quantity_issued')->where('id_project', $id_project)->get('finished_issue')->row()->quantity_issued ?? 0);
+
+            // find shift closures related to this project using production shift IDs first, then fallback
+            $shift_closures = [];
+            if ($this->db->table_exists('shift_closures')) {
+                if (!empty($shiftIds)) {
+                    $rows = $this->db->where_in('shift_id', $shiftIds)->get('shift_closures')->result();
+                    if (!empty($rows)) $shift_closures = $rows;
+                }
+
+                // fallback: closures that reference this project's finished_report id via warehouse_request_id
+                if (empty($shift_closures)) {
+                    $rows = $this->db->query("SELECT sc.* FROM shift_closures sc LEFT JOIN finished_report fr ON sc.warehouse_request_id = fr.id_finished WHERE fr.id_project = ?", [$id_project])->result();
+                    if (!empty($rows)) $shift_closures = $rows;
+                }
+            }
+
+            // Filter: only keep closures whose shift_id matches known production shift IDs
+            if (!empty($shift_closures) && !empty($shiftIds)) {
+                // normalize shiftIds to strings to avoid strict type mismatch between int/string
+                $shiftIdsStr = array_map('strval', $shiftIds);
+                $shift_closures = array_values(array_filter($shift_closures, function($sc) use ($shiftIdsStr) {
+                    $sid = isset($sc->shift_id) ? $sc->shift_id : (isset($sc->shiftId) ? $sc->shiftId : null);
+                    if ($sid === null) return false;
+                    return in_array((string)$sid, $shiftIdsStr, true);
+                }));
+            }
+
+            // attach production shift details to closures when available
+            if (!empty($shift_closures) && !empty($production_shifts_map)) {
+                foreach ($shift_closures as &$sc) {
+                    $sc->production_shift = $production_shifts_map[$sc->shift_id] ?? null;
+                }
+                unset($sc);
+            }
+
+            $data['shift_closures'] = $shift_closures;
+        }
+
         $this->load->view('bod/vbackend', $data);
     }
 }

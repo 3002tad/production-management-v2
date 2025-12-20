@@ -470,6 +470,13 @@ class Planning extends CI_Controller
             redirect(site_url('leader/ChangePlanning/' . ($this->input->post('id_plan') ?: '')));
         }
     }
+   
 
 
 }
+
+
+
+
+
+
