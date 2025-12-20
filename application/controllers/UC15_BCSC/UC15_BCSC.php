@@ -129,27 +129,36 @@ class UC15_BCSC extends CI_Controller
         $this->db->order_by('z.zone_code, pl.line_code');
         $lines = $this->db->get()->result();
 
-        // Load active/upcoming shifts (today and future)
+        // Load active/upcoming shifts (today and future) - get shifts that are NOT completed (status != 3)
         $this->load->model('leader/ShiftModel');
-        $shifts = $this->ShiftModel->getShifts([
-            'date_from' => date('Y-m-d'),
-            'shift_status' => ''
-        ]);
-
-        // Auto-detect current shift based on time
-        $current_shift_id = null;
-        $current_time = date('H:i:s');
-        $current_date = date('Y-m-d');
+        $user_id = $this->session->userdata('user_id');
         
-        foreach ($shifts as $shift) {
-            if ($shift->shift_date == $current_date) {
-                // Check if current time is within shift time range
-                if ($current_time >= $shift->start_time && $current_time <= $shift->end_time) {
-                    $current_shift_id = $shift->shift_id;
-                    break;
-                }
+        // Get shifts assigned to current user (worker) - don't check time, just check if assigned
+        $this->db->distinct();
+        $this->db->select('ps.shift_id, ps.shift_code, ps.shift_name, ps.line_id, ps.shift_date, ps.start_time, ps.end_time, ps.shift_status,
+            pl.line_code, pl.line_name,
+            z.zone_code, z.zone_name');
+        $this->db->from('production_shifts ps');
+        $this->db->join('production_lines pl', 'ps.line_id = pl.id', 'left');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->join('shift_machine_staff sms', 'ps.shift_id = sms.shift_id AND sms.status = 1', 'inner');
+        $this->db->where('sms.staff_id', $user_id);
+        $this->db->where('ps.shift_status IN (1,2,4)'); // Not started, running, or paused
+        $this->db->order_by('ps.shift_date', 'ASC');
+        $this->db->order_by('ps.start_time', 'ASC');
+        $shifts = $this->db->get()->result();
+        
+        // Debug: log assigned shifts
+        if (ENVIRONMENT === 'development') {
+            log_message('debug', 'UC15_BCSC::add() - Assigned shifts count: ' . count($shifts));
+            log_message('debug', 'UC15_BCSC::add() - SQL: ' . $this->db->last_query());
+            if (count($shifts) > 0) {
+                log_message('debug', 'UC15_BCSC::add() - First shift: ' . json_encode($shifts[0]));
             }
         }
+
+        // Get current shift (first assigned shift, or null if none)
+        $current_shift_id = !empty($shifts) ? $shifts[0]->shift_id : null;
 
         $data = [
             'zones' => $zones,
