@@ -69,6 +69,10 @@ class Machine extends CI_Controller
         // Clear any old error messages since user has access now
         $this->session->unset_userdata('error');
         
+        // Clear flashdata from other modules (incident, etc.) to avoid showing unrelated messages
+        $this->session->unset_userdata('success');
+        $this->session->unset_userdata('error');
+        
         // Get grouped machines
         $machines_grouped = $this->MachineModel->getMachinesGrouped();
         
