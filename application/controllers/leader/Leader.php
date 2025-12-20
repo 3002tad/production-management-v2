@@ -96,9 +96,9 @@ class Leader extends CI_Controller
             $machine_capacity = array_slice($machine_capacity, 0, 5);
         }
 
-        $finished = $this->db->query("SELECT fr.id_finished, fr.total_finished, fr.fdate, p.project_name, p.qty_request, c.cust_name FROM finished_report fr JOIN project p ON fr.id_project = p.id_project LEFT JOIN customer c ON p.id_cust = c.id_cust ORDER BY fr.id_finished DESC LIMIT 10")->result();
+        $finished = $this->db->query("SELECT fr.id_finished, fr.total_finished, fr.fdate, p.id_project, p.project_name, p.qty_request, c.cust_name FROM finished_report fr JOIN project p ON fr.id_project = p.id_project LEFT JOIN customer c ON p.id_cust = c.id_cust ORDER BY fr.id_finished DESC LIMIT 10")->result();
 
-        $sorting = $this->db->query("SELECT sr.id_sorting, sr.finished, sr.waste, (sr.finished + sr.waste) as qty_output, ps.id_plan, s.staff_name FROM sorting_report sr JOIN plan_shift ps ON sr.id_planshift = ps.id_planshift JOIN staff s ON ps.id_staff = s.id_staff LEFT JOIN planning pl ON ps.id_plan = pl.id_plan ORDER BY sr.id_sorting DESC LIMIT 10")->result();
+        $sorting = $this->db->query("SELECT sr.id_sorting, sr.finished, sr.waste, (sr.finished + sr.waste) as qty_output, ps.id_plan, pl.plan_name, p.project_name, s.staff_name FROM sorting_report sr JOIN plan_shift ps ON sr.id_planshift = ps.id_planshift JOIN staff s ON ps.id_staff = s.id_staff LEFT JOIN planning pl ON ps.id_plan = pl.id_plan LEFT JOIN project p ON pl.id_project = p.id_project ORDER BY sr.id_sorting DESC LIMIT 10")->result();
 
         $data = [
             'finished' => $finished,

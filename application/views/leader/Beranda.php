@@ -300,9 +300,9 @@
                             <tbody>
                             <?php if (!empty($finished)) : foreach ($finished as $p) : ?>
                                 <tr>
-                                    <td class ="pl-4"> <?= $p->id_project?> </td>
-                                    <td class ="pl-4"> <?= $p->project_name ?? $p->plan_name?> </td>
-                                    <td class ="pl-4"> <?= $p->cust_name?> </td>
+                                    <td class ="pl-4"> <?= $p->id_project ?? '-' ?> </td>
+                                    <td class ="pl-4"> <?= $p->project_name ?? '-' ?> </td>
+                                    <td class ="pl-4"> <?= $p->cust_name ?? '-' ?> </td>
                                 </tr>
                             <?php endforeach; else: ?>
                                 <tr>
@@ -331,8 +331,8 @@
                             <tbody>
                             <?php if (!empty($sorting)) : foreach ($sorting as $pl) : ?>
                                 <tr>
-                                    <td class ="pl-4"> <?= $pl->plan_name?> </td>
-                                    <td class ="pl-4"> <?= $pl->plan_name?> </td>
+                                    <td class ="pl-4"> <?= $pl->id_sorting ?? '-' ?> </td>
+                                    <td class ="pl-4"> <?= $pl->plan_name ?? '-' ?> </td>
                                     <td class ="pl-4"> <?= $pl->project_name ?? '-' ?> </td>
                                     <td class ="pl-4"> Hôm nay </td>
                                 </tr>
