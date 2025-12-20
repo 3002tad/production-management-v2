@@ -29,7 +29,7 @@
             <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
                 <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/'); ?>">Leader</a></li>
                 <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/shift'); ?>">Ca làm việc</a></li>
-                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/shift/' . $shift->shift_id . '/detail'); ?>"><?= $shift->shift_name ?></a></li>
+                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="<?= site_url('leader/shift/detail/' . $shift->shift_id); ?>"><?= $shift->shift_name ?></a></li>
                 <li class="breadcrumb-item text-sm text-dark active">Chốt ca</li>
             </ol>
             <h6 class="font-weight-bolder mb-0"><?= $title ?></h6>
@@ -327,7 +327,7 @@
                                 </ul>
                             </div>
                             <div>
-                                <a href="<?= site_url('leader/shift/' . $shift->shift_id . '/detail'); ?>" 
+                                <a href="<?= site_url('leader/shift/detail/' . $shift->shift_id); ?>" 
                                    class="btn btn-light me-2">
                                     <i class="material-icons text-sm">arrow_back</i>&nbsp;&nbsp;Quay lại
                                 </a>
