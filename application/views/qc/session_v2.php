@@ -13,13 +13,71 @@
     <!-- Material Dashboard CSS -->
     <link href="<?= site_url('asset/backend/assets/css/material-dashboard.css?v=3.0.0'); ?>" rel="stylesheet" />
     
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         .checklist-item {
             transition: all 0.3s ease;
+            background-color: #fff;
+            border: 1px solid #e0e0e0 !important;
         }
         .checklist-item:hover {
             background-color: #f8f9fa;
-            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        .checklist-item.has-result {
+            border-left: 4px solid #43A047 !important;
+            background-color: #f1f8e9 !important;
+        }
+        .checklist-item.has-error {
+            border-left: 4px solid #E53935 !important;
+            background-color: #ffebee !important;
+        }
+        .item-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            min-width: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        .defect-details {
+            animation: slideDown 0.3s ease-out;
+            border: 1px solid #fff3cd;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #fffbf0;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 100px;
+            }
+        }
+        .result-select.is-invalid {
+            border-color: #e74c3c;
+            background-color: #fadbd8;
+        }
+        .defect-details input.is-invalid {
+            border-color: #e74c3c;
+            background-color: #fadbd8;
+        }
+        .progress {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #43A047 0%, #66BB6A 100%);
+            transition: width 0.3s ease;
         }
         .suggestion-card {
             border-left: 4px solid #1A73E8;
@@ -43,6 +101,18 @@
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 20px;
+        }
+        .form-select-sm {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.35rem;
+        }
+        .form-select-sm:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .gap-2 {
+            gap: 0.5rem !important;
         }
     </style>
 </head>
@@ -121,33 +191,54 @@
     <div class="container-fluid py-4">
         <!-- Upload Messages -->
         <?php if ($this->session->flashdata('upload_success')): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show" role="alert" id="php-upload-success">
             <span class="alert-icon"><i class="material-icons">check_circle</i></span>
             <span class="alert-text"><?= $this->session->flashdata('upload_success') ?></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         <script>
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Thành công!',
-                    text: '<?= addslashes($this->session->flashdata('upload_success')) ?>',
-                    showConfirmButton: true,
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#17ad37',
-                    timer: 3000,
-                    timerProgressBar: true
-                });
-            }
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: '<?= addslashes($this->session->flashdata('upload_success')) ?>',
+                        showConfirmButton: true,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#17ad37',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                }
+                // Clear flashdata-based alert from DOM after showing
+                setTimeout(() => {
+                    const alert = document.getElementById('php-upload-success');
+                    if (alert) {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            });
         </script>
         <?php endif; ?>
         
         <?php if ($this->session->flashdata('upload_error')): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" id="php-upload-error">
             <span class="alert-icon"><i class="material-icons">error</i></span>
             <span class="alert-text"><?= $this->session->flashdata('upload_error') ?></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(() => {
+                    const alert = document.getElementById('php-upload-error');
+                    if (alert) {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            });
+        </script>
         <?php endif; ?>
         
         <!-- Session Info Header (Use Case - Bước 3: Xem chi tiết) -->
@@ -215,17 +306,31 @@
         <?php endif; ?>
 
         <div class="row">
+            <?php 
+                $total_items = count($items ?? []); 
+                $filled_items = 0; 
+                foreach ($items as $item) {
+                    if (isset($item->result) && !empty($item->result)) $filled_items++;
+                }
+                $is_step5_locked = ($session->status == 'DECIDED');
+            ?>
             <!-- Checklist Panel (Use Case Bước 4, 5, 6) -->
             <div class="col-lg-8">
-                <div class="card <?= $session->status == 'DECIDED' ? 'session-locked' : '' ?>">
+                <div class="card <?= $is_step5_locked ? 'session-locked' : '' ?>">
                     <div class="card-header pb-0">
-                        <h6>Use Case Bước 5: Thực hiện kiểm định, nhập kết quả (<?= $checklist_status['filled'] ?? 0 ?>/<?= $checklist_status['total'] ?? 0 ?>)</h6>
-                        <div class="progress">
-                            <div class="progress-bar bg-gradient-success" role="progressbar" 
-                                 style="width: <?= $checklist_status['completion_rate'] ?? 0 ?>%" 
-                                 aria-valuenow="<?= $checklist_status['completion_rate'] ?? 0 ?>" 
+                        <h6>Use Case Bước 5: Thực hiện kiểm định, nhập kết quả <span class="header-progress-badge">(<span class="header-filled"><?= $filled_items ?></span>/<span class="header-total"><?= $total_items ?></span>)</span></h6>
+                        <?php if ($session->status == 'DECIDED'): ?>
+                            <span class="badge bg-gradient-success"><i class="material-icons text-xs">lock</i> Phiên đã chốt - Khóa chỉnh sửa</span>
+                        <?php elseif ($filled_items > 0): ?>
+                            <span class="badge bg-gradient-info"><i class="material-icons text-xs">save</i> Đã lưu kết quả tạm thời</span>
+                        <?php endif; ?>
+                        <div class="progress mt-2">
+                            <?php $percent = $total_items > 0 ? ($filled_items / $total_items * 100) : 0; ?>
+                            <div class="progress-bar bg-gradient-success header-progress-bar" role="progressbar" 
+                                 style="width: <?= $percent ?>%" 
+                                 aria-valuenow="<?= $percent ?>" 
                                  aria-valuemin="0" aria-valuemax="100">
-                                <?= number_format($checklist_status['completion_rate'] ?? 0, 1) ?>%
+                                <span class="header-progress-percent"><?= round($percent, 1) ?>%</span>
                             </div>
                         </div>
                         <p class="text-xs text-secondary mt-2 mb-0">
@@ -236,48 +341,111 @@
                     <div class="card-body">
                         <form method="POST" action="<?= site_url('qc/saveItems/' . $session->id); ?>" id="checklistForm">
                             <?php if (!empty($items)): ?>
-                                <?php foreach ($items as $item): ?>
-                                <div class="checklist-item mb-3 p-3 border rounded">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-6">
-                                            <h6 class="mb-1"><?= isset($item->criteria_name) ? $item->criteria_name : (isset($item->item_name) ? $item->item_name : '---') ?></h6>
-                                            <p class="text-xs text-secondary mb-0">
-                                                <i class="material-icons text-xs">info</i> 
-                                                <?= isset($item->description) ? $item->description : (isset($item->criteria) ? $item->criteria : 'Kiểm tra chất lượng') ?>
-                                            </p>
-                                            <?php if (!empty($item->test_method)): ?>
-                                            <p class="text-xs text-info mb-0">
-                                                <i class="material-icons text-xs">science</i> 
-                                                Phương pháp: <?= $item->test_method ?>
-                                            </p>
-                                            <?php endif; ?>
+                                <?php foreach ($items as $index => $item): ?>
+                                    <?php 
+                                        $item_code = isset($item->item_code) ? $item->item_code : (isset($item->code) ? $item->code : 'item_' . $index);
+                                        $item_result = isset($item->result) ? $item->result : ''; 
+                                        
+                                        $item_name = isset($item->item_name) ? $item->item_name : (isset($item->criteria_name) ? $item->criteria_name : '');
+                                        $item_description = isset($item->description) ? $item->description : (isset($item->criteria) ? $item->criteria : 'Kiểm tra chất lượng');
+                                        $item_test_method = isset($item->test_method) ? $item->test_method : '';
+                                    ?>
+                                <div class="checklist-item mb-3 p-3 border rounded" data-item-index="<?= $index ?>">
+                                    <!-- Hidden fields for auto-create functionality -->
+                                    <input type="hidden" name="item_names[<?= $item_code ?>]" value="<?= htmlspecialchars($item_name) ?>">
+                                    <input type="hidden" name="descriptions[<?= $item_code ?>]" value="<?= htmlspecialchars($item_description) ?>">
+                                    <input type="hidden" name="test_methods[<?= $item_code ?>]" value="<?= htmlspecialchars($item_test_method) ?>">
+                                    
+                                    <div class="row align-items-start">
+                                        <!-- Item Info -->
+                                        <div class="col-lg-5">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div class="item-badge bg-light p-2 rounded text-center" style="min-width: 40px;">
+                                                    <small class="fw-bold text-primary"><?= $index + 1 ?></small>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-2 fw-bold">
+                                                        <?= $item_name ?>
+                                                    </h6>
+                                                    <p class="text-xs text-secondary mb-2 d-flex align-items-start gap-1">
+                                                        <i class="material-icons" style="font-size: 16px; margin-top: 2px;">info</i>
+                                                        <span><?= $item_description ?></span>
+                                                    </p>
+                                                    <?php if (!empty($item_test_method)): ?>
+                                                    <p class="text-xs text-info mb-0 d-flex align-items-start gap-1">
+                                                        <i class="material-icons" style="font-size: 16px; margin-top: 2px;">science</i>
+                                                        <span>Phương pháp: <?= $item_test_method ?></span>
+                                                    </p>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label text-xs">Kết quả (pass/fail)</label>
+
+                                        <!-- Result Selection -->
+                                        <div class="col-lg-4">
+                                            <label class="form-label text-xs fw-bold mb-2">Kết quả (pass/fail)</label>
                                             <select class="form-select form-select-sm result-select" 
-                                                    name="results[<?= isset($item->item_code) ? $item->item_code : (isset($item->code) ? $item->code : '') ?>]" 
+                                                    name="results[<?= $item_code ?>]" 
                                                     data-item-id="<?= isset($item->id) ? $item->id : '' ?>"
+                                                    data-item-index="<?= $index ?>"
                                                     required>
                                                 <option value="">-- Chọn --</option>
-                                                <option value="PASS" <?= (isset($item->result) && $item->result == 'PASS') ? 'selected' : '' ?>>
+                                                <option value="PASS" <?= ($item_result == 'PASS') ? 'selected' : '' ?>>
                                                     ✅ PASS
                                                 </option>
-                                                <option value="FAIL" <?= (isset($item->result) && $item->result == 'FAIL') ? 'selected' : '' ?>>
+                                                <option value="FAIL" <?= ($item_result == 'FAIL') ? 'selected' : '' ?>>
                                                     ❌ FAIL
                                                 </option>
                                             </select>
                                         </div>
-                                        <div class="col-md-3">
+
+                                        <!-- Defect Details (shown when FAIL) -->
+                                        <div class="col-lg-3">
+                                            <div class="defect-details" style="display: <?= ($item_result == 'FAIL') ? 'block' : 'none' ?>;">
+                                                <label class="form-label text-xs fw-bold mb-2">Chi tiết lỗi</label>
+                                                <input type="text" 
+                                                       class="form-control form-control-sm" 
+                                                       name="defects[<?= $item_code ?>]"
+                                                       placeholder="Mô tả chi tiết lỗi..."
+                                                       value="<?= isset($item->defect_details) ? htmlspecialchars($item->defect_details) : '' ?>">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
+                                
+                                <!-- Progress Summary -->
+                                <div class="mt-4 pt-3 border-top">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <p class="text-sm mb-0">
+                                                <strong>Tiến độ:</strong> <span class="badge bg-info progress-badge"><?= $filled_items ?>/<?= $total_items ?></span>
+                                                <span class="text-secondary">items đã hoàn thành</span>
+                                                <span class="badge bg-primary ms-2 progress-percentage"><?= $total_items > 0 ? round(($filled_items / $total_items * 100), 1) : 0 ?>%</span>
+                                            </p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar bg-success summary-progress-bar" role="progressbar" 
+                                                     style="width: <?= $total_items > 0 ? ($filled_items / $total_items * 100) : 0 ?>%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                             <?php else: ?>
-                                <div class="alert alert-warning text-center mt-3">Không có checklist hoặc dữ liệu kiểm tra để nhập kết quả. Vui lòng kiểm tra lại cấu hình checklist và dữ liệu ca sản xuất!</div>
+                                <div class="alert alert-warning text-center mt-3">
+                                    <i class="material-icons">warning</i>
+                                    <p class="mb-0">Không có checklist hoặc dữ liệu kiểm tra để nhập kết quả. Vui lòng kiểm tra lại cấu hình checklist và dữ liệu ca sản xuất!</p>
+                                </div>
                             <?php endif; ?>
                             
                             <?php if ($session->status != 'DECIDED'): ?>
-                            <div class="text-end mt-3">
-                                <button type="submit" class="btn btn-primary">
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary me-2" onclick="window.history.back()">
+                                    <i class="material-icons">arrow_back</i> Quay lại
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="saveItemsBtn">
                                     <i class="material-icons">save</i> Lưu kết quả
                                 </button>
                             </div>
@@ -296,23 +464,34 @@
                         </p>
                     </div>
                     <div class="card-body">
-                        <?php if (!empty($attachments)): ?>
-                        <div class="row">
-                            <?php foreach ($attachments as $att): ?>
-                            <div class="col-md-3 mb-3">
-                                <div class="card">
-                                    <img src="<?= site_url('uploads/qc/' . $att->path) ?>" 
-                                         class="card-img-top" alt="Attachment">
-                                    <div class="card-body p-2">
-                                        <p class="text-xs mb-0"><?= $att->mime_type ?></p>
+                        <div class="row" id="attachmentList">
+                            <?php if (!empty($attachments)): ?>
+                                <?php foreach ($attachments as $att): ?>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card">
+                                        <img src="<?= site_url($att->path) ?>" 
+                                             class="card-img-top" alt="Attachment" style="height: 150px; object-fit: cover;">
+                                        <div class="card-body p-2">
+                                            <p class="text-xs mb-0 text-truncate"><?= $att->filename ?></p>
+                                            <p class="text-xxs text-secondary mb-0"><?= $att->mime_type ?></p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
-                        <?php endif; ?>
                         
                         <?php if ($session->status != 'DECIDED'): ?>
+                        <div id="uploadPreviewContainer" class="mb-3" style="display: none;">
+                            <p class="text-xs fw-bold mb-2">Xem trước:</p>
+                            <div class="position-relative d-inline-block">
+                                <img id="uploadPreview" src="#" alt="Preview" class="img-thumbnail" style="max-height: 200px;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 p-1" id="removePreview">
+                                    <i class="material-icons text-xs">close</i>
+                                </button>
+                            </div>
+                        </div>
+
                         <form method="POST" action="<?= site_url('qc/uploadAttachment/' . $session->id); ?>" 
                               enctype="multipart/form-data" id="uploadForm">
                             <div class="input-group">
@@ -516,63 +695,481 @@
 <script src="<?= site_url('asset/backend/assets/js/material-dashboard.min.js'); ?>"></script>
 
 <script>
-// Show/hide defect details based on result
-document.querySelectorAll('.result-select').forEach(select => {
-    select.addEventListener('change', function() {
-        const row = this.closest('.checklist-item');
-        const defectDetails = row.querySelector('.defect-details');
-        if (this.value === 'FAIL') {
-            defectDetails.style.display = 'block';
-        } else {
-            defectDetails.style.display = 'none';
+// ========================================
+// CHECKLIST FORM MANAGEMENT
+// ========================================
+
+// Consolidated QC Session Scripts
+const QC_SESSION = {
+    updateProgress: function() {
+        try {
+            const selects = document.querySelectorAll('.result-select');
+            let filledCount = 0;
+            const totalCount = selects.length;
+            
+            selects.forEach(select => {
+                const row = select.closest('.checklist-item');
+                const val = select.value;
+                if (val && val !== '') {
+                    filledCount++;
+                    if (row) {
+                        row.classList.add('has-result');
+                        if (val === 'FAIL') {
+                            row.classList.add('has-error');
+                        } else {
+                            row.classList.remove('has-error');
+                        }
+                    }
+                } else {
+                    if (row) {
+                        row.classList.remove('has-result', 'has-error');
+                    }
+                }
+            });
+            
+            console.log(`QC Progress: ${filledCount}/${totalCount}`);
+            
+            // Update text elements
+            document.querySelectorAll('.header-filled').forEach(el => el.innerText = filledCount);
+            document.querySelectorAll('.header-total').forEach(el => el.innerText = totalCount);
+            document.querySelectorAll('.progress-badge').forEach(el => el.innerText = filledCount + '/' + totalCount);
+            
+            if (totalCount > 0) {
+                const percentage = (filledCount / totalCount) * 100;
+                const percentText = Math.round(percentage) + '%';
+                
+                // Update progress bars
+                document.querySelectorAll('.header-progress-bar, .summary-progress-bar').forEach(bar => {
+                    bar.style.width = percentage + '%';
+                    bar.setAttribute('aria-valuenow', percentage);
+                });
+                
+                // Update percentage labels
+                document.querySelectorAll('.header-progress-percent, .progress-percentage').forEach(el => {
+                    el.innerText = percentText;
+                });
+            }
+        } catch (err) {
+            console.error('Error in updateProgress:', err);
         }
-    });
+    },
+
+    handleSelectChange: function(e) {
+        const select = e.target;
+        if (!select.classList.contains('result-select')) return;
+
+        const row = select.closest('.checklist-item');
+        const defectDetails = row ? row.querySelector('.defect-details') : null;
+        
+        console.log('Select changed:', select.name, select.value);
+        
+        if (select.value === 'FAIL') {
+            if (defectDetails) {
+                defectDetails.style.display = 'block';
+                const defectInput = defectDetails.querySelector('input');
+                if (defectInput) defectInput.required = true;
+            }
+        } else {
+            if (defectDetails) {
+                defectDetails.style.display = 'none';
+                const defectInput = defectDetails.querySelector('input');
+                if (defectInput) {
+                    defectInput.required = false;
+                    defectInput.value = '';
+                }
+            }
+        }
+        
+        this.updateProgress();
+    },
+
+    init: function() {
+        console.log('QC_SESSION.init() called');
+        
+        // Initial progress update
+        this.updateProgress();
+        
+        // Event delegation for selects
+        const form = document.getElementById('checklistForm');
+        if (form) {
+            form.addEventListener('change', (e) => this.handleSelectChange(e));
+        }
+
+        // Initial recommendation refresh
+        if (typeof refreshRecommendationFromServer === 'function') {
+            refreshRecommendationFromServer();
+        }
+    }
+};
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    QC_SESSION.init();
+
+    // Prevent flashdata alerts from showing again on reload
+    if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_RELOAD) {
+        const flashAlerts = document.querySelectorAll('#php-upload-success, #php-upload-error');
+        flashAlerts.forEach(alert => alert.remove());
+    }
 });
 
-// Validate reject form (Alternative Flow 8.1)
+// Validate checklist form before submission
+document.getElementById('checklistForm')?.addEventListener('submit', function(e) {
+    const selects = document.querySelectorAll('.result-select');
+    let hasEmptyFields = false;
+    let hasMissingDefects = false;
+    
+    selects.forEach(select => {
+        if (!select.value || select.value === '') {
+            hasEmptyFields = true;
+            select.classList.add('is-invalid');
+        } else {
+            select.classList.remove('is-invalid');
+        }
+        
+        // Check for required defect details
+        const row = select.closest('.checklist-item');
+        const defectDetails = row.querySelector('.defect-details');
+        if (defectDetails && defectDetails.style.display !== 'none') {
+            const defectInput = defectDetails.querySelector('input');
+            if (!defectInput.value || defectInput.value.trim() === '') {
+                hasMissingDefects = true;
+                defectInput.classList.add('is-invalid');
+            } else {
+                defectInput.classList.remove('is-invalid');
+            }
+        }
+    });
+    
+    if (hasEmptyFields) {
+        e.preventDefault();
+        Swal?.fire({
+            icon: 'warning',
+            title: 'Chưa hoàn thành',
+            text: 'Vui lòng chọn kết quả cho tất cả các mục kiểm tra!',
+            confirmButtonColor: '#ffc107',
+            confirmButtonText: 'OK'
+        });
+        return false;
+    }
+    
+    if (hasMissingDefects) {
+        e.preventDefault();
+        Swal?.fire({
+            icon: 'warning',
+            title: 'Thiếu chi tiết lỗi',
+            text: 'Vui lòng nhập chi tiết cho tất cả các lỗi (FAIL)!',
+            confirmButtonColor: '#ffc107',
+            confirmButtonText: 'OK'
+        });
+        return false;
+    }
+    
+    // Prevent default form submission - use AJAX instead
+    e.preventDefault();
+    
+    // AJAX submit
+    const form = this;
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('#saveItemsBtn');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Disable entire form during save
+    const allInputs = form.querySelectorAll('input, select, button, textarea');
+    allInputs.forEach(el => el.disabled = true);
+    
+    submitBtn.innerHTML = '<i class="material-icons">hourglass_empty</i> Đang lưu...';
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(json => {
+        if (json.success) {
+            // Update button to show success immediately
+            submitBtn.innerHTML = '<i class="material-icons">check_circle</i> Đã lưu!';
+            submitBtn.classList.add('btn-success');
+            
+            // Show success toast
+            Swal?.fire({
+                icon: 'success',
+                title: 'Đã lưu!',
+                timer: 800,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                position: 'top-end'
+            });
+            
+            // Reload page after 0.8 seconds to refresh data from DB
+            setTimeout(() => {
+                location.reload();
+            }, 800);
+        } else {
+            Swal?.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: json.error || 'Lưu thất bại'
+            });
+            // Re-enable form on error
+            allInputs.forEach(el => el.disabled = false);
+            submitBtn.innerHTML = originalBtnText;
+        }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        Swal?.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Không thể kết nối tới server'
+        });
+        // Re-enable form on error
+        allInputs.forEach(el => el.disabled = false);
+        submitBtn.innerHTML = originalBtnText;
+    });
+
+// ========================================
+// REJECT FORM VALIDATION (Alternative Flow 8.1)
+// ========================================
+
 document.getElementById('rejectForm')?.addEventListener('submit', function(e) {
     const reason = this.querySelector('textarea[name="reason"]').value;
     const attachmentCount = <?= count($attachments ?? []) ?>;
     
     if (reason.length < 20) {
         e.preventDefault();
-        alert('⚠️ Alternative Flow 8.1: Lý do từ chối phải có ít nhất 20 ký tự!');
+        Swal?.fire({
+            icon: 'error',
+            title: 'Lý do không đủ',
+            text: 'Lý do từ chối phải có ít nhất 20 ký tự (Use Case Alternative Flow 8.1)!',
+            confirmButtonColor: '#e74c3c',
+            confirmButtonText: 'OK'
+        });
         return false;
     }
     
     if (attachmentCount === 0) {
         e.preventDefault();
-        alert('⚠️ Alternative Flow 8.1: Bắt buộc phải đính kèm ảnh/video khi từ chối!');
+        Swal?.fire({
+            icon: 'error',
+            title: 'Chưa có bằng chứng',
+            text: 'Bắt buộc phải đính kèm ảnh/video khi từ chối (Use Case Alternative Flow 8.1)!',
+            confirmButtonColor: '#e74c3c',
+            confirmButtonText: 'OK'
+        });
         return false;
     }
 });
 
-// Validate upload form and show loading
-document.getElementById('uploadForm')?.addEventListener('submit', function(e) {
+// ========================================
+// FILE UPLOAD MANAGEMENT (AJAX & Preview)
+// ========================================
+
+(function() {
     const fileInput = document.getElementById('attachmentFile');
+    const uploadForm = document.getElementById('uploadForm');
     const uploadBtn = document.getElementById('uploadBtn');
-    
-    if (!fileInput.files || fileInput.files.length === 0) {
+    const previewContainer = document.getElementById('uploadPreviewContainer');
+    const previewImg = document.getElementById('uploadPreview');
+    const removePreviewBtn = document.getElementById('removePreview');
+    const attachmentList = document.getElementById('attachmentList');
+
+    if (!fileInput) return;
+
+    // Preview logic
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            // Reset button state
+            uploadBtn.innerHTML = '<i class="material-icons">upload</i> Tải lên';
+            uploadBtn.disabled = false;
+
+            // Show preview if image
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        }
+    });
+
+    // Remove preview
+    removePreviewBtn?.addEventListener('click', function() {
+        fileInput.value = '';
+        previewContainer.style.display = 'none';
+        uploadBtn.disabled = true;
+    });
+
+    // AJAX Upload
+    uploadForm?.addEventListener('submit', function(e) {
         e.preventDefault();
-        alert('⚠️ Vui lòng chọn file để tải lên!');
-        return false;
-    }
-    
-    // Show loading state
-    uploadBtn.innerHTML = '<i class="material-icons">hourglass_empty</i> Đang tải...';
-    uploadBtn.disabled = true;
-    
-    // Note: Form will submit normally and redirect after upload
-});
+        
+        if (!fileInput.files || fileInput.files.length === 0) {
+            Swal?.fire({
+                icon: 'warning',
+                title: 'Chưa chọn file',
+                text: 'Vui lòng chọn file để tải lên!',
+                confirmButtonColor: '#ffc107',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
 
-// Reset upload button on file change
-document.getElementById('attachmentFile')?.addEventListener('change', function() {
-    const uploadBtn = document.getElementById('uploadBtn');
-    uploadBtn.innerHTML = '<i class="material-icons">upload</i> Tải lên';
-    uploadBtn.disabled = false;
-});
+        const formData = new FormData(this);
+        const originalBtnText = uploadBtn.innerHTML;
+        
+        // Show loading state
+        uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tải...';
+        uploadBtn.disabled = true;
 
-// Auto-hide alerts after 5 seconds
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add to list
+                const att = data.attachment;
+                const newCol = document.createElement('div');
+                newCol.className = 'col-md-3 mb-3';
+                newCol.innerHTML = `
+                    <div class="card">
+                        <img src="${att.path}" class="card-img-top" alt="Attachment" style="height: 150px; object-fit: cover;">
+                        <div class="card-body p-2">
+                            <p class="text-xs mb-0 text-truncate">${att.filename}</p>
+                            <p class="text-xxs text-secondary mb-0">${att.mime_type}</p>
+                        </div>
+                    </div>
+                `;
+                attachmentList.appendChild(newCol);
+
+                // Reset form
+                uploadForm.reset();
+                previewContainer.style.display = 'none';
+                
+                Swal?.fire({
+                    icon: 'success',
+                    title: 'Thành công',
+                    text: 'Đã tải ảnh lên thành công!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // Update attachment count in header
+                const headerTitle = document.querySelector('.card-header h6');
+                if (headerTitle && headerTitle.innerText.includes('Đính kèm')) {
+                    const currentCount = attachmentList.querySelectorAll('.col-md-3').length;
+                    headerTitle.innerHTML = `Đính kèm ảnh/video (${currentCount})`;
+                }
+            } else {
+                throw new Error(data.error || 'Lỗi không xác định');
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            Swal?.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: error.message || 'Không thể tải file lên. Vui lòng thử lại.',
+                confirmButtonColor: '#e74c3c'
+            });
+        })
+        .finally(() => {
+            uploadBtn.innerHTML = originalBtnText;
+            uploadBtn.disabled = false;
+        });
+    });
+})();
+
+// ========================================
+// AUTO-SAVE & NOTIFICATIONS
+// ========================================
+
+// Refresh recommendation from server on page load
+function refreshRecommendationFromServer() {
+    const sessionId = '<?= $session->id ?>';
+    
+    fetch(`<?= site_url('qc/getRecommendation/') ?>${sessionId}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Recommendation from server:', data);
+        
+        if (data && data.recommendation) {
+            // Update Step 6 recommendation card
+            const suggestionCard = document.querySelector('.suggestion-card');
+            if (suggestionCard) {
+                const card = suggestionCard.closest('.card');
+                card.className = 'card mt-4 suggestion-card suggestion-' + data.recommendation.toLowerCase();
+                
+                const badgeClass = data.recommendation === 'APPROVE' ? 'bg-gradient-success' : 
+                                   data.recommendation === 'REJECT' ? 'bg-gradient-danger' :
+                                   data.recommendation === 'REVIEW_NEEDED' ? 'bg-gradient-warning' : 
+                                   data.recommendation === 'INCOMPLETE' ? 'bg-gradient-secondary' : 'bg-gradient-secondary';
+                
+                card.innerHTML = `
+                    <div class="card-header pb-0">
+                        <h6><i class="material-icons">psychology</i> Use Case Bước 6: Gợi ý kết luận</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span class="badge badge-lg ${badgeClass}">
+                                ${data.recommendation}
+                            </span>
+                            <span class="badge badge-sm bg-gradient-info ms-2">
+                                Độ tin cậy: ${data.confidence || 'N/A'}
+                            </span>
+                        </div>
+                        <p class="text-sm"><strong>Phân tích:</strong></p>
+                        <p class="text-xs">${data.analysis || 'Không có phân tích'}</p>
+                        ${data.action ? `
+                            <div class="alert alert-info p-2 mt-2">
+                                <p class="text-xs mb-0">
+                                    <i class="material-icons text-xs">lightbulb</i> 
+                                    <strong>Hành động đề xuất:</strong> ${data.action}
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // Update Step 7 decision buttons
+            const decisionCard = document.querySelector('.card-body button[data-bs-target="#approveModal"]')?.closest('.card');
+            if (decisionCard && data.recommendation !== 'INCOMPLETE') {
+                // Enable buttons
+                const approveBtn = decisionCard.querySelector('button[data-bs-target="#approveModal"]');
+                const rejectBtn = decisionCard.querySelector('button[data-bs-target="#rejectModal"]');
+                const warningMsg = decisionCard.querySelector('.text-warning');
+                
+                if (approveBtn) approveBtn.disabled = false;
+                if (rejectBtn) rejectBtn.disabled = false;
+                if (warningMsg) warningMsg.remove();
+            }
+        }
+    })
+    .catch(error => console.log('Failed to refresh recommendation:', error));
+}
+
+// Auto-hide dismissible alerts after 5 seconds
 setTimeout(function() {
     const alerts = document.querySelectorAll('.alert-dismissible');
     alerts.forEach(function(alert) {
@@ -583,7 +1180,7 @@ setTimeout(function() {
     });
 }, 5000);
 
-// Auto-save checklist every 30 seconds
+// Auto-save checklist every 30 seconds (Only when session is OPEN)
 <?php if ($session->status != 'DECIDED'): ?>
 let autoSaveInterval = setInterval(() => {
     const form = document.getElementById('checklistForm');
@@ -591,12 +1188,23 @@ let autoSaveInterval = setInterval(() => {
         const formData = new FormData(form);
         fetch(form.action, {
             method: 'POST',
-            body: formData
-        }).then(response => {
-            console.log('Auto-saved at ' + new Date().toLocaleTimeString());
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .catch(error => console.log('Auto-save status:', error))
+        .finally(() => {
+            console.log('Last auto-saved: ' + new Date().toLocaleTimeString());
         });
     }
 }, 30000);
+
+// Clear auto-save interval when page unloads
+window.addEventListener('beforeunload', () => {
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
+});
 <?php endif; ?>
 </script>
 

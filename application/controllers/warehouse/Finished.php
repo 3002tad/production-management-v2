@@ -86,14 +86,22 @@ class Finished extends CI_Controller {
     {
         $batches = $this->FinishedReceiptModel->getQcPassedBatches();
 
-        if (empty($batches)) {
-            $this->session->set_flashdata('warning', 'Không có ca/lô nào đạt QC để nhập');
+        // Load projects list for dropdown with stats
+        $projects = [];
+        if ($this->db->table_exists('project')) {
+            $this->db->select('p.id_project, p.project_name, p.qty_request as qty_target');
+            $this->db->select('COALESCE((SELECT SUM(quantity_received) FROM finished_receipt WHERE id_project = p.id_project AND status = "posted"), 0) as qty_received');
+            $this->db->from('project p');
+            // Chỉ lấy các dự án chưa nhập đủ số lượng
+            $this->db->having('qty_received < qty_target');
+            $projects = $this->db->get()->result();
         }
 
         $data = [
             'navlink' => 'finished_receipt',
             'content' => 'warehouse/finished/receipt_form',
-            'batches' => $batches
+            'batches' => $batches,
+            'projects' => $projects
         ];
 
         $this->load->view('warehouse/vbackend', $data);
@@ -125,14 +133,21 @@ class Finished extends CI_Controller {
         $data_source = null;
         
         if ($this->db->table_exists('shift_closures')) {
-            $batch = $this->db->where('id', $id_finished_report)
+            $batch = $this->db->where('closure_id', $id_finished_report)
                               ->get('shift_closures')
                               ->row();
             
             if ($batch) {
-                // For shift_closures, use project_code as id_project
-                $quantity_planned = $batch->qty_finished;
-                $id_project = $batch->project_code;
+                // For shift_closures, use total_good
+                $quantity_planned = $batch->total_good;
+                
+                // Try to get project from planning if warehouse_request_id exists
+                if (!empty($batch->warehouse_request_id)) {
+                    $proj = $this->db->select('id_project')->get_where('planning', ['id_plan' => $batch->warehouse_request_id])->row();
+                    if ($proj) {
+                        $id_project = $proj->id_project;
+                    }
+                }
                 $data_source = 'shift_closures';
             }
         }
@@ -151,13 +166,19 @@ class Finished extends CI_Controller {
         }
 
         if (!$batch) {
-            $this->session->set_flashdata('error', 'Ca/lô không tồn tại trong shift_closures hoặc finished_report');
+            $this->session->set_flashdata('error', 'Ca/lô không tồn tại (ID: ' . $id_finished_report . ')');
             redirect('warehouse/finished/receipt_form');
+        }
+
+        // Override id_project from form if provided
+        $form_project_id = $this->input->post('id_project');
+        if ($form_project_id) {
+            $id_project = $form_project_id;
         }
 
         // Validate id_project was retrieved successfully
         if (!$id_project) {
-            $this->session->set_flashdata('error', 'Không tìm thấy dự án liên kết với ca/lô');
+            $this->session->set_flashdata('error', 'Không tìm thấy dự án liên kết với ca/lô. Vui lòng chọn dự án.');
             redirect('warehouse/finished/receipt_form');
         }
 
@@ -169,17 +190,20 @@ class Finished extends CI_Controller {
             'created_by' => $this->session->userdata('user_id'),
             'created_by_name' => $this->session->userdata('username'),
             'notes' => $notes,
-            'created_date' => date('Y-m-d H:i:s')
+            'created_date' => date('Y-m-d H:i:s'),
+            'status' => 'posted'
         ];
 
         $receipt_id = $this->FinishedReceiptModel->createReceipt($receipt_data);
 
         if ($receipt_id) {
             $this->FinishedReceiptModel->updateStockAfterReceipt($quantity_received, 1);
-            $this->session->set_flashdata('success', 'Nhập thành công - Phiếu #' . $receipt_id . ' (từ ' . $data_source . ')');
+            $this->session->set_flashdata('success', 'Nhập thành công - Phiếu #' . $receipt_id);
             redirect('warehouse/finished/receipt_view/' . $receipt_id);
         } else {
-            $this->session->set_flashdata('error', 'Lỗi: Không thể lưu phiếu');
+            $db_error = $this->db->error();
+            $error_msg = !empty($db_error['message']) ? $db_error['message'] : 'Không thể lưu phiếu vào cơ sở dữ liệu';
+            $this->session->set_flashdata('error', $error_msg);
             redirect('warehouse/finished/receipt_form');
         }
     }

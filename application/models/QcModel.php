@@ -79,31 +79,51 @@ class QcModel extends CI_Model
      */
     public function getPendingClosures($filters = [])
     {
+        $schema = $this->_getShiftClosureSchema();
+        
         // Lấy phiếu chốt ca chờ QC từ warehouse_import_requests
-        // JOIN với shift_closures, production_shifts, production_lines, project, product
-        $this->db->select('wir.*, 
-            sc.closure_id,
-            sc.closure_code as code, 
-            ps.shift_code, 
-            pl.line_code, 
-            p.project_name as project_code, 
-            pr.product_name as product_code,
-            pr.application as variant,
-            p.diameter as lot_code,
-            sc.total_good as qty_finished,
-            sc.total_defect as qty_waste,
-            sc.closure_date as closed_at,
-            u.full_name as closed_by');
+        // JOIN với shift_closures, production_shifts, production_lines, planning, project, product
+        $select = [
+            'wir.*',
+            'sc.closure_id',
+            'sc.closure_code as code',
+            'COALESCE(NULLIF(ps.shift_code, ""), ps.shift_name) as shift_code',
+            'pl.line_code',
+            'pln.plan_name as project_name',
+            'p.id_project as project_code',
+            'pr.product_name as product_name',
+            'pr.id_product as product_code',
+            'pr.application as variant',
+            'p.diameter as lot_code',
+            'sc.total_good as qty_finished',
+            'sc.total_defect as qty_waste',
+            'sc.closure_date as closed_at',
+            'u.full_name as closed_by'
+        ];
+
+        // Add schema-based fallbacks from shift_closures
+        if ($schema['has_line_code']) $select[] = 'sc.line_code as sc_line_code';
+        if ($schema['has_shift_code']) $select[] = 'sc.shift_code as sc_shift_code';
+        if ($schema['has_project_code']) $select[] = 'sc.project_code as sc_project_code';
+        if ($schema['has_product_code']) $select[] = 'sc.product_code as sc_product_code';
+        if ($schema['has_variant']) $select[] = 'sc.variant as sc_variant';
+
+        $this->db->select(implode(",\n            ", $select));
         
         $this->db->from('warehouse_import_requests wir');
         $this->db->join('shift_closures sc', 'wir.closure_id = sc.closure_id', 'left');
         $this->db->join('production_shifts ps', 'sc.shift_id = ps.shift_id', 'left');
         $this->db->join('production_lines pl', 'ps.line_id = pl.id', 'left');
-        $this->db->join('project p', 'ps.id_plan = p.id_project', 'left');
+        $this->db->join('planning pln', 'ps.id_plan = pln.id_plan', 'left');
+        $this->db->join('project p', 'pln.id_project = p.id_project', 'left');
         $this->db->join('product pr', 'p.id_product = pr.id_product', 'left');
         $this->db->join('user u', 'sc.closed_by = u.user_id', 'left');
         
+        // Join with qc_sessions to check if it's already decided
+        $this->db->join('qc_sessions qs', 'wir.closure_id = qs.closure_id', 'left');
+        
         $this->db->where('wir.status', 'pending_qc');
+        $this->db->where('(qs.status IS NULL OR qs.status != "DECIDED")');
 
         if (!empty($filters['shift_id'])) {
             $this->db->where('ps.shift_id', $filters['shift_id']);
@@ -118,7 +138,27 @@ class QcModel extends CI_Model
             $this->db->where('wir.created_at <=', $filters['date_to']);
         }
         $this->db->order_by('wir.created_at', 'DESC');
-        return $this->db->get()->result();
+        $results = $this->db->get()->result();
+
+        // Apply fallbacks for each result
+        foreach ($results as &$row) {
+            if (empty($row->line_code) && !empty($row->sc_line_code)) $row->line_code = $row->sc_line_code;
+            if (empty($row->shift_code) && !empty($row->sc_shift_code)) $row->shift_code = $row->sc_shift_code;
+            
+            if (empty($row->product_name)) {
+                $row->product_name = !empty($row->product_name) ? $row->product_name : (!empty($row->product_code) ? $row->product_code : $row->code);
+            }
+            
+            if (empty($row->project_name)) {
+                if (!empty($row->sc_project_code)) $row->project_name = $row->sc_project_code;
+                elseif (!empty($row->project_code)) $row->project_name = $row->project_code;
+                else $row->project_name = $row->product_name;
+            }
+
+            if (empty($row->variant) && !empty($row->sc_variant)) $row->variant = $row->sc_variant;
+        }
+
+        return $results;
     }
     
     /**
@@ -134,9 +174,12 @@ class QcModel extends CI_Model
         // Đếm số phiếu chốt ca chờ QC trong warehouse_import_requests
         $pending = 0;
         if ($this->db->table_exists('warehouse_import_requests')) {
-            $this->db->where('status', 'pending_qc');
-            $this->db->where('DATE(created_at)', $today);
-            $pending = $this->db->count_all_results('warehouse_import_requests');
+            $this->db->from('warehouse_import_requests wir');
+            $this->db->join('qc_sessions qs', 'wir.closure_id = qs.closure_id', 'left');
+            $this->db->where('wir.status', 'pending_qc');
+            $this->db->where('(qs.status IS NULL OR qs.status != "DECIDED")');
+            $this->db->where('DATE(wir.created_at)', $today);
+            $pending = $this->db->count_all_results();
         }
         
         // Count verified today
@@ -175,7 +218,6 @@ class QcModel extends CI_Model
         $this->db->select('*');
         $this->db->from('warehouse_import_requests');
         $this->db->where('closure_id', $closure_id);
-        $this->db->where('status', 'pending_qc');
         return $this->db->get()->row();
     }
     
@@ -245,6 +287,27 @@ class QcModel extends CI_Model
         // Note: we update the base table without alias here
         return $this->db->update('shift_closures', $data, [$pk => $closure_id]);
     }
+
+    /**
+     * Update warehouse import request status
+     * 
+     * @param int $closure_id
+     * @param string $status
+     * @param array $extra_data
+     * @return bool
+     */
+    public function updateWarehouseImportRequestStatus($closure_id, $status, $extra_data = [])
+    {
+        if (!$this->db->table_exists('warehouse_import_requests')) {
+            return false;
+        }
+
+        $data = array_merge(['status' => $status], $extra_data);
+        $data['updated_at'] = date('Y-m-d H:i:s');
+
+        $this->db->where('closure_id', $closure_id);
+        return $this->db->update('warehouse_import_requests', $data);
+    }
     
     // ========================================
     // QC SESSIONS
@@ -268,7 +331,9 @@ class QcModel extends CI_Model
         }
         
         if ($this->db->insert('qc_sessions', $data)) {
-            return $this->db->insert_id();
+            $session_id = $this->db->insert_id();
+            
+            return $session_id;
         }
         
         return false;
@@ -282,38 +347,54 @@ class QcModel extends CI_Model
      */
     public function getSessionById($id)
     {
+        $schema = $this->_getShiftClosureSchema();
+        
         // Select session data + closure + project/product/line/shift info via joins
-        $this->db->select('
-            qs.*,
-            sc.closure_id,
-            sc.closure_code as code,
-            sc.closure_code,
-            ps.shift_code,
-            pl.line_code,
-            p.project_name as project_code,
-            pr.product_name as product_code,
-            pr.application as variant,
-            p.diameter as lot_code,
-            sc.total_good as qty_finished,
-            sc.total_defect as qty_waste,
-            sc.closure_date as closed_at,
-            u.full_name as inspector_name,
-            u2.full_name as closed_by,
-            qd.result,
-            qd.reason as decision_reason,
-            qd.defect_rate,
-            qd.aql as decision_aql,
-            qd.decided_by,
-            qd.decided_at,
-            wir.product_name as wir_product_name,
-            wir.product_code as wir_product_code');
+        $select = [
+            'qs.*',
+            'sc.closure_id',
+            'sc.closure_code as code',
+            'sc.closure_code',
+            'COALESCE(NULLIF(ps.shift_code, ""), ps.shift_name) as shift_code',
+            'pl.line_code',
+            'pln.plan_name as project_name',
+            'p.id_project as project_code',
+            'pr.product_name as product_name',
+            'pr.id_product as product_code',
+            'pr.application as variant',
+            'p.diameter as lot_code',
+            'sc.total_good as qty_finished',
+            'sc.total_defect as qty_waste',
+            'sc.closure_date as closed_at',
+            'u.full_name as inspector_name',
+            'u2.full_name as closed_by',
+            'qd.result',
+            'qd.reason as decision_reason',
+            'qd.defect_rate',
+            'qd.aql as decision_aql',
+            'qd.decided_by',
+            'qd.decided_at',
+            'wir.status as closure_status',
+            'wir.product_name as wir_product_name',
+            'wir.product_code as wir_product_code'
+        ];
+
+        // Add schema-based fallbacks from shift_closures
+        if ($schema['has_line_code']) $select[] = 'sc.line_code as sc_line_code';
+        if ($schema['has_shift_code']) $select[] = 'sc.shift_code as sc_shift_code';
+        if ($schema['has_project_code']) $select[] = 'sc.project_code as sc_project_code';
+        if ($schema['has_product_code']) $select[] = 'sc.product_code as sc_product_code';
+        if ($schema['has_variant']) $select[] = 'sc.variant as sc_variant';
+
+        $this->db->select(implode(",\n            ", $select));
         
         $this->db->from('qc_sessions qs');
         $this->db->join('shift_closures sc', 'qs.closure_id = sc.closure_id', 'left');
         $this->db->join('warehouse_import_requests wir', 'qs.closure_id = wir.closure_id', 'left');
         $this->db->join('production_shifts ps', 'sc.shift_id = ps.shift_id', 'left');
         $this->db->join('production_lines pl', 'ps.line_id = pl.id', 'left');
-        $this->db->join('project p', 'ps.id_plan = p.id_project', 'left');
+        $this->db->join('planning pln', 'ps.id_plan = pln.id_plan', 'left');
+        $this->db->join('project p', 'pln.id_project = p.id_project', 'left');
         $this->db->join('product pr', 'p.id_product = pr.id_product', 'left');
         $this->db->join('user u', 'qs.inspector_code = u.username', 'left');
         $this->db->join('user u2', 'sc.closed_by = u2.user_id', 'left');
@@ -321,17 +402,46 @@ class QcModel extends CI_Model
         
         $this->db->where('qs.id', $id);
         $result = $this->db->get()->row();
-        // Đảm bảo luôn có product_code và variant hợp lệ
+
+        // Đảm bảo luôn có đầy đủ thông tin hiển thị (Fallback logic)
         if ($result) {
-            if (empty($result->product_code) && !empty($result->wir_product_code)) {
-                $result->product_code = $result->wir_product_code;
+            // 1. Fallback cho Line/Shift
+            if (empty($result->line_code) && !empty($result->sc_line_code)) {
+                $result->line_code = $result->sc_line_code;
             }
-            if (empty($result->variant) && isset($result->wir_variant)) {
-                $result->variant = $result->wir_variant;
+            if (empty($result->shift_code) && !empty($result->sc_shift_code)) {
+                $result->shift_code = $result->sc_shift_code;
             }
-            // Nếu vẫn thiếu, thử lấy từ product_name
-            if (empty($result->product_code) && !empty($result->product_name)) {
-                $result->product_code = $result->product_name;
+
+            // 2. Fallback cho Product Code
+            if (empty($result->product_code)) {
+                if (!empty($result->sc_product_code)) $result->product_code = $result->sc_product_code;
+                elseif (!empty($result->wir_product_code)) $result->product_code = $result->wir_product_code;
+                else $result->product_code = $result->product_name;
+            }
+            
+            // 3. Fallback cho Product Name
+            if (empty($result->product_name)) {
+                if (!empty($result->wir_product_name)) $result->product_name = $result->wir_product_name;
+                else $result->product_name = $result->product_code;
+            }
+            
+            // 4. Fallback cho Project Name
+            if (empty($result->project_name)) {
+                if (!empty($result->sc_project_code)) $result->project_name = $result->sc_project_code;
+                elseif (!empty($result->project_code)) $result->project_name = $result->project_code;
+                else $result->project_name = $result->product_name;
+            }
+            
+            // 5. Fallback cho Project Code
+            if (empty($result->project_code)) {
+                $result->project_code = !empty($result->sc_project_code) ? $result->sc_project_code : $result->project_name;
+            }
+
+            // 6. Fallback cho Variant
+            if (empty($result->variant)) {
+                if (!empty($result->sc_variant)) $result->variant = $result->sc_variant;
+                elseif (isset($result->wir_variant)) $result->variant = $result->wir_variant;
             }
         }
         return $result;
@@ -366,44 +476,38 @@ class QcModel extends CI_Model
             }
 
             $select[] = $closureCodeSelect . ' as closure_code';
-            if ($schema['has_line_code']) {
-                $select[] = 'sc.line_code';
-            }
-            if ($schema['has_shift_code']) {
-                $select[] = 'sc.shift_code';
-            }
-            if ($schema['has_project_code']) {
-                $select[] = 'sc.project_code';
-            }
-            if ($schema['has_product_code']) {
-                $select[] = 'sc.product_code';
-            }
         }
 
-        $select[] = 'p.project_name';
+        // Always join with production tables to get full info
+        $select[] = 'pl.line_code';
+        $select[] = 'COALESCE(NULLIF(ps.shift_code, ""), ps.shift_name) as shift_code';
+        $select[] = 'pln.plan_name as project_name';
         $select[] = 'pr.product_name';
         $select[] = 'qd.result';
         $select[] = 'qd.decided_at';
+        
+        // Add schema-based fallbacks from shift_closures
+        if ($schema['has_line_code']) $select[] = 'sc.line_code as sc_line_code';
+        if ($schema['has_shift_code']) $select[] = 'sc.shift_code as sc_shift_code';
+        if ($schema['has_project_code']) $select[] = 'sc.project_code as sc_project_code';
+        if ($schema['has_product_code']) $select[] = 'sc.product_code as sc_product_code';
 
         $this->db->select(implode(",\n            ", $select));
         $this->db->from('qc_sessions qs');
 
         if ($schema['exists']) {
             $this->db->join('shift_closures sc', 'qs.closure_id = sc.' . $closurePk, 'left');
-
-            if ($schema['has_project_code']) {
-                $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
-            } else {
-                $this->db->join('project p', '1=0', 'left');
-            }
-
-            if ($schema['has_product_code']) {
-                $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
-            } else {
-                $this->db->join('product pr', '1=0', 'left');
-            }
+            $this->db->join('production_shifts ps', 'sc.shift_id = ps.shift_id', 'left');
+            $this->db->join('production_lines pl', 'ps.line_id = pl.id', 'left');
+            $this->db->join('planning pln', 'ps.id_plan = pln.id_plan', 'left');
+            $this->db->join('project p', 'pln.id_project = p.id_project', 'left');
+            $this->db->join('product pr', 'p.id_product = pr.id_product', 'left');
         } else {
+            // Fallback if shift_closures doesn't exist (unlikely but for safety)
             $this->db->join('shift_closures sc', '1=0', 'left');
+            $this->db->join('production_shifts ps', '1=0', 'left');
+            $this->db->join('production_lines pl', '1=0', 'left');
+            $this->db->join('planning pln', '1=0', 'left');
             $this->db->join('project p', '1=0', 'left');
             $this->db->join('product pr', '1=0', 'left');
         }
@@ -412,7 +516,23 @@ class QcModel extends CI_Model
         $this->db->where('qs.inspector_code', $inspector_code);
         $this->db->order_by('qs.created_at', 'DESC');
         
-        return $this->db->get()->result();
+        $results = $this->db->get()->result();
+
+        // Apply fallbacks for each result
+        foreach ($results as &$row) {
+            if (empty($row->line_code) && !empty($row->sc_line_code)) $row->line_code = $row->sc_line_code;
+            if (empty($row->shift_code) && !empty($row->sc_shift_code)) $row->shift_code = $row->sc_shift_code;
+            
+            if (empty($row->product_name)) {
+                $row->product_name = !empty($row->sc_product_code) ? $row->sc_product_code : $row->closure_code;
+            }
+            
+            if (empty($row->project_name)) {
+                $row->project_name = !empty($row->sc_project_code) ? $row->sc_project_code : $row->product_name;
+            }
+        }
+
+        return $results;
     }
     
     /**
@@ -444,12 +564,11 @@ class QcModel extends CI_Model
             }
 
             $select[] = $closureCodeSelect . ' as closure_code';
-            if ($schema['has_line_code']) {
-                $select[] = 'sc.line_code';
-            }
-            if ($schema['has_shift_code']) {
-                $select[] = 'sc.shift_code';
-            }
+            
+            // These are joined from production_shifts and production_lines
+            $select[] = 'pl.line_code';
+            $select[] = 'COALESCE(NULLIF(ps.shift_code, ""), ps.shift_name) as shift_code';
+
             if ($schema['has_project_code']) {
                 $select[] = 'sc.project_code';
             }
@@ -459,9 +578,13 @@ class QcModel extends CI_Model
             if ($schema['has_lot_code']) {
                 $select[] = 'sc.lot_code';
             }
+
+            // Add schema-based fallbacks from shift_closures
+            if ($schema['has_line_code']) $select[] = 'sc.line_code as sc_line_code';
+            if ($schema['has_shift_code']) $select[] = 'sc.shift_code as sc_shift_code';
         }
 
-        $select[] = 'p.project_name';
+        $select[] = 'pln.plan_name as project_name';
         $select[] = 'pr.product_name';
         $select[] = 'qd.result';
         $select[] = 'qd.defect_rate';
@@ -474,41 +597,33 @@ class QcModel extends CI_Model
 
         $this->db->select(implode(",\n            ", $select));
         $this->db->from('qc_sessions qs');
-
-        if ($schema['exists']) {
-            $this->db->join('shift_closures sc', 'qs.closure_id = sc.' . $closurePk, 'left');
-
-            if ($schema['has_project_code']) {
-                $this->db->join('project p', 'sc.project_code = p.id_project', 'left');
-            } else {
-                $this->db->join('project p', '1=0', 'left');
-            }
-
-            if ($schema['has_product_code']) {
-                $this->db->join('product pr', 'sc.product_code = pr.id_product', 'left');
-            } else {
-                $this->db->join('product pr', '1=0', 'left');
-            }
-        } else {
-            $this->db->join('shift_closures sc', '1=0', 'left');
-            $this->db->join('project p', '1=0', 'left');
-            $this->db->join('product pr', '1=0', 'left');
-        }
-
-        $this->db->join('qc_decisions qd', 'qs.id = qd.session_id', 'inner');
+        $this->db->join('shift_closures sc', 'qs.closure_id = sc.closure_id', 'left');
+        $this->db->join('production_shifts ps', 'sc.shift_id = ps.shift_id', 'left');
+        $this->db->join('production_lines pl', 'ps.line_id = pl.id', 'left');
+        $this->db->join('planning pln', 'ps.id_plan = pln.id_plan', 'left');
+        $this->db->join('project p', 'pln.id_project = p.id_project', 'left');
+        $this->db->join('product pr', 'p.id_product = pr.id_product', 'left');
         $this->db->join('user u', 'qs.inspector_code = u.username', 'left');
+        $this->db->join('qc_decisions qd', 'qs.id = qd.session_id', 'inner');
         $this->db->join('user u2', 'qd.decided_by = u2.username', 'left');
+
         $this->db->where('qs.status', 'DECIDED');
         
         // Apply filters
-        if (!empty($filters['line_code']) && $schema['has_line_code']) {
-            $this->db->where('sc.line_code', $filters['line_code']);
+        if (!empty($filters['line_code'])) {
+            $this->db->where('pl.line_code', $filters['line_code']);
         }
-        if (!empty($filters['shift_code']) && $schema['has_shift_code']) {
-            $this->db->where('sc.shift_code', $filters['shift_code']);
+        if (!empty($filters['shift_code'])) {
+            $this->db->where('ps.shift_code', $filters['shift_code']);
         }
-        if (!empty($filters['project_code']) && $schema['has_project_code']) {
-            $this->db->where('sc.project_code', $filters['project_code']);
+        if (!empty($filters['project_code'])) {
+            // Try to filter by project_code in sc or project_name in p
+            $this->db->group_start();
+            if ($schema['has_project_code']) {
+                $this->db->where('sc.project_code', $filters['project_code']);
+            }
+            $this->db->or_where('p.id_project', $filters['project_code']);
+            $this->db->group_end();
         }
         if (!empty($filters['result'])) {
             $this->db->where('qd.result', $filters['result']);
@@ -522,7 +637,23 @@ class QcModel extends CI_Model
         
         $this->db->order_by('qd.decided_at', 'DESC');
         
-        return $this->db->get()->result();
+        $results = $this->db->get()->result();
+
+        // Apply fallbacks for each result
+        foreach ($results as &$row) {
+            if (empty($row->line_code) && !empty($row->sc_line_code)) $row->line_code = $row->sc_line_code;
+            if (empty($row->shift_code) && !empty($row->sc_shift_code)) $row->shift_code = $row->sc_shift_code;
+            
+            if (empty($row->product_name)) {
+                $row->product_name = !empty($row->product_code) ? $row->product_code : (!empty($row->sc_product_code) ? $row->sc_product_code : $row->closure_code);
+            }
+            
+            if (empty($row->project_name)) {
+                $row->project_name = !empty($row->project_code) ? $row->project_code : (!empty($row->sc_project_code) ? $row->sc_project_code : $row->product_name);
+            }
+        }
+
+        return $results;
     }
     
     /**
@@ -642,18 +773,54 @@ class QcModel extends CI_Model
         
         foreach ($items as $item) {
             $item['session_id'] = $session_id;
+            $checklist_item_code = $item['checklist_item_code'];
             
-            // Check if item exists (by session_id + checklist_item_code)
+            // Extract metadata fields (used for auto-create, not for qc_items)
+            $item_name = $item['item_name'] ?? null;
+            $description = $item['description'] ?? null;
+            $test_method = $item['test_method'] ?? null;
+            
+            // Remove these fields from item array before saving to qc_items
+            unset($item['item_name']);
+            unset($item['description']);
+            unset($item['test_method']);
+            
+            // Check if checklist_item_code exists in qc_checklist_master (using 'code' column)
+            $current_product_code = $this->getProductCodeFromSession($session_id);
+            $checklist_exists = $this->db->get_where('qc_checklist_master', [
+                'code' => $checklist_item_code,
+                'product_code' => $current_product_code
+            ])->row();
+            
+            // If checklist item doesn't exist, create it
+            if (!$checklist_exists) {
+                $this->db->insert('qc_checklist_master', [
+                    'code' => $checklist_item_code,
+                    'item_name' => $item_name ?? 'Item: ' . $checklist_item_code,
+                    'criteria' => $description ?? '',  // Map description to criteria column
+                    'product_code' => $current_product_code,
+                    'sequence' => 999,  // Default sequence, can be reordered
+                    'variant' => null,
+                    'is_active' => 1,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+            
+            // Check if item exists in qc_items (by session_id + checklist_item_code)
             $existing = $this->db->get_where('qc_items', [
                 'session_id' => $session_id,
-                'checklist_item_code' => $item['checklist_item_code']
+                'checklist_item_code' => $checklist_item_code
             ])->row();
+            
+            // Ensure session_id is in the data
+            $item['session_id'] = $session_id;
             
             if ($existing) {
                 // Update
                 $this->db->update('qc_items', $item, ['id' => $existing->id]);
             } else {
-                // Insert
+                // Insert (only with qc_items valid columns)
                 $this->db->insert('qc_items', $item);
             }
         }
@@ -661,6 +828,24 @@ class QcModel extends CI_Model
         $this->db->trans_complete();
         
         return $this->db->trans_status();
+    }
+    
+    /**
+     * Get product code from session (via join with closure/shift/plan)
+     * 
+     * @param int $session_id
+     * @return string
+     */
+    private function getProductCodeFromSession($session_id)
+    {
+        // Get session with all joined details
+        $session = $this->getSessionById($session_id);
+        
+        if ($session && !empty($session->product_code)) {
+            return $session->product_code;
+        }
+        
+        return 'DEFAULT_PRODUCT';
     }
     
     /**
@@ -796,6 +981,13 @@ class QcModel extends CI_Model
         // 4. Update closure status to VERIFIED with can_receive_fg flag
         $this->updateClosureStatus($session->closure_id, 'VERIFIED', true);
         
+        // 5. Update warehouse import request status to qc_approved
+        $this->updateWarehouseImportRequestStatus($session->closure_id, 'qc_approved', [
+            'qc_by' => $decision_data['decided_by'],
+            'qc_date' => date('Y-m-d H:i:s'),
+            'qc_approved_quantity' => $session->qty_finished ?? 0
+        ]);
+        
         $this->db->trans_complete();
         
         return $this->db->trans_status();
@@ -837,7 +1029,15 @@ class QcModel extends CI_Model
         // 4. Update closure status to REJECTED
         $this->updateClosureStatus($session->closure_id, 'REJECTED', false);
         
-        // 5. Create adjustment request
+        // 5. Update warehouse import request status to qc_rejected
+        $this->updateWarehouseImportRequestStatus($session->closure_id, 'qc_rejected', [
+            'qc_by' => $decision_data['decided_by'],
+            'qc_date' => date('Y-m-d H:i:s'),
+            'qc_rejected_quantity' => $session->qty_finished ?? 0,
+            'qc_notes' => $decision_data['reason']
+        ]);
+        
+        // 6. Create adjustment request
         $adj_request = [
             'code' => $this->generateAdjustmentRequestCode(),
             'closure_id' => $session->closure_id,
@@ -985,7 +1185,9 @@ class QcModel extends CI_Model
         
         $this->db->order_by('sequence', 'ASC');
         
-        return $this->db->get()->result();
+        $result = $this->db->get()->result();
+        
+        return $result;
     }
     
     // ========================================
@@ -1108,47 +1310,50 @@ class QcModel extends CI_Model
         if (!$session) {
             return [
                 'complete' => false,
+                'total' => 0,
+                'filled' => 0,
                 'error' => 'Session not found'
             ];
         }
         
-        // Get product_code and variant - use isset to handle missing fields
-        $product_code = isset($session->product_code) ? $session->product_code : null;
-        $variant = isset($session->variant) ? $session->variant : null;
-        
-        if (!$product_code || !$variant) {
-            return [
-                'complete' => false,
-                'error' => 'Product code or variant missing from session'
-            ];
-        }
-        
-        // Get required checklist items
-        $checklist_items = $this->getChecklistItems($product_code, $variant);
-        $total_items = count($checklist_items);
-        
-        // Get filled items
+        // Get filled items first (always available if saved)
         $qc_items = $this->getQcItemsBySessionId($session_id);
         $filled_items = count($qc_items);
         
-        // Find missing items
-        $filled_codes = array_column($qc_items, 'checklist_item_code');
-        $required_codes = array_column($checklist_items, 'code');
-        $missing_codes = array_diff($required_codes, $filled_codes);
+        // Get product_code and variant
+        $product_code = !empty($session->product_code) ? $session->product_code : 'DEFAULT_PRODUCT';
+        $variant = isset($session->variant) ? $session->variant : null;
         
-        $missing_items = [];
-        foreach ($checklist_items as $item) {
-            if (in_array($item->code, $missing_codes)) {
-                $missing_items[] = [
-                    'code' => $item->code,
-                    'name' => $item->item_name,
-                    'category' => $item->category
-                ];
+        // Get required checklist items from master
+        $checklist_items = $this->getChecklistItems($product_code, $variant);
+        $total_items = count($checklist_items);
+        
+        // If master is empty but we have results, use results count as total (for auto-generated items)
+        if ($total_items === 0 && $filled_items > 0) {
+            $total_items = $filled_items;
+            $missing_items = [];
+            $complete = true;
+        } else {
+            // Find missing items
+            $filled_codes = array_column($qc_items, 'checklist_item_code');
+            $required_codes = array_column($checklist_items, 'code');
+            $missing_codes = array_diff($required_codes, $filled_codes);
+            
+            $missing_items = [];
+            foreach ($checklist_items as $item) {
+                if (in_array($item->code, $missing_codes)) {
+                    $missing_items[] = [
+                        'code' => $item->code,
+                        'name' => $item->item_name,
+                        'category' => $item->category
+                    ];
+                }
             }
+            $complete = ($total_items > 0 && $filled_items >= $total_items);
         }
         
         return [
-            'complete' => $filled_items >= $total_items,
+            'complete' => $complete,
             'total' => $total_items,
             'filled' => $filled_items,
             'missing' => $missing_items,

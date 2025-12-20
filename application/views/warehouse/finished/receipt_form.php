@@ -66,7 +66,9 @@
                             data-qty-received="<?= $batch->qty_already_received; ?>"
                             data-project="<?= $batch->project_name; ?>"
                             data-date="<?= $batch->fdate; ?>">
-                      <?= $batch->project_name; ?> (<?= $batch->fdate; ?>) - SL: <?= $batch->qty_passed; ?> cái
+                      <?= $batch->project_name; ?> (<?= $batch->fdate; ?>) 
+                      <?= !empty($batch->qc_session_code) ? " - QC: " . $batch->qc_session_code : ""; ?>
+                      - SL: <?= $batch->qty_passed; ?> cái
                     </option>
                   <?php endforeach; ?>
                 <?php else: ?>
@@ -83,12 +85,39 @@
 
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label">Dự Kiến Sản Xuất</label>
+                <label class="form-label">Thành phẩm đã sản xuất</label>
                 <input type="text" id="qty_planned" class="form-control" readonly>
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label">Đã Nhập</label>
                 <input type="text" id="qty_already_received" class="form-control" readonly>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="id_project" class="form-label">Dự Án / Đơn Hàng <span class="text-danger">*</span></label>
+              <select id="id_project" name="id_project" class="form-select" required onchange="updateProjectInfo()">
+                <option value="">-- Chọn dự án --</option>
+                <?php if (!empty($projects)): ?>
+                  <?php foreach ($projects as $proj): ?>
+                    <option value="<?= $proj->id_project; ?>"
+                            data-target="<?= $proj->qty_target; ?>"
+                            data-received="<?= $proj->qty_received; ?>">
+                      <?= $proj->project_name; ?>
+                    </option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+            </div>
+
+            <div class="row" id="project_stats_row" style="display:none;">
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-primary">Tổng Nhu Cầu Dự Án</label>
+                <input type="text" id="proj_qty_target" class="form-control bg-light font-weight-bold" readonly>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label text-success">Tổng Đã Nhập Dự Án</label>
+                <input type="text" id="proj_qty_received" class="form-control bg-light font-weight-bold" readonly>
               </div>
             </div>
 
@@ -127,6 +156,34 @@ function updateBatchInfo() {
   
   document.getElementById('qty_planned').value = option.getAttribute('data-qty-passed') || '';
   document.getElementById('qty_already_received').value = option.getAttribute('data-qty-received') || '';
+  
+  // Tự động chọn dự án tương ứng
+  const projectName = option.getAttribute('data-project');
+  if (projectName) {
+    const projSelect = document.getElementById('id_project');
+    for (let i = 0; i < projSelect.options.length; i++) {
+      if (projSelect.options[i].text.trim() === projectName.trim()) {
+        projSelect.selectedIndex = i;
+        updateProjectInfo();
+        break;
+      }
+    }
+  }
+  
   document.getElementById('quantity_received').focus();
+}
+
+function updateProjectInfo() {
+  const select = document.getElementById('id_project');
+  const option = select.options[select.selectedIndex];
+  const statsRow = document.getElementById('project_stats_row');
+  
+  if (select.value) {
+    statsRow.style.display = 'flex';
+    document.getElementById('proj_qty_target').value = (option.getAttribute('data-target') || '0') + ' cái';
+    document.getElementById('proj_qty_received').value = (option.getAttribute('data-received') || '0') + ' cái';
+  } else {
+    statsRow.style.display = 'none';
+  }
 }
 </script>

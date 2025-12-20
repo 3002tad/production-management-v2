@@ -38,7 +38,11 @@
           <a href="<?= site_url('warehouse/finished/receipt'); ?>" class="btn btn-sm btn-secondary">← Quay lại danh sách</a>
         </div>
         <div class="card-body">
-
+          <?php if (!$receipt): ?>
+            <div class="alert alert-danger">
+              Không tìm thấy thông tin phiếu nhập.
+            </div>
+          <?php else: ?>
           <div class="row mb-4">
             <div class="col-md-6">
               <div class="card bg-light">
@@ -46,11 +50,11 @@
                   <h6 class="card-title text-muted">Thông Tin Phiếu</h6>
                   <dl class="row">
                     <dt class="col-sm-5">Mã Phiếu:</dt>
-                    <dd class="col-sm-7"><strong><?= $receipt->receipt_code; ?></strong></dd>
+                    <dd class="col-sm-7"><strong><?= $receipt->receipt_code ?? 'N/A'; ?></strong></dd>
 
                     <dt class="col-sm-5">Trạng Thái:</dt>
                     <dd class="col-sm-7">
-                      <?php if ($receipt->status === 'posted'): ?>
+                      <?php if (($receipt->status ?? '') === 'posted'): ?>
                         <span class="badge bg-success">Đã Lưu</span>
                       <?php else: ?>
                         <span class="badge bg-danger">Hủy</span>
@@ -58,10 +62,10 @@
                     </dd>
 
                     <dt class="col-sm-5">Ngày Tạo:</dt>
-                    <dd class="col-sm-7"><?= date('d/m/Y H:i:s', strtotime($receipt->created_date)); ?></dd>
+                    <dd class="col-sm-7"><?= !empty($receipt->created_date) ? date('d/m/Y H:i:s', strtotime($receipt->created_date)) : 'N/A'; ?></dd>
 
                     <dt class="col-sm-5">Người Lập:</dt>
-                    <dd class="col-sm-7"><?= $receipt->created_by_name; ?></dd>
+                    <dd class="col-sm-7"><?= $receipt->created_by_name ?? 'N/A'; ?></dd>
                   </dl>
                 </div>
               </div>
@@ -76,20 +80,20 @@
                     <dd class="col-sm-7"><strong><?= $project->project_name ?? 'N/A'; ?></strong></dd>
 
                     <dt class="col-sm-5">ID Dự Án:</dt>
-                    <dd class="col-sm-7"><?= $receipt->id_project; ?></dd>
+                    <dd class="col-sm-7"><?= $receipt->id_project ?? 'N/A'; ?></dd>
 
                     <dt class="col-sm-5">SL Kế Hoạch:</dt>
-                    <dd class="col-sm-7"><span class="badge bg-primary"><?= $receipt->quantity_planned; ?></span></dd>
+                    <dd class="col-sm-7"><span class="badge bg-primary"><?= $receipt->quantity_planned ?? 0; ?></span></dd>
 
                     <dt class="col-sm-5">SL Thực Nhập:</dt>
-                    <dd class="col-sm-7"><span class="badge bg-success"><?= $receipt->quantity_received; ?></span></dd>
+                    <dd class="col-sm-7"><span class="badge bg-success"><?= $receipt->quantity_received ?? 0; ?></span></dd>
                   </dl>
                 </div>
               </div>
             </div>
           </div>
 
-          <?php if ($receipt->notes): ?>
+          <?php if (!empty($receipt->notes)): ?>
             <div class="mb-4">
               <h6>Ghi Chú</h6>
               <div class="bg-light p-3 rounded">
@@ -102,8 +106,8 @@
             <a href="<?= site_url('warehouse/finished/receipt'); ?>" class="btn btn-secondary">
               <i class="material-icons align-middle">arrow_back</i> Quay lại
             </a>
-            <?php if ($receipt->status === 'posted'): ?>
-              <a href="<?= site_url('warehouse/finished/receipt_cancel/' . $receipt->id_receipt); ?>" class="btn btn-danger" onclick="return confirm('Bạn chắc chắn muốn hủy phiếu này?')">
+            <?php if (($receipt->status ?? '') === 'posted'): ?>
+              <a href="<?= site_url('warehouse/finished/receipt_cancel/' . ($receipt->id_receipt ?? 0)); ?>" class="btn btn-danger" onclick="return confirm('Bạn chắc chắn muốn hủy phiếu này?')">
                 <i class="material-icons align-middle">delete</i> Hủy Phiếu
               </a>
             <?php endif; ?>
@@ -111,6 +115,7 @@
               <i class="material-icons align-middle">print</i> In Phiếu
             </button>
           </div>
+          <?php endif; ?>
 
         </div>
       </div>

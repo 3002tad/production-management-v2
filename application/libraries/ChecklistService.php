@@ -66,6 +66,14 @@ class ChecklistService
         // 1. Check checklist completeness
         $checklist_status = $this->CI->qcModel->isChecklistComplete($session_id);
         
+        // Safety check: ensure required keys exist
+        if (!isset($checklist_status['filled'])) {
+            $checklist_status['filled'] = 0;
+        }
+        if (!isset($checklist_status['total'])) {
+            $checklist_status['total'] = 0;
+        }
+        
         if (!$checklist_status['complete']) {
             return [
                 'recommendation' => 'INCOMPLETE',
@@ -211,18 +219,26 @@ class ChecklistService
         // Support multiple schema versions:
         // - Newer flow: status is stored on warehouse_import_requests (pending_qc)
         // - Older flow: some implementations may expose $session->closure_status
-        if (property_exists($session, 'closure_status')) {
-            if ($session->closure_status !== 'PENDING_QC') {
-                $errors[] = 'Phiếu chốt ca không ở trạng thái PENDING_QC';
+        $is_status_valid = true;
+        $current_status = 'UNKNOWN';
+
+        if (property_exists($session, 'closure_status') && !empty($session->closure_status)) {
+            $current_status = strtoupper($session->closure_status);
+            if (!in_array($current_status, ['PENDING_QC', 'OPEN', 'IN_PROGRESS'])) {
+                $is_status_valid = false;
             }
-        } else {
-            // Fallback: look up warehouse import request by closure_id
-            if (!empty($session->closure_id)) {
-                $import_request = $this->CI->qcModel->getWarehouseImportRequest($session->closure_id);
-                if (!$import_request || $import_request->status !== 'pending_qc') {
-                    $errors[] = 'Phiếu chốt ca không ở trạng thái PENDING_QC';
+        } else if (!empty($session->closure_id)) {
+            $import_request = $this->CI->qcModel->getWarehouseImportRequest($session->closure_id);
+            if ($import_request) {
+                $current_status = strtoupper($import_request->status);
+                if (!in_array($current_status, ['PENDING_QC', 'OPEN', 'IN_PROGRESS'])) {
+                    $is_status_valid = false;
                 }
             }
+        }
+
+        if (!$is_status_valid) {
+            $errors[] = 'Phiếu chốt ca không ở trạng thái PENDING_QC (Trạng thái hiện tại: ' . $current_status . ')';
         }
         
         // 3. Check checklist completeness (REQUIRED for both APPROVE and REJECT)

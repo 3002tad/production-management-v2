@@ -1377,11 +1377,80 @@ class Warehouse extends CI_Controller
     }
 
     /**
+     * Route remapper for finished goods section
+     * Handles: /warehouse/finished/$section/$action
+     */
+    public function _remap($method, $params = [])
+    {
+        // Handle finished goods sub-routes
+        if ($method === 'finished') {
+            $section = isset($params[0]) ? $params[0] : 'dashboard';
+            $action = isset($params[1]) ? $params[1] : null;
+            
+            // Route to appropriate method
+            switch ($section) {
+                case 'receipt':
+                case 'receipts':
+                    if ($action === 'new' || $action === 'form') {
+                        return $this->finished_receipt_form();
+                    } else {
+                        return $this->finished_receipts();
+                    }
+                    break;
+                case 'receipt_view':
+                    // /warehouse/finished/receipt_view/7
+                    $id = isset($params[1]) ? $params[1] : null;
+                    return $this->finished_receipt_view($id);
+                    break;
+                case 'receipt_save':
+                    // /warehouse/finished/receipt_save
+                    return $this->finished_receipt_save();
+                    break;
+                case 'deliveries':
+                case 'issues':
+                    if ($action === 'new') {
+                        return $this->finished_delivery_form();
+                    } else {
+                        return $this->finished_deliveries();
+                    }
+                    break;
+                case 'delivery_view':
+                    // /warehouse/finished/delivery_view/7
+                    $id = isset($params[1]) ? $params[1] : null;
+                    return $this->finished_delivery_view($id);
+                    break;
+                case 'delivery_save':
+                    // /warehouse/finished/delivery_save
+                    return $this->finished_delivery_save();
+                    break;
+                default:
+                    return $this->finished($section);
+            }
+        }
+        
+        // For other methods, use default behavior
+        if (method_exists($this, $method)) {
+            return call_user_func_array([$this, $method], $params);
+        }
+        show_404();
+    }
+
+    /**
      * Finished Goods (Kho thành phẩm) Dashboard
      * Route: /warehouse/finished
+     * Sub-routes: /warehouse/finished/receipt, /warehouse/finished/issues
      */
-    public function finished()
+    public function finished($section = 'dashboard')
     {
+        // Handle sub-routes
+        if ($section === 'receipt' || $section === 'receipts') {
+            return $this->finished_receipts();
+        }
+        if ($section === 'issues') {
+            return $this->finished_issues();
+        }
+
+        // Default: dashboard view
         // Get recent receipts
         $receipts_data = $this->db->query('
             SELECT fr.id_receipt, fr.quantity_received, fr.status, 
@@ -1545,60 +1614,17 @@ class Warehouse extends CI_Controller
             'receipts' => $receipts,
             'total' => $total,
             'limit' => $limit,
+            'page' => $page,
             'content' => 'warehouse/finished/receipt_list',
             'navlink' => 'finished',
         ];
         $this->load->view('warehouse/VBackend', $data);
     }
-
+    
     /**
-     * Finished Receipt form (create)
+     * Finished Issues (Deliveries) list
      */
-    public function finished_receipt_form()
-    {
-        $this->load->model('FinishedReceiptModel');
-        $batches = $this->FinishedReceiptModel->getQcPassedBatches();
-
-        if (empty($batches)) {
-            $this->session->set_flashdata('warning', 'Không có ca/lô nào đạt QC để nhập');
-        }
-
-        $data = [
-            'content' => 'warehouse/finished/receipt_form',
-            'navlink' => 'finished',
-            'batches' => $batches
-        ];
-        $this->load->view('warehouse/VBackend', $data);
-    }
-
-    /**
-     * Finished Receipt view (detail)
-     */
-    public function finished_receipt_view($id = null)
-    {
-        $receipt = null;
-        $project = null;
-        if ($id && $this->db->table_exists('finished_receipt')) {
-            $receipt = $this->db->where('id_receipt', (int)$id)->get('finished_receipt')->row();
-            
-            // Get project information if id_project exists in receipt
-            if ($receipt && isset($receipt->id_project)) {
-                $project = $this->db->where('id_project', (int)$receipt->id_project)->get('project')->row();
-            }
-        }
-        $data = [
-            'receipt' => $receipt,
-            'project' => $project,
-            'content' => 'warehouse/finished/receipt_view',
-            'navlink' => 'finished',
-        ];
-        $this->load->view('warehouse/VBackend', $data);
-    }
-
-    /**
-     * Finished Deliveries list
-     */
-    public function finished_deliveries()
+    public function finished_issues()
     {
         $issues = [];
         $total = 0;
@@ -1606,7 +1632,6 @@ class Warehouse extends CI_Controller
         $page = (int)$this->input->get('page', true);
         if ($page <= 0) { $page = 1; }
         $offset = ($page - 1) * $limit;
-
         if ($this->db->table_exists('finished_issue')) {
             $total = (int)$this->db->count_all('finished_issue');
             
@@ -1629,8 +1654,8 @@ class Warehouse extends CI_Controller
             
             $issues = $this->db->query($sql)->result();
         }
-
-        // Compute total stock from finished_stock table (sum quantity_in_stock)
+        
+        // Get total stock from finished_stock table
         $total_stock = 0;
         if ($this->db->table_exists('finished_stock')) {
             $row = $this->db->select('SUM(quantity_in_stock) as qty')->get('finished_stock')->row();
@@ -1638,7 +1663,7 @@ class Warehouse extends CI_Controller
                 $total_stock = (int)$row->qty;
             }
         }
-
+        
         $data = [
             'issues' => $issues,
             'total' => $total,
@@ -1646,6 +1671,80 @@ class Warehouse extends CI_Controller
             'page' => $page,
             'total_stock' => $total_stock,
             'content' => 'warehouse/finished/delivery_list',
+            'navlink' => 'finished',
+        ];
+        $this->load->view('warehouse/VBackend', $data);
+    }
+    
+    /**
+     * Alias for finished_issues() - deliveries (xuất hàng)
+     */
+    public function finished_deliveries()
+    {
+        return $this->finished_issues();
+    }
+
+    /**
+     * Finished Receipt form (create)
+     */
+    public function finished_receipt_form()
+    {
+        $this->load->model('FinishedReceiptModel');
+        $batches = $this->FinishedReceiptModel->getQcPassedBatches();
+
+        // Load projects list for dropdown with stats
+        $projects = [];
+        if ($this->db->table_exists('project')) {
+            $this->db->select('p.id_project, p.project_name, p.qty_request as qty_target');
+            $this->db->select('COALESCE((SELECT SUM(quantity_received) FROM finished_receipt WHERE id_project = p.id_project AND status = "posted"), 0) as qty_received');
+            $this->db->from('project p');
+            // Chỉ lấy các dự án chưa nhập đủ số lượng
+            $this->db->having('qty_received < qty_target');
+            $projects = $this->db->get()->result();
+        }
+
+        $data = [
+            'content' => 'warehouse/finished/receipt_form',
+            'navlink' => 'finished',
+            'batches' => $batches,
+            'projects' => $projects
+        ];
+        $this->load->view('warehouse/VBackend', $data);
+    }
+
+    /**
+     * Finished Receipt view (detail)
+     */
+    public function finished_receipt_view($id = null)
+    {
+        if (!$id) {
+            $this->session->set_flashdata('error', 'Mã phiếu không hợp lệ');
+            redirect('warehouse/finished/receipt');
+        }
+
+        $receipt = null;
+        $project = null;
+        if ($this->db->table_exists('finished_receipt')) {
+            $receipt = $this->db->where('id_receipt', (int)$id)->get('finished_receipt')->row();
+            
+            if (!$receipt) {
+                $this->session->set_flashdata('error', 'Không tìm thấy phiếu nhập #' . $id);
+                redirect('warehouse/finished/receipt');
+            }
+
+            // Get project information if id_project exists in receipt
+            if (isset($receipt->id_project)) {
+                $project = $this->db->where('id_project', (int)$receipt->id_project)->get('project')->row();
+            }
+        } else {
+            $this->session->set_flashdata('error', 'Bảng dữ liệu không tồn tại');
+            redirect('warehouse/finished/receipt');
+        }
+
+        $data = [
+            'receipt' => $receipt,
+            'project' => $project,
+            'content' => 'warehouse/finished/receipt_view',
             'navlink' => 'finished',
         ];
         $this->load->view('warehouse/VBackend', $data);
@@ -1823,8 +1922,10 @@ class Warehouse extends CI_Controller
 
             // Update stock
             if ($this->db->table_exists('finished_stock')) {
+                $product_id = $project->id_product ?? 1;
                 $this->db->set('quantity_in_stock', 'quantity_in_stock - ' . $quantity_issued, FALSE)
-                         ->where('id_product', 1)
+                         ->set('quantity_issued', 'quantity_issued + ' . $quantity_issued, FALSE)
+                         ->where('id_product', $product_id)
                          ->update('finished_stock');
             }
 
@@ -1851,47 +1952,48 @@ class Warehouse extends CI_Controller
             $this->session->set_flashdata('error', 'Vui lòng chọn ca/lô');
             redirect('warehouse/finished/receipt_form');
         }
-
         if ($quantity_received <= 0) {
             $this->session->set_flashdata('error', 'Vui lòng nhập số lượng hợp lệ (> 0)');
             redirect('warehouse/finished/receipt_form');
         }
 
-        // Try to fetch from QC Module (shift_closures) first
+        // Try to fetch from shift_closures - link thông qua closure_id
         $batch = null;
         $quantity_planned = 0;
         $id_project = null;
         
         if ($this->db->table_exists('shift_closures')) {
-            $batch = $this->db->where('id', $id_finished_report)
+            $batch = $this->db->where('closure_id', $id_finished_report)
                               ->get('shift_closures')
                               ->row();
             
             if ($batch) {
-                $quantity_planned = $batch->qty_finished;
-                $id_project = $batch->project_code;
+                // Lấy thông tin từ shift_closures
+                $quantity_planned = (int)$batch->total_good;  // Sử dụng total_good từ closure
+                
+                // Nếu có warehouse_request_id, lấy project từ đó
+                if ($batch->warehouse_request_id) {
+                    // Tìm project liên kết
+                    $proj = $this->db->select('id_project')->limit(1)->get_where('planning', ['id_plan' => $batch->warehouse_request_id])->row();
+                    if ($proj) {
+                        $id_project = $proj->id_project;
+                    }
+                }
             }
         }
 
-        // Fallback to finished_report if not found in shift_closures
-        if (!$batch && $this->db->table_exists('finished_report')) {
-            $batch = $this->db->where('id_finished', $id_finished_report)
-                              ->get('finished_report')
-                              ->row();
-            
-            if ($batch) {
-                $quantity_planned = $batch->total_finished;
-                $id_project = $batch->id_project;
-            }
-        }
-
+        // Nếu không có thì để user chọn project từ form
         if (!$batch) {
-            $this->session->set_flashdata('error', 'Ca/lô không tồn tại');
+            $this->session->set_flashdata('error', 'Ca/lô không tồn tại (closure_id: ' . $id_finished_report . ')');
             redirect('warehouse/finished/receipt_form');
         }
 
+        // Nếu không lấy được id_project từ shift_closures, có thể để trống hoặc lấy từ form
+        // Bây giờ form sẽ gửi id_project
+        $id_project = (int)($this->input->post('id_project') ?? $id_project ?? 0);
+
         $receipt_data = [
-            'id_project' => $id_project,
+            'id_project' => $id_project > 0 ? $id_project : null,
             'id_finished_report' => $id_finished_report,
             'quantity_received' => $quantity_received,
             'quantity_planned' => $quantity_planned,
@@ -1905,11 +2007,22 @@ class Warehouse extends CI_Controller
         $receipt_id = $this->FinishedReceiptModel->createReceipt($receipt_data);
 
         if ($receipt_id) {
-            $this->FinishedReceiptModel->updateStockAfterReceipt($quantity_received, 1);
+            // Lấy id_product từ project để cập nhật tồn kho chính xác
+            $product_id = 1; // Mặc định
+            if ($id_project > 0) {
+                $proj_info = $this->db->select('id_product')->get_where('project', ['id_project' => $id_project])->row();
+                if ($proj_info) {
+                    $product_id = $proj_info->id_product;
+                }
+            }
+            
+            $this->FinishedReceiptModel->updateStockAfterReceipt($quantity_received, $product_id);
             $this->session->set_flashdata('success', 'Nhập thành công - Phiếu #' . $receipt_id);
             redirect('warehouse/finished/receipt_view/' . $receipt_id);
         } else {
-            $this->session->set_flashdata('error', 'Lỗi: Không thể lưu phiếu');
+            $db_error = $this->db->error();
+            $error_msg = !empty($db_error['message']) ? $db_error['message'] : 'Không thể lưu phiếu vào cơ sở dữ liệu';
+            $this->session->set_flashdata('error', $error_msg);
             redirect('warehouse/finished/receipt_form');
         }
     }

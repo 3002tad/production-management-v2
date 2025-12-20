@@ -28,46 +28,38 @@ class FinishedReceiptModel extends CI_Model {
         $result = [];
         $shift_closures_exists = $this->db->table_exists('shift_closures');
 
-        // Pick a closure code column that exists to avoid missing-column errors
-        $closureCodeColumn = 'sc.id';
-        if ($shift_closures_exists) {
-            if ($this->db->field_exists('code', 'shift_closures')) {
-                $closureCodeColumn = 'sc.code';
-            } elseif ($this->db->field_exists('closure_id', 'shift_closures')) {
-                $closureCodeColumn = 'sc.closure_id';
-            }
-        }
-
         // Thử lấy từ QC Module trước (mới)
         if ($shift_closures_exists) {
             $sql = "SELECT 
-                      sc.id AS id_finished,
-                      {$closureCodeColumn} AS closure_code,
-                      sc.project_code,
-                      sc.product_code,
-                      sc.qty_finished AS qty_passed,
-                      sc.qty_waste,
-                      sc.closed_at AS fdate,
+                      sc.closure_id AS id_finished,
+                      sc.closure_code,
+                      sc.shift_id,
+                      sc.total_good AS qty_passed,
+                      sc.total_defect,
+                      sc.closure_date AS fdate,
                       sc.closed_by,
-                      p.id_project,
+                      sc.status,
+                      sc.created_at,
                       p.project_name,
-                      pr.product_name,
-                      qd.result AS qc_result,
-                      qd.aql AS qc_aql,
-                      qd.defect_rate,
-                      qd.decided_at AS qc_approved_at,
-                      qd.decided_by AS qc_approved_by,
-                      COALESCE(SUM(CASE WHEN recpt.status = 'posted' THEN recpt.quantity_received ELSE 0 END), 0) AS qty_already_received
+                      qs.code AS qc_session_code,
+                      qd.decided_at AS qc_date,
+                      COALESCE((SELECT SUM(quantity_received) FROM finished_receipt WHERE id_finished_report = sc.closure_id AND status = 'posted'), 0) AS qty_already_received
                     FROM shift_closures sc
-                    LEFT JOIN qc_sessions qs ON qs.closure_id = sc.id
-                    LEFT JOIN qc_decisions qd ON qd.session_id = qs.id
-                    LEFT JOIN project p ON sc.project_code = p.id_project
-                    LEFT JOIN product pr ON sc.product_code = pr.id_product
-                    LEFT JOIN finished_receipt recpt ON sc.id = recpt.id_finished_report AND recpt.status = 'posted'
-                    WHERE sc.can_receive_fg = 1
-                      AND sc.status = 'VERIFIED'
-                    GROUP BY sc.id
-                    ORDER BY sc.closed_at DESC";
+                    LEFT JOIN production_shifts ps ON sc.shift_id = ps.shift_id
+                    LEFT JOIN planning pl ON ps.id_plan = pl.id_plan
+                    LEFT JOIN project p ON pl.id_project = p.id_project";
+            
+            // Kiểm tra xem có bảng QC không để join
+            if ($this->db->table_exists('qc_sessions') && $this->db->table_exists('qc_decisions')) {
+                $sql .= " JOIN qc_sessions qs ON sc.closure_id = qs.closure_id
+                          JOIN qc_decisions qd ON qs.id = qd.session_id
+                          WHERE qd.result = 'APPROVE'";
+            } else {
+                $sql .= " WHERE sc.status = 'confirmed'";
+            }
+            
+            $sql .= " GROUP BY sc.closure_id
+                      ORDER BY sc.closure_date DESC";
             
             $result = $this->db->query($sql)->result();
             // If shift_closures exists, always use it (even if empty) - don't fallback
@@ -227,10 +219,19 @@ class FinishedReceiptModel extends CI_Model {
         $this->db->where('id_receipt', $receipt_id)
                  ->update('finished_receipt', ['status' => 'cancelled']);
 
+        // Lấy id_product từ project liên kết với phiếu nhập
+        $product_id = 1; // Mặc định
+        if (!empty($receipt->id_project)) {
+            $proj = $this->db->select('id_product')->get_where('project', ['id_project' => $receipt->id_project])->row();
+            if ($proj) {
+                $product_id = $proj->id_product;
+            }
+        }
+
         // Reverse stock update
         $this->db->set('quantity_in_stock', 'quantity_in_stock - ' . $receipt->quantity_received, FALSE)
                  ->set('quantity_received', 'quantity_received - ' . $receipt->quantity_received, FALSE)
-                 ->where('id_product', 1)
+                 ->where('id_product', $product_id)
                  ->update('finished_stock');
 
         return true;

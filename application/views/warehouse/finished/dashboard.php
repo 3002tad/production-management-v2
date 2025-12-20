@@ -55,10 +55,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                 <span class="text-sm mb-0">Nhập thành phẩm từ QC vào kho</span>
                             </div>
                             <div class="col-5 text-end">
-                                <a href="<?= site_url('warehouse/finished/receipts') ?>" class="btn btn-sm btn-white mb-0 me-2" title="Xem danh sách">
+                                <a href="<?= site_url('warehouse/finished/receipt') ?>" class="btn btn-sm btn-white mb-0 me-2" title="Xem danh sách">
                                     <i class="material-icons-round align-middle text-lg">view_list</i>
                                 </a>
-                                <a href="<?= site_url('warehouse/finished/receipts/new') ?>" class="btn btn-sm btn-white mb-0" title="Tạo phiếu mới">
+                                <a href="<?= site_url('warehouse/finished/receipt/new') ?>" class="btn btn-sm btn-white mb-0" title="Tạo phiếu mới">
                                     <i class="material-icons-round align-middle text-lg">add_circle</i>
                                 </a>
                             </div>

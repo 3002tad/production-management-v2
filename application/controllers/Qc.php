@@ -214,11 +214,19 @@ class Qc extends CI_Controller
         
         // Get checklist items (and use for sample_size/aql)
         $checklist = $this->checklistservice->getChecklist($session->product_code, $session->variant);
+        
+        // Debug: Log checklist fetch result
+        error_log("DEBUG: getChecklist($session->product_code, $session->variant) returned " . count($checklist) . " items");
+        
         // Debug: Nếu thiếu product_code hoặc variant hoặc checklist rỗng, hiển thị cảnh báo
         if (empty($session->product_code) || empty($session->variant)) {
-            $this->session->set_flashdata('error', 'Thiếu mã sản phẩm hoặc variant! product_code: ' . ($session->product_code ?? 'NULL') . ', variant: ' . ($session->variant ?? 'NULL'));
+            $debug_msg = 'Thiếu mã sản phẩm hoặc variant! product_code: ' . ($session->product_code ?? 'NULL') . ', variant: ' . ($session->variant ?? 'NULL');
+            $this->session->set_flashdata('error', $debug_msg);
+            error_log("DEBUG: " . $debug_msg);
         } else if (empty($checklist)) {
-            $this->session->set_flashdata('error', 'Không tìm thấy checklist cho product_code: ' . $session->product_code . ', variant: ' . $session->variant);
+            $debug_msg = 'Không tìm thấy checklist cho product_code: ' . $session->product_code . ', variant: ' . $session->variant;
+            $this->session->set_flashdata('error', $debug_msg);
+            error_log("DEBUG: " . $debug_msg);
         }
         // Add sample_size and aql_threshold to session object from checklist
         if (!empty($checklist)) {
@@ -246,6 +254,9 @@ class Qc extends CI_Controller
         // Get decision if exists
         $decision = $this->qcModel->getDecisionBySessionId($session_id);
         
+        // Get checklist status
+        $checklist_status = $this->qcModel->isChecklistComplete($session_id);
+        
         // Get recommendation if session is still OPEN
         $recommendation = null;
         $near_threshold_warning = null;
@@ -253,21 +264,23 @@ class Qc extends CI_Controller
             $recommendation = $this->checklistservice->calculateDecisionRecommendation($session_id);
             
             // Check near threshold (Alternative Flow 6.1)
-            $total_defects = 0;
-            foreach ($qc_items as $item) {
-                $total_defects += $item->defect_count ?? 0;
-            }
-            $defect_rate = $session->sample_size > 0 ? ($total_defects / $session->sample_size) * 100 : 0;
-            $near_threshold = $this->qcModel->isNearThreshold($defect_rate, $session->aql_threshold);
-            if ($near_threshold['near_threshold']) {
-                $near_threshold_warning = $near_threshold;
+            if ($recommendation['recommendation'] !== 'INCOMPLETE') {
+                $total_defects = 0;
+                foreach ($qc_items as $item) {
+                    $total_defects += $item->defect_count ?? 0;
+                }
+                $defect_rate = $session->sample_size > 0 ? ($total_defects / $session->sample_size) * 100 : 0;
+                $near_threshold = $this->qcModel->isNearThreshold($defect_rate, $session->aql_threshold);
+                if ($near_threshold['near_threshold']) {
+                    $near_threshold_warning = $near_threshold;
+                }
             }
         }
         
         // Get closure details
         $closure = $this->qcModel->getClosureById($session->closure_id);
         
-        // Get checklist status
+        // Get checklist status (if not already fetched above)
         $checklist_status = $this->qcModel->isChecklistComplete($session_id);
         
         // Combine checklist master with QC items for display
@@ -278,13 +291,44 @@ class Qc extends CI_Controller
                 'id' => $qc_item->id ?? null,
                 'item_code' => $master_item->item_code,  // Add item_code for form identification
                 'criteria_name' => $master_item->criteria_name,
+                'item_name' => $master_item->criteria_name,
                 'description' => $master_item->description,
                 'test_method' => $master_item->test_method,
                 'result' => $qc_item->result ?? null,
                 'defect_count' => $qc_item->defect_count ?? 0,
                 'severity' => $qc_item->severity ?? null,
-                'notes' => $qc_item->note ?? null  // DB field is 'note' (singular), map to 'notes' for view
+                'defect_details' => $qc_item->note ?? null  // Map DB 'note' to view 'defect_details'
             ];
+        }
+        
+        // Auto-generate 5 default checklist items if none exist in master
+        if (empty($items)) {
+            $default_items = [
+                ['code' => 'CHK_001', 'name' => 'Kiểm tra ngoại hình', 'desc' => 'Kiểm tra kích thước, hình dạng, màu sắc phù hợp tiêu chuẩn'],
+                ['code' => 'CHK_002', 'name' => 'Kiểm tra chất lượng bề mặt', 'desc' => 'Kiểm tra không có vết xước, trầy xát, nứt nẻ'],
+                ['code' => 'CHK_003', 'name' => 'Kiểm tra kích thước chính xác', 'desc' => 'Kiểm tra độ dày, chiều dài, chiều rộng đúng công thức'],
+                ['code' => 'CHK_004', 'name' => 'Kiểm tra độ bền', 'desc' => 'Kiểm tra độ chắc chắn, không bị hỏng sau lực tác động'],
+                ['code' => 'CHK_005', 'name' => 'Kiểm tra hoàn thiện', 'desc' => 'Kiểm tra sản phẩm đã được hoàn thiện và sạch sẽ']
+            ];
+            
+            foreach ($default_items as $idx => $default) {
+                // Check if we already have results for these default items in qc_items
+                $qc_item = $qc_items_map[$default['code']] ?? null;
+                
+                $items[] = (object)[
+                    'id' => $qc_item->id ?? null,
+                    'item_code' => $default['code'],
+                    'criteria_name' => $default['name'],
+                    'item_name' => $default['name'],
+                    'description' => $default['desc'],
+                    'test_method' => 'Kiểm tra trực quan (Visual inspection)',
+                    'result' => $qc_item->result ?? null,
+                    'defect_count' => $qc_item->defect_count ?? 0,
+                    'severity' => $qc_item->severity ?? null,
+                    'defect_details' => $qc_item->note ?? null,
+                    'is_default' => true  // Mark as auto-generated
+                ];
+            }
         }
         
         $data = [
@@ -415,6 +459,9 @@ class Qc extends CI_Controller
             $defects = $this->input->post('defects');
             $severity = $this->input->post('severity');
             $notes = $this->input->post('notes');
+            $item_names = $this->input->post('item_names');
+            $descriptions = $this->input->post('descriptions');
+            $test_methods = $this->input->post('test_methods');
             
             if (!$results || !is_array($results)) {
                 $this->jsonResponse(['error' => 'items data is required'], 400);
@@ -425,12 +472,18 @@ class Qc extends CI_Controller
             // Key is item_code, need to lookup existing qc_item id
             $items = [];
             foreach ($results as $item_code => $result) {
+                // In the view, 'defects' input contains the text description (note)
+                $item_note = isset($defects[$item_code]) ? $defects[$item_code] : null;
+                
                 $items[] = [
                     'checklist_item_code' => $item_code,  // Use item_code from checklist master
                     'result' => $result,
-                    'defect_count' => isset($defects[$item_code]) ? (int)$defects[$item_code] : 0,
+                    'defect_count' => 0, // Default to 0, can be enhanced later if needed
                     'severity' => $severity[$item_code] ?? null,
-                    'note' => $notes[$item_code] ?? null  // DB column is 'note' (singular)
+                    'note' => $item_note,  // Map 'defects' text to DB 'note'
+                    'item_name' => $item_names[$item_code] ?? null,  // For auto-create functionality
+                    'description' => $descriptions[$item_code] ?? null,  // For auto-create functionality
+                    'test_method' => $test_methods[$item_code] ?? null  // For auto-create functionality
                 ];
             }
         }
@@ -530,10 +583,15 @@ class Qc extends CI_Controller
         if (!$this->upload->do_upload('attachment')) {
             $upload_errors = $this->upload->display_errors('', '');
             
+            if ($this->input->is_ajax_request()) {
+                $this->jsonResponse(['error' => $upload_errors], 400);
+                return;
+            }
+
             // Check if no file was selected
             if (strpos($upload_errors, 'You did not select a file to upload') !== false) {
                 $this->session->set_flashdata('upload_error', 'Vui lòng chọn file để tải lên.');
-                redirect('qc/session/' . $session_id);
+                redirect('qc/sessions/' . $session_id);
                 return;
             }
             
@@ -544,7 +602,7 @@ class Qc extends CI_Controller
             log_message('error', 'Path writable: ' . (is_writable($upload_path) ? 'YES' : 'NO'));
             
             $this->session->set_flashdata('upload_error', 'Lỗi tải file: ' . $upload_errors);
-            redirect('qc/session/' . $session_id);
+            redirect('qc/sessions/' . $session_id);
             return;
         }
         
@@ -563,11 +621,26 @@ class Qc extends CI_Controller
         $attachment_id = $this->qcModel->saveAttachment($attachment_data);
         
         if ($attachment_id) {
+            // Check if AJAX request
+            if ($this->input->is_ajax_request()) {
+                $this->jsonResponse([
+                    'success' => true,
+                    'message' => 'Tải file thành công',
+                    'attachment' => [
+                        'id' => $attachment_id,
+                        'filename' => $attachment_data['filename'],
+                        'path' => site_url($attachment_data['path']),
+                        'mime_type' => $attachment_data['mime_type']
+                    ]
+                ]);
+                return;
+            }
+
             // Set success message
             $this->session->set_flashdata('upload_success', 'Tải file thành công: ' . $attachment_data['filename']);
             
             // Redirect back to session detail
-            redirect('qc/session/' . $session_id);
+            redirect('qc/sessions/' . $session_id);
         } else {
             // Log database error
             $db_error = $this->db->error();
@@ -577,9 +650,14 @@ class Qc extends CI_Controller
             // Delete uploaded file if DB insert fails
             @unlink($upload_path . $upload_data['file_name']);
             
+            if ($this->input->is_ajax_request()) {
+                $this->jsonResponse(['error' => 'Lỗi lưu thông tin file vào database'], 500);
+                return;
+            }
+
             // Set error message and redirect back
             $this->session->set_flashdata('upload_error', 'Lỗi lưu thông tin file: ' . json_encode($db_error));
-            redirect('qc/session/' . $session_id);
+            redirect('qc/sessions/' . $session_id);
         }
     }
     
