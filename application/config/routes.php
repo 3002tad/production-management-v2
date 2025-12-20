@@ -135,6 +135,8 @@ $route['leader/machine/(:any)'] = 'leader/Machine/$1';
 $route['leader/machine'] = 'leader/Machine/index';
 
 // Leader dashboard and functions - This is catch-all, must be LAST
+$route['leader/orders'] = 'leader/Leader/orders';
+$route['leader/order/(:num)'] = 'leader/Leader/order/$1';
 $route['leader/(:any)'] = 'leader/Leader/$1';
 $route['leader'] = 'leader/Leader/index';
 

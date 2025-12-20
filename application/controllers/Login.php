@@ -86,10 +86,9 @@ class Login extends CI_Controller
                         return;
                     }
 
-                    // Thiết lập thông báo đăng nhập thành công cho system_admin và legacy admin
-                    if (isset($data->role_name) && ($data->role_name === 'system_admin' || $data->role_name === 'admin')) {
-                        $this->session->set_flashdata('success', 'Đăng nhập thành công! Chào mừng ' . $data->full_name);
-                    }
+                    // Thiết lập thông báo đăng nhập thành công cho tất cả vai trò
+                    $welcome_name = !empty($data->full_name) ? $data->full_name : $data->username;
+                    $this->session->set_flashdata('success', 'Đăng nhập thành công! Chào mừng ' . $welcome_name);
 
                     // Redirect based on role
                     $this->redirect_by_role($data->role_name);

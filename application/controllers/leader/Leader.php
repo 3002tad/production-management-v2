@@ -159,6 +159,66 @@ class Leader extends CI_Controller
         $this->load->view('leader/vbackend', $data);
     }
 
+    /**
+     * Read-only orders listing for Leader
+     */
+    public function orders()
+    {
+        $this->load->model('OrderModel');
+
+        $filters = [
+            'keyword' => $this->input->get('keyword', true),
+            'status' => $this->input->get('status', true),
+            'customer_id' => $this->input->get('customer_id', true),
+            'product_id' => $this->input->get('product_id', true),
+            'date_from' => $this->input->get('date_from', true),
+            'date_to' => $this->input->get('date_to', true),
+        ];
+
+        $orders = $this->OrderModel->getAllOrders($filters);
+
+        $data = [
+            'orders' => $orders,
+            'filters' => $filters,
+            'content' => 'leader/order/Orders',
+            'navlink' => 'orders',
+        ];
+
+        $this->load->view('leader/vbackend', $data);
+    }
+
+    /**
+     * Read-only order detail for Leader
+     */
+    public function order($id_project = null)
+    {
+        $this->load->model('OrderModel');
+        $id = $id_project ?? $this->uri->segment(3);
+        if (!$id) {
+            show_error('Thiếu mã đơn hàng', 400, 'Bad Request');
+        }
+
+        $order = $this->OrderModel->getOrderById($id);
+        if (!$order) {
+            show_error('Không tìm thấy đơn hàng', 404, 'Not Found');
+        }
+
+        // Optional: fetch related planning info count
+        $plans = $this->db->select('pl.*')
+                          ->from('planning pl')
+                          ->where('pl.id_project', (int)$id)
+                          ->get()->result();
+
+        $data = [
+            'order' => $order,
+            'plans' => $plans,
+            'content' => 'leader/order/OrderView',
+            'navlink' => 'orders',
+        ];
+
+        $this->load->view('leader/vbackend', $data);
+    }
+
     public function plan_shift()
     {
         if ($this->uri->segment(4) === 'view') {

@@ -200,7 +200,7 @@
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center justify-content-end w-100">
                 <span class="me-3 text-sm text-secondary d-none d-md-inline">Production System</span>
-                <a href="<?= site_url('leader/logout'); ?>" class="btn btn-md3-logout mb-0">
+                <a href="<?= site_url('leader/logout'); ?>" class="btn btn-md3-logout mb-0" onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
                     <span>Logout</span>
                     <span class="material-icons-round">arrow_forward</span>
                 </a>
