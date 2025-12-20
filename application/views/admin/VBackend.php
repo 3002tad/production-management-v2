@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" />
 
   <!-- Font Awesome Icons -->
-  <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" />
   <!-- Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <!-- CSS Files -->
@@ -262,9 +262,11 @@
     <script src="<?= site_url('asset/backend/assets/js/script.js'); ?>"></script>
 
   <script>
-    var ctx = document.getElementById("chart-bars").getContext("2d");
+    var chartElement = document.getElementById("chart-bars");
+    if (chartElement) {
+      var ctx = chartElement.getContext("2d");
 
-    new Chart(ctx, {
+      new Chart(ctx, {
       type: "bar",
       data: {
         labels: ["M", "T", "W", "T", "F", "S", "S"],
@@ -507,6 +509,7 @@
         },
       },
     });
+    }
   </script>
   <script>
     var win = navigator.platform.indexOf('Win') > -1;
@@ -520,7 +523,7 @@
   <!-- Github buttons -->
   <script async defer src="https://buttons.github.io/buttons.js"></script>
   <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
-  <script src="./assets/js/material-dashboard.min.js?v=3.0.0"></script>
+  
   <script>
     // Toast notification system (similar to BOD vbackend)
     var urlParams = new URLSearchParams(window.location.search);
