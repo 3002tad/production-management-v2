@@ -105,7 +105,7 @@
                     </div>
                     <div class="d-flex">
                         <div class="pt-2 pl-2">
-                            <a class="btn btn-outline-dark btn-sm mb-0" href="<?= site_url('admin/project'); ?>"><?= lang('btn_back'); ?></a>
+                            <a class="btn btn-outline-dark btn-sm mb-0" href="<?= site_url('admin/staff'); ?>"><?= lang('btn_back'); ?></a>
                         </div>
                         <div class="pt-2 pl-2">
                             <button class="btn btn-dark btn-sm mb-0" type="submit"><?= lang('btn_save'); ?></button>

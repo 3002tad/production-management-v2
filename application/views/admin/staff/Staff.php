@@ -2,192 +2,160 @@
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;"><?= lang('breadcrumb_pages'); ?></a></li>
+                    <li class="breadcrumb-item text-sm">
+                        <a class="opacity-5 text-dark" href="<?= site_url('admin/'); ?>">
+                            <i class="material-icons-round text-sm">home</i>
+                        </a>
+                    </li>
                     <li class="breadcrumb-item text-sm text-dark active" aria-current="page"><?= lang('breadcrumb_staff'); ?></li>
                 </ol>
-                <h6 class="font-weight-bolder mb-0"><?= lang('breadcrumb_staff'); ?></h6>
+                <h6 class="font-weight-bolder mb-0">Quản lý Nhân Viên</h6>
             </nav>
-        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
-            <div class="ms-md-auto pe-md-3 d-flex align-items-center">
-            <h6 class="text-sm font-weight-bolder mb-0"><?= lang('title_production_system'); ?></h6>
-            </div>
         </div>
     </nav>
-</br>
-<style>
-    .metric-card{border-radius:16px; box-shadow:0 8px 24px rgba(15,23,42,.1); background:#fff}
-    .metric-card .icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff}
-    .grad-green{background:linear-gradient(135deg,#22c55e,#16a34a)}
-    .grad-blue{background:linear-gradient(135deg,#3b82f6,#2563eb)}
-    .grad-red{background:linear-gradient(135deg,#ef4444,#f97316)}
-    .grad-orange{background:linear-gradient(135deg,#f59e0b,#f97316)}
-    .section-header{background:#d81b60;color:#fff;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-</style>
-<div class="container-fluid py-2">
-    <div class="row g-3">
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="text-xs text-secondary">Tổng Nhân Viên</div>
-                    <div class="h4 mb-0"><?php echo isset($statistics['total']) ? $statistics['total'] : 0; ?></div>
+
+<div class="container-fluid py-4">
+    <!-- Statistics Cards with Material Design -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-header p-3 pt-2">
+                    <div class="icon icon-lg icon-shape bg-gradient-dark shadow-dark text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="material-icons-round opacity-10">groups</i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Tổng Nhân Viên</p>
+                        <h4 class="mb-0"><?php echo isset($statistics['total']) ? $statistics['total'] : 0; ?></h4>
+                    </div>
                 </div>
-                <div class="icon grad-blue"><span class="material-icons-round">groups</span></div>
+                <hr class="dark horizontal my-0">
+                <div class="card-footer p-3">
+                    <p class="mb-0"><span class="text-secondary text-sm font-weight-bolder">Tất cả nhân viên</span> trong hệ thống</p>
+                </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="text-xs text-secondary">Đang hoạt động</div>
-                    <div class="h4 mb-0"><?php echo isset($statistics['active']) ? $statistics['active'] : 0; ?></div>
+
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-header p-3 pt-2">
+                    <div class="icon icon-lg icon-shape bg-gradient-success shadow-success text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="material-icons-round opacity-10">verified</i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Đang hoạt động</p>
+                        <h4 class="mb-0 text-success"><?php echo isset($statistics['active']) ? $statistics['active'] : 0; ?></h4>
+                    </div>
                 </div>
-                <div class="icon grad-green"><span class="material-icons-round">verified</span></div>
+                <hr class="dark horizontal my-0">
+                <div class="card-footer p-3">
+                    <p class="mb-0"><span class="text-success text-sm font-weight-bolder">Có thể làm việc</span></p>
+                </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="text-xs text-secondary">Có tài khoản</div>
-                    <div class="h4 mb-0"><?php echo isset($statistics['with_user']) ? $statistics['with_user'] : 0; ?></div>
+
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-header p-3 pt-2">
+                    <div class="icon icon-lg icon-shape bg-gradient-danger shadow-danger text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="material-icons-round opacity-10">lock</i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Không tài khoản</p>
+                        <h4 class="mb-0 text-danger"><?php echo isset($statistics['without_user']) ? $statistics['without_user'] : 0; ?></h4>
+                    </div>
                 </div>
-                <div class="icon grad-orange"><span class="material-icons-round">key</span></div>
+                <hr class="dark horizontal my-0">
+                <div class="card-footer p-3">
+                    <p class="mb-0"><span class="text-danger text-sm font-weight-bolder">Chưa có user</span></p>
+                </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card p-3 d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="text-xs text-secondary">Chưa có tài khoản</div>
-                    <div class="h4 mb-0"><?php echo isset($statistics['without_user']) ? $statistics['without_user'] : 0; ?></div>
+
+        <div class="col-xl-3 col-sm-6">
+            <div class="card">
+                <div class="card-header p-3 pt-2">
+                    <div class="icon icon-lg icon-shape bg-gradient-warning shadow-warning text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="material-icons-round opacity-10">key</i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Có tài khoản</p>
+                        <h4 class="mb-0 text-warning"><?php echo isset($statistics['with_user']) ? $statistics['with_user'] : 0; ?></h4>
+                    </div>
                 </div>
-                <div class="icon grad-red"><span class="material-icons-round">person_off</span></div>
+                <hr class="dark horizontal my-0">
+                <div class="card-footer p-3">
+                    <p class="mb-0"><span class="text-warning text-sm font-weight-bolder">Có user</span></p>
+                </div>
             </div>
         </div>
     </div>
-    <div class="section-header mt-3">
-        <div class="h6 mb-0">Danh Sách Nhân Viên</div>
-        <a href="<?= site_url('admin/staff/addstaff'); ?>" class="btn btn-light btn-sm" style="color:#d81b60">
-            + THÊM NHÂN VIÊN
-        </a>
-    </div>
-</div>
-<div class="container py-4 pl-5 pr-5">
+
+    <!-- Staff List Table -->
     <div class="row">
-        <div class="card">
-        <div class="card-body pt-4 p-3">
-            <!-- Statistics Cards -->
-            <div class="row mb-4">
-                <div class="col-lg-3 col-6">
-                    <div class="small-box border">
-                        <div class="inner text-center">
-                            <h3><?php echo isset($statistics['total']) ? $statistics['total'] : 0; ?></h3>
-                            <p class="mb-0">Tổng nhân viên</p>
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-primary shadow-primary border-radius-lg pt-4 pb-3">
+                        <div class="d-flex align-items-center justify-content-between px-3">
+                            <h6 class="text-white text-capitalize ps-3">Danh sách Nhân viên</h6>
+                            <a href="<?= site_url('admin/staff/addstaff'); ?>" class="btn btn-sm bg-white text-primary">
+                                <i class="material-icons-round text-sm">add</i> Thêm Nhân Viên
+                            </a>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-6">
-                    <div class="small-box border">
-                        <div class="inner text-center">
-                            <h3><?php echo isset($statistics['active']) ? $statistics['active'] : 0; ?></h3>
-                            <p class="mb-0">Trạng thái</p>
+
+                <div class="card-body px-0 pb-2">
+                    <!-- Filters -->
+                    <form method="GET" action="<?= site_url('admin/staff'); ?>" class="row g-3 mb-3 px-3">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" name="search_code" placeholder="Tìm kiếm..." 
+                                   value="<?php echo isset($_GET['search_code']) ? $_GET['search_code'] : ''; ?>">
                         </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-6">
-                    <div class="small-box border">
-                        <div class="inner text-center">
-                            <h3><?php echo isset($statistics['with_user']) ? $statistics['with_user'] : 0; ?></h3>
-                            <p class="mb-0">Có user</p>
+                        <div class="col-md-3">
+                            <select class="form-select" name="department">
+                                <option value="">-- Chọn bộ phận --</option>
+                                <option value="Sản Xuất" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Sản Xuất') ? 'selected' : ''; ?>>Sản Xuất</option>
+                                <option value="IT" <?php echo (isset($_GET['department']) && $_GET['department'] == 'IT') ? 'selected' : ''; ?>>IT</option>
+                                <option value="Kho" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kho') ? 'selected' : ''; ?>>Kho</option>
+                                <option value="QC" <?php echo (isset($_GET['department']) && $_GET['department'] == 'QC') ? 'selected' : ''; ?>>QC</option>
+                                <option value="Kỹ Thuật" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kỹ Thuật') ? 'selected' : ''; ?>>Kỹ Thuật</option>
+                                <option value="Ban Giám Đốc" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Ban Giám Đốc') ? 'selected' : ''; ?>>Ban Giám Đốc</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-6">
-                    <div class="small-box border">
-                        <div class="inner text-center">
-                            <h3><?php echo isset($statistics['without_user']) ? $statistics['without_user'] : 0; ?></h3>
-                            <p class="mb-0">Chưa</p>
+                        <div class="col-md-2">
+                            <select class="form-select" name="status">
+                                <option value="">-- Trạng thái --</option>
+                                <option value="1" <?php echo (isset($_GET['status']) && $_GET['status'] == '1') ? 'selected' : ''; ?>>Active</option>
+                                <option value="2" <?php echo (isset($_GET['status']) && $_GET['status'] == '2') ? 'selected' : ''; ?>>Inactive</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-            </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="material-icons-round text-sm">search</i> Lọc
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="<?= site_url('admin/staff'); ?>" class="btn btn-secondary w-100">
+                                <i class="material-icons-round text-sm">refresh</i> Reset
+                            </a>
+                        </div>
+                    </form>
 
-            <!-- Filters -->
-            <div class="mb-3">
-                <form class="row" method="GET" action="<?= site_url('admin/staff'); ?>">
-                    <div class="col-md-4">
-                        <label class="form-label">Bộ phận:</label>
-                        <select name="department" class="form-control">
-                            <option value="">Chọn bộ phận</option>
-                            <option value="Sản Xuất" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Sản Xuất') ? 'selected' : ''; ?>>Sản Xuất</option>
-                            <option value="IT" <?php echo (isset($_GET['department']) && $_GET['department'] == 'IT') ? 'selected' : ''; ?>>IT</option>
-                            <option value="Kho" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kho') ? 'selected' : ''; ?>>Kho</option>
-                            <option value="QC" <?php echo (isset($_GET['department']) && $_GET['department'] == 'QC') ? 'selected' : ''; ?>>QC</option>
-                            <option value="Kỹ Thuật" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Kỹ Thuật') ? 'selected' : ''; ?>>Kỹ Thuật</option>
-                            <option value="Ban Giám Đốc" <?php echo (isset($_GET['department']) && $_GET['department'] == 'Ban Giám Đốc') ? 'selected' : ''; ?>>Ban Giám Đốc</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Chức vụ:</label>
-                        <select name="position" class="form-control">
-                            <option value="">Chọn chức vụ</option>
-                            <option value="Giám Đốc" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Giám Đốc') ? 'selected' : ''; ?>>Giám Đốc</option>
-                            <option value="Trưởng Phòng" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Trưởng Phòng') ? 'selected' : ''; ?>>Trưởng Phòng</option>
-                            <option value="Trưởng Dây Chuyền" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Trưởng Dây Chuyền') ? 'selected' : ''; ?>>Trưởng Dây Chuyền</option>
-                            <option value="Nhân Viên Kho" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Nhân Viên Kho') ? 'selected' : ''; ?>>Nhân Viên Kho</option>
-                            <option value="Công Nhân" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Công Nhân') ? 'selected' : ''; ?>>Công Nhân</option>
-                            <option value="Kỹ Thuật Viên" <?php echo (isset($_GET['position']) && $_GET['position'] == 'Kỹ Thuật Viên') ? 'selected' : ''; ?>>Kỹ Thuật Viên</option>
+                    <?php if ($this->session->flashdata('flash')): ?>
+                        <div class="alert alert-success mx-3">
+                            <?= $this->session->flashdata('flash'); ?>
+                        </div>
+                    <?php endif; ?>
 
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Status:</label>
-                        <select name="status" class="form-control">
-                            <option value="">Tất cả</option>
-                            <option value="1" <?php echo (isset($_GET['status']) && $_GET['status'] == '1') ? 'selected' : ''; ?>>Active</option>
-                            <option value="2" <?php echo (isset($_GET['status']) && $_GET['status'] == '2') ? 'selected' : ''; ?>>Inactive</option>
-                        </select>
-                    </div>
-                    <div class="col-12 mt-3">
-                        <label class="form-label">Tìm kiếm:</label>
-                        <input type="text" name="search_code" class="form-control" placeholder="Nhập tên/mã/email/điện thoại" value="<?php echo isset($_GET['search_code']) ? $_GET['search_code'] : ''; ?>">
-                    </div>
-                    <div class="col-12 mt-2">
-                        <button class="btn btn-primary" type="submit">Lọc</button>
-                        <a href="<?= site_url('admin/staff'); ?>" class="btn btn-secondary ml-2">Reset</a>
-                    </div>
-                </form>
-            </div>
+                    <?php if ($this->session->flashdata('error')): ?>
+                        <div class="alert alert-danger mx-3">
+                            <?= $this->session->flashdata('error'); ?>
+                        </div>
+                    <?php endif; ?>
 
-            <?php if ($this->session->flashdata('search_not_found')): ?>
-                <div class="alert alert-warning d-flex align-items-center justify-content-between">
-                    <div>
-                        <?= $this->session->flashdata('error'); ?>
-                    </div>
-                    <div>
-                        <a href="<?= site_url('admin/staff'); ?>" class="btn btn-sm btn-primary mr-2">Nhập lại</a>
-                        <a href="<?= site_url('admin/staff'); ?>" class="btn btn-sm btn-secondary">Hủy</a>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($this->session->flashdata('flash')): ?>
-                <div class="alert alert-success">
-                    <?= $this->session->flashdata('flash'); ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($this->session->flashdata('error')): ?>
-                <div class="alert alert-danger">
-                    <?= $this->session->flashdata('error'); ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($this->session->flashdata('debug')): ?>
-                <div class="alert alert-info">
-                    Debug: <?= $this->session->flashdata('debug'); ?>
-                </div>
-            <?php endif; ?>
-
-            <div class="table-responsive p-0">
-                <table id="table-data" class="table align-items-center justify-content-center mb-0">
+                    <div class="table-responsive p-0">
+                        <table id="table-data" class="table align-items-center mb-0">
                     <thead>
                         <tr>
                         <th class="text-center">STT</th>

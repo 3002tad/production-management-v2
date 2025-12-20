@@ -654,7 +654,12 @@ class Admin extends CI_Controller
                 $this->db->where('staff.st_status', $status);
             }
             if ($search_code) {
-                $this->db->where('staff.id_staff', $search_code);
+                $this->db->group_start();
+                $this->db->like('staff.id_staff', $search_code);
+                $this->db->or_like('staff.staff_name', $search_code);
+                $this->db->or_like('staff.email', $search_code);
+                $this->db->or_like('staff.phone', $search_code);
+                $this->db->group_end();
             }
             $results = $this->db->get()->result();
 

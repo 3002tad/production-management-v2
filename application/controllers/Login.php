@@ -98,7 +98,9 @@ class Login extends CI_Controller
                     redirect('login');
                 }
             } else {
-                $this->load->view('login');
+                // Load view and let flashdata display
+                $data['login_error'] = $this->session->flashdata('login_error');
+                $this->load->view('login', $data);
             }
         }
     }
@@ -421,7 +423,6 @@ $hasUpper = preg_match('/[A-Z]/', $password);
         }
 
         $this->session->sess_destroy();
-        $this->session->set_flashdata('login_success', 'Đăng xuất thành công!');
         redirect('login/');
     }
 }

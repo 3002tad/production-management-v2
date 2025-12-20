@@ -83,11 +83,8 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                <div class="card-header pb-0">
                     <h6>Tìm kiếm & Lọc</h6>
-                    <a href="<?= site_url('leader/shift/create'); ?>" class="btn btn-primary btn-sm">
-                        <i class="material-icons text-sm">add</i>&nbsp;&nbsp;Tạo Ca Mới
-                    </a>
                 </div>
                 <div class="card-body">
                     <form method="GET" action="<?= site_url('leader/shift'); ?>" class="row g-3">
@@ -175,21 +172,26 @@
                                 </h5>
                                 <span class="badge <?= $plan_status_badge ?> mt-2"><?= $plan_status_text ?></span>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <div class="row">
-                                    <div class="col-4">
-                                        <p class="text-xs text-white mb-0">Ca gợi ý</p>
-                                        <h6 class="text-white mb-0"><?= $plan->suggested_shift_count ?? 0 ?></h6>
-                                    </div>
-                                    <div class="col-4">
-                                        <p class="text-xs text-white mb-0">Ca thực tế</p>
-                                        <h6 class="text-white mb-0"><?= $plan->actual_shift_count ?? 0 ?></h6>
-                                    </div>
-                                    <div class="col-4">
-                                        <p class="text-xs text-white mb-0">Hoàn thành</p>
-                                        <h6 class="text-white mb-0"><?= $plan->completed_shift_count ?? 0 ?></h6>
+                            <div class="col-md-6 text-end d-flex justify-content-end align-items-center gap-4">
+                                <div>
+                                    <div class="row">
+                                        <div class="col-4">
+                                            <p class="text-xs text-white mb-0">Ca gợi ý</p>
+                                            <h6 class="text-white mb-0"><?= $plan->suggested_shift_count ?? 0 ?></h6>
+                                        </div>
+                                        <div class="col-4">
+                                            <p class="text-xs text-white mb-0">Ca thực tế</p>
+                                            <h6 class="text-white mb-0"><?= $plan->actual_shift_count ?? 0 ?></h6>
+                                        </div>
+                                        <div class="col-4">
+                                            <p class="text-xs text-white mb-0">Hoàn thành</p>
+                                            <h6 class="text-white mb-0"><?= $plan->completed_shift_count ?? 0 ?></h6>
+                                        </div>
                                     </div>
                                 </div>
+                                <a href="<?= site_url('leader/shift/create?id_plan=' . $plan->id_plan); ?>" class="btn btn-light btn-sm">
+                                    <i class="material-icons text-sm">add</i>&nbsp;Tạo Ca
+                                </a>
                             </div>
                         </div>
                     </div>

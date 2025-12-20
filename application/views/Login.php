@@ -21,10 +21,10 @@
                 <div class="form-login text-center">
                     <div class="parent d-flex justify-content-center align-items-center" style="height: 80vh;">
                         <div class="child">
-<?php if($this->session->flashdata('login_error')): ?>
+<?php if($this->session->flashdata('login_error') || isset($login_error)): ?>
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <i class="fa fa-exclamation-circle me-2"></i>
-                                <strong>Lỗi!</strong> <?= $this->session->flashdata('login_error') ?>
+                                <strong>Lỗi!</strong> <?= $this->session->flashdata('login_error') ?: $login_error ?>
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -74,6 +74,15 @@
         } else {
             input.attr("type", "password");
         }
+    });
+
+    // Auto-hide alerts after 3 seconds
+    $(".alert").each(function() {
+        setTimeout(function() {
+            $(".alert").fadeOut("slow", function() {
+                $(this).remove();
+            });
+        }, 1000);
     });
 </script>
 
