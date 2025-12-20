@@ -13,10 +13,10 @@
 
 <div class="container-fluid py-4">
     <!-- Flash Messages -->
-    <?php if ($this->session->flashdata('error')): ?>
+    <?php if ($this->session->flashdata('shift_error')): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <span class="alert-icon"><i class="material-icons">error</i></span>
-        <span class="alert-text"><?= $this->session->flashdata('error') ?></span>
+        <span class="alert-text"><?= $this->session->flashdata('shift_error') ?></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     <?php endif; ?>

@@ -372,6 +372,12 @@ class Shift extends CI_Controller
             return;
         }
 
+        // Check if shift has already started - cannot confirm materials once shift is running
+        if ($shift->shift_status == 2 || $shift->is_closed == 1) {
+            echo json_encode(['success' => false, 'message' => 'Ca đã bắt đầu hoặc đã chốt, không thể xác nhận NVL']);
+            return;
+        }
+
         if (empty($shift->id_plan)) {
             echo json_encode(['success' => false, 'message' => 'Ca chưa gắn với kế hoạch sản xuất']);
             return;
@@ -549,7 +555,8 @@ class Shift extends CI_Controller
                 'line_id' => $line_id
             ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            error_log('get_machines_by_line Error: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => $e->getMessage(), 'error_details' => $e->getTraceAsString()]);
         }
     }
 
@@ -887,7 +894,9 @@ class Shift extends CI_Controller
                 redirect('leader/shift/detail/' . $result);
             }
         } else {
-            $this->session->set_flashdata('error', 'Tạo ca thất bại');
+            // Use a dedicated flash key so errors from other actions (like machine assignment)
+            // that also use 'error' do not appear on the create-shift screen.
+            $this->session->set_flashdata('shift_error', 'Tạo ca thất bại');
             redirect('leader/shift/create' . (!empty($id_plan) ? '?id_plan=' . $id_plan : ''));
         }
     }
@@ -1003,7 +1012,11 @@ class Shift extends CI_Controller
             $this->db->where('shift_id', $shift_id);
             $this->db->delete('shift_machine_staff');
 
-            // 7. Delete shift
+            // 7. Delete material confirmations for this shift
+            $this->db->where('shift_id', $shift_id);
+            $this->db->delete('shift_material_confirmations');
+
+            // 8. Delete shift
             $this->db->where('shift_id', $shift_id);
             $deleted = $this->db->delete('production_shifts');
             log_message('debug', 'Shift::delete result: ' . var_export($deleted, true) . ' - Affected rows: ' . $this->db->affected_rows());

@@ -203,13 +203,33 @@
                                 </div>
                                 <div>
                                     <?php if (!empty($mc) && !empty($mc['details']) && (!isset($mc['ok']) || $mc['ok'])): ?>
-                                        <button type="button"
-                                                class="btn btn-sm btn-primary"
-                                                id="btn_confirm_material"
-                                                data-shift-id="<?= (int) $shift->shift_id; ?>">
-                                            <i class="material-icons text-sm me-1">done_all</i>
-                                            Xác nhận NVL
-                                        </button>
+                                        <?php if (isset($material_confirm) && $material_confirm): ?>
+                                            <!-- Đã xác nhận - nút xanh, disabled -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-success"
+                                                    disabled>
+                                                <i class="material-icons text-sm me-1">check_circle</i>
+                                                Đã xác nhận NVL
+                                            </button>
+                                        <?php elseif ($shift->shift_status == 2 || $shift->is_closed == 1): ?>
+                                            <!-- Ca đã chạy hoặc đã chốt - nút bạc, disabled -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-secondary"
+                                                    disabled
+                                                    title="Ca đã bắt đầu, không thể xác nhận NVL">
+                                                <i class="material-icons text-sm me-1">block</i>
+                                                Không thể xác nhận
+                                            </button>
+                                        <?php else: ?>
+                                            <!-- Chưa xác nhận, ca chưa chạy - nút xám, active -->
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    id="btn_confirm_material"
+                                                    data-shift-id="<?= (int) $shift->shift_id; ?>">
+                                                <i class="material-icons text-sm me-1">done_all</i>
+                                                Xác nhận NVL
+                                            </button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -680,10 +700,12 @@ function displayMachineCards(machines) {
         let staffList = '';
         if (machine.assigned_staff && machine.assigned_staff.length > 0) {
             machine.assigned_staff.forEach(function(staff) {
+                // Display staff name (prioritizes staff_name, falls back to user info)
+                const staffNameDisplay = staff.staff_name || 'N/A';
                 staffList += `
                     <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
                         <div>
-                            <p class="text-sm mb-0">${staff.full_name || staff.username}</p>
+                            <p class="text-sm mb-0">${staffNameDisplay}</p>
                             <small class="text-muted">${staff.role_name || 'N/A'} - ${staff.department || 'N/A'}</small>
                         </div>
                         <form method="POST" action="<?= site_url('leader/shift/remove_staff_from_machine'); ?>" style="display:inline;">
@@ -1277,7 +1299,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(function(res) {
                 if (res && res.success) {
                     alert(res.message || 'Đã xác nhận NVL cho ca');
-                    window.location.reload();
+                    // Change button to success state without reloading
+                    btn.className = 'btn btn-sm btn-success';
+                    btn.disabled = true;
+                    btn.id = ''; // Remove ID so it won't be selected again
+                    btn.innerHTML = '<i class="material-icons text-sm me-1">check_circle</i>Đã xác nhận NVL';
                 } else {
                     alert(res && res.message ? res.message : 'Không thể xác nhận NVL');
                     btn.disabled = false;

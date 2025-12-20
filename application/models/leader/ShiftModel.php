@@ -447,30 +447,34 @@ class ShiftModel extends CI_Model
      */
     public function getMachinesByLine($line_id)
     {
-        $this->db->select('machines.*, 
-            machines.code as machine_code, 
-            machines.name as machine_name, 
-            machines.stage_type as machine_type,
-            COALESCE(machines.equipment_category, "production") as equipment_category');
+        $this->db->select('machines.id, machines.code as machine_code, machines.name as machine_name, machines.stage_type as machine_type, machines.equipment_category, machines.line_id, machines.status');
         $this->db->from('machines');
         $this->db->where('machines.line_id', $line_id);
         $this->db->where('machines.status', 'active');
         $this->db->order_by('machines.code', 'ASC');
-        return $this->db->get()->result();
+        $result = $this->db->get();
+        if (!$result) {
+            error_log('getMachinesByLine query error: ' . $this->db->last_query());
+            return [];
+        }
+        return $result->result();
     }
 
     /**
      * Lấy danh sách nhân sự đã gán vào máy cụ thể trong ca
      */
+    /**
+     * Lấy danh sách nhân sự đã gán vào máy cụ thể trong ca
+     */
     public function getStaffByMachine($shift_id, $machine_id)
     {
-        $this->db->select('shift_machine_staff.*, 
+        $this->db->select('shift_machine_staff.id, shift_machine_staff.shift_id, shift_machine_staff.machine_id, shift_machine_staff.staff_id, 
+            COALESCE(staff.staff_name, user.full_name, user.username) as staff_name,
             user.username, user.email, 
-            staff.staff_name as full_name, 
             staff.department, staff.position,
             roles.role_name');
         $this->db->from($this->table_machine_staff);
-        $this->db->join('user', 'user.user_id = shift_machine_staff.staff_id');
+        $this->db->join('user', 'user.user_id = shift_machine_staff.staff_id', 'inner');
         $this->db->join('staff', 'staff.id_staff = shift_machine_staff.staff_id', 'left');
         $this->db->join('roles', 'roles.role_id = user.role_id', 'left');
         $this->db->where('shift_machine_staff.shift_id', $shift_id);
