@@ -77,14 +77,6 @@
                     </li>
                     <hr class="horizontal light mt-0 mb-2">
                     <li class="nav-item navbar-expand-xs">
-                        <a class="nav-link text-white<?= ($navlink === 'production') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/production'); ?>">
-                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="material-icons opacity-10">settings_input_component</i>
-                            </div>
-                            <span class="nav-link-text ms-1"><?= lang('menu_production'); ?></span>
-                        </a>
-                    </li>
-                    <li class="nav-item navbar-expand-xs">
                         <a class="nav-link text-white<?= ($navlink === 'shift') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/shift'); ?>">
                             <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="material-icons opacity-10">schedule</i>
@@ -106,6 +98,14 @@
                             <i class="material-icons opacity-10">view_in_ar</i>
                             </div>
                             <span class="nav-link-text ms-1"><?= lang('menu_raw_materials'); ?></span>
+                        </a>
+                    </li>
+                    <li class="nav-item navbar-expand-xs">
+                        <a class="nav-link text-white<?= ($navlink === 'finished_inventory') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('leader/finished_inventory'); ?>">
+                            <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                            <i class="material-icons opacity-10">inventory</i>
+                            </div>
+                            <span class="nav-link-text ms-1">Tồn kho thành phẩm</span>
                         </a>
                     </li>
           <!-- Human Resources / Staff management (visible to leader) -->
@@ -133,11 +133,26 @@
                         </a>
                     </li>
                     <li class="nav-item navbar-expand-xs">
-                      <a class="nav-link text-white<?= ($navlink === 'incident') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc15_bcsc/uc15_bcsc'); ?>">
+                      <a class="nav-link text-white<?= ($navlink === 'incident') ? 'active bg-gradient-info' : ''; ?>" href="<?= site_url('uc16_gn_dp'); ?>">
                         <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="material-icons opacity-10">report_problem</i>
                         </div>
                         <span class="nav-link-text ms-1">Sự cố</span>
+                      </a>
+                    </li>
+
+                    <li class="navbar-vertical">
+                    <div class="text-white text-xs d-flex align-items-center justify-content-left pl-4 pt-2">
+                    <span class="nav-link-text ms-1 p-2">Hệ thống</span>
+                    </div>
+                    </li>
+                    <hr class="horizontal light mt-0 mb-2">
+                    <li class="nav-item navbar-expand-xs">
+                      <a class="nav-link text-white" href="<?= site_url('leader/logout'); ?>">
+                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10">logout</i>
+                        </div>
+                        <span class="nav-link-text ms-1">Đăng xuất</span>
                       </a>
                     </li>
                 </ul>

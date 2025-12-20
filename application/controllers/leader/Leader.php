@@ -52,25 +52,94 @@ class Leader extends CI_Controller
 
     public function index()
     {
+        // Load simulator model to collect current shift machine capacity
+        $this->load->model('leader/ProductionSimulatorModel', 'simModel');
+
+        // Aggregate capacity for active shifts (shift_status = 2)
+        $machine_capacity = [];
+        try {
+            $active_shifts = $this->simModel->getActiveShiftsForSimulation();
+            foreach ($active_shifts as $shift) {
+                $summaries = $this->simModel->getShiftProductionSummary($shift->shift_id);
+                foreach ($summaries as $row) {
+                    $key = (string)($row->machine_id ?? ('code:' . ($row->machine_code ?? 'unknown')));
+                    if (!isset($machine_capacity[$key])) {
+                        $machine_capacity[$key] = [
+                            'machine_id' => $row->machine_id ?? null,
+                            'machine_code' => $row->machine_code ?? '',
+                            'machine_name' => $row->machine_name ?? '',
+                            'total_good' => (int)($row->total_good ?? 0),
+                            'total_defect' => (int)($row->total_defect ?? 0),
+                            'total_produced' => (int)($row->total_produced ?? 0),
+                            'avg_efficiency' => (float)($row->avg_efficiency ?? 0),
+                            'total_downtime' => (int)($row->total_downtime ?? 0),
+                            'shift_id' => $shift->shift_id,
+                            'shift_name' => $shift->shift_name ?? ''
+                        ];
+                    } else {
+                        // Combine across shifts if multiple active in parallel
+                        $machine_capacity[$key]['total_good'] += (int)($row->total_good ?? 0);
+                        $machine_capacity[$key]['total_defect'] += (int)($row->total_defect ?? 0);
+                        $machine_capacity[$key]['total_produced'] += (int)($row->total_produced ?? 0);
+                        $machine_capacity[$key]['total_downtime'] += (int)($row->total_downtime ?? 0);
+                        // Average efficiency: simple mean across summaries
+                        $prev_eff = $machine_capacity[$key]['avg_efficiency'];
+                        $machine_capacity[$key]['avg_efficiency'] = ($prev_eff + (float)($row->avg_efficiency ?? 0)) / 2.0;
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Leader::index capacity fetch error: ' . $e->getMessage());
+        }
+
+        // Sort by total_produced desc and limit to top 5 for dashboard
+        if (!empty($machine_capacity)) {
+            $machine_capacity = array_values($machine_capacity);
+            usort($machine_capacity, function($a, $b) {
+                return ($b['total_produced'] <=> $a['total_produced']);
+            });
+            $machine_capacity = array_slice($machine_capacity, 0, 5);
+        }
 
         $data = [
-            'finished' => $this->db->query('SELECT * FROM finished_report JOIN project JOIN customer
-            WHERE finished_report.id_project=project.id_project AND project.id_cust=customer.id_cust')->result(),
+            'finished' => $this->db->query('SELECT p.id_project, p.project_name, c.cust_name, p.qty_request, 
+                                            COALESCE(SUM(sc.total_good), 0) as total_finished
+                                            FROM project p
+                                            LEFT JOIN customer c ON p.id_cust = c.id_cust
+                                            LEFT JOIN planning pl ON p.id_project = pl.id_project
+                                            LEFT JOIN plan_shift ps ON pl.id_plan = ps.id_plan
+                                            LEFT JOIN shift_closures sc ON ps.id_shift = sc.shift_id
+                                            GROUP BY p.id_project, p.project_name, c.cust_name, p.qty_request')->result(),
             
-            'sorting' => $this->db->query('SELECT * FROM sorting_report JOIN plan_shift JOIN planning JOIN staff
-            WHERE sorting_report.id_planshift=plan_shift.id_planshift AND plan_shift.id_staff=staff.id_staff AND plan_shift.id_plan=planning.id_plan')->result(),
+            'sorting' => $this->db->query('SELECT sr.id_sorting, ps.id_planshift, p.plan_name, s.staff_name, sr.finished, sr.waste
+                                          FROM sorting_report sr
+                                          JOIN plan_shift ps ON sr.id_planshift = ps.id_planshift
+                                          JOIN planning p ON ps.id_plan = p.id_plan
+                                          JOIN staff s ON ps.id_staff = s.id_staff
+                                          ORDER BY sr.id_sorting DESC LIMIT 10')->result(),
 
             'project' => $this->crudModel->getData('project')->num_rows(),
             'planning' => $this->crudModel->getData('planning')->num_rows(),
             'plan_shift' => $this->crudModel->getData('plan_shift')->num_rows(),
-            'finished_report' => $this->crudModel->getData('finished_report')->num_rows(),
+            'finished_report' => $this->crudModel->getData('shift_closures')->num_rows(),
+
+            // New card data: capacity per machine for active shifts
+            'machine_capacity' => $machine_capacity,
 
             'content' => 'leader/beranda',
             'navlink' => 'beranda',
         ];
 
         // Fetch new incidents (status = 0) to show in dashboard notification
-        $new_incidents = $this->db->where('status', 0)->order_by('created_at', 'DESC')->get('incident_reports')->result();
+        $new_incidents = $this->db->select('ir.*, z.zone_name, pl.line_code, pl.line_name, m.name as machine_name, m.code as machine_code')
+                                   ->from('incident_reports ir')
+                                   ->join('production_lines pl', 'ir.line_id = pl.id', 'left')
+                                   ->join('zones z', 'pl.zone_id = z.zone_id', 'left')
+                                   ->join('machines m', 'ir.id_machine = m.id', 'left')
+                                   ->where('ir.status', 0)
+                                   ->order_by('ir.created_at', 'DESC')
+                                   ->get()
+                                   ->result();
         $data['new_incidents'] = $new_incidents;
         $data['new_incident_count'] = count($new_incidents);
 
@@ -329,32 +398,67 @@ class Leader extends CI_Controller
 
     public function material()
     {
-        if ($this->uri->segment(3) === 'addmaterial') {
-        
-            $data = [
-                'planshift' => $this->db->query('SELECT * FROM plan_shift JOIN staff WHERE plan_shift.id_staff=staff.id_staff AND ps_status = 1 AND staff.st_status=2')->result(),
-                'material' => $this->db->query('SELECT * FROM material')->result(),
+        // Show warehouse material list in read-only mode for leader
+        $data = [
+            'material_input' => $this->db->query('
+                SELECT 
+                    id_material,
+                    material_name,
+                    stock,
+                    min_stock,
+                    uom,
+                    (min_stock - stock) as thiếu_bao_nhiêu
+                FROM material 
+                WHERE stock < min_stock
+                ORDER BY (min_stock - stock) DESC
+                LIMIT 10
+            ')->result(),
+            'materials' => $this->db->query('SELECT * FROM material WHERE id_material IS NOT NULL')->result(),
+            'content' => 'leader/material/Material',
+            'navlink' => 'material',
+            'is_readonly' => true,
+        ];
 
-                'content' => 'leader/material/addmaterial',
-                'navlink' => 'material',
-            ];
-        } elseif ($this->uri->segment(3) === 'addnewmaterial') {
-        
-            $data = [
-                'content' => 'leader/material/addnewmaterial',
-                'navlink' => 'material',
-            ];
+        $this->load->view('leader/VBackend', $data);
+    }
 
-        } else {
-            $data = [
-                'material' => $this->db->query('SELECT * FROM p_material JOIN plan_shift JOIN material JOIN staff WHERE p_material.id_material = material.id_material AND p_material.id_planshift = plan_shift.id_planshift AND plan_shift.id_staff = staff.id_staff')->result(),
-                'materials' => $this->db->query('SELECT * FROM material')->result(),
-                'content' => 'leader/material/material',
-                'navlink' => 'material',
-            ];
+    /**
+     * Finished Products Inventory: Xem số lượng thành phẩm trong kho (Read-only for leader)
+     */
+    public function finished_inventory()
+    {
+        // Get all finished products inventory
+        $inventory = [];
+        if ($this->db->table_exists('finished_stock')) {
+            $inventory = $this->db->query('
+                SELECT 
+                    fs.id_stock,
+                    fs.id_product,
+                    fs.quantity_in_stock,
+                    fs.last_updated,
+                    COALESCE(pr.product_name, "N/A") AS product_name,
+                    pr.id_product AS product_code
+                FROM finished_stock fs
+                LEFT JOIN product pr ON fs.id_product = pr.id_product
+                ORDER BY fs.last_updated DESC
+            ')->result();
         }
 
-        $this->load->view('leader/vbackend', $data);
+        // Get summary statistics
+        $total_quantity = 0;
+        if (!empty($inventory)) {
+            foreach ($inventory as $item) {
+                $total_quantity += $item->quantity_in_stock;
+            }
+        }
+
+        $data = [
+            'inventory' => $inventory,
+            'total_quantity' => $total_quantity,
+            'content' => 'leader/finished/inventory',
+            'navlink' => 'finished_inventory',
+        ];
+        $this->load->view('leader/VBackend', $data);
     }
 
     public function addMaterial()

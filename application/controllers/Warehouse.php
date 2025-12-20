@@ -1481,6 +1481,45 @@ class Warehouse extends CI_Controller
     }
 
     /**
+     * Finished Products Inventory: Xem số lượng thành phẩm trong kho
+     */
+    public function finished_inventory()
+    {
+        // Get all finished products inventory
+        $inventory = [];
+        if ($this->db->table_exists('finished_stock')) {
+            $inventory = $this->db->query('
+                SELECT 
+                    fs.id_stock,
+                    fs.id_product,
+                    fs.quantity_in_stock,
+                    fs.last_updated,
+                    COALESCE(pr.product_name, "N/A") AS product_name,
+                    pr.id_product AS product_code
+                FROM finished_stock fs
+                LEFT JOIN product pr ON fs.id_product = pr.id_product
+                ORDER BY fs.last_updated DESC
+            ')->result();
+        }
+
+        // Get summary statistics
+        $total_quantity = 0;
+        if (!empty($inventory)) {
+            foreach ($inventory as $item) {
+                $total_quantity += $item->quantity_in_stock;
+            }
+        }
+
+        $data = [
+            'inventory' => $inventory,
+            'total_quantity' => $total_quantity,
+            'content' => 'warehouse/finished/inventory',
+            'navlink' => 'finished_inventory',
+        ];
+        $this->load->view('warehouse/VBackend', $data);
+    }
+
+    /**
      * Project: Tiến độ & Kế hoạch (màn hình riêng)
      */
     public function project()

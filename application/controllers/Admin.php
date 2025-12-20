@@ -696,10 +696,13 @@ class Admin extends CI_Controller
     public function addStaff()
     {
         $add = [
-            'id_staff' => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
+            'id_staff'   => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
             'staff_name' => trim($this->input->post('staff_name')),
-            'phone' => trim($this->input->post('phone')),
-            'email' => trim($this->input->post('email')),
+            'phone'      => trim($this->input->post('phone')),
+            'email'      => trim($this->input->post('email')),
+            'department' => trim($this->input->post('department')) ?: null,
+            'position'   => trim($this->input->post('position')) ?: null,
+            'st_status'  => (int)($this->input->post('st_status') ?? 1),
         ];
 
         // skills removed — do not include skills field
@@ -714,9 +717,11 @@ class Admin extends CI_Controller
 
         $update = [
             'staff_name' => trim($this->input->post('staff_name')),
-            'staff_name' => trim($this->input->post('staff_name')),
-            'phone' => trim($this->input->post('phone')),
-            'email' => trim($this->input->post('email')),
+            'phone'      => trim($this->input->post('phone')),
+            'email'      => trim($this->input->post('email')),
+            'department' => trim($this->input->post('department')) ?: null,
+            'position'   => trim($this->input->post('position')) ?: null,
+            'st_status'  => (int)($this->input->post('st_status') ?? 1),
         ];
 
         // skills removed — do not update skills field

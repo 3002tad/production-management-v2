@@ -29,15 +29,26 @@
 
     .md3-navbar {
         backdrop-filter: blur(12px);
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(14, 165, 233, 0.06));
+        /* Darker pink gradient to match project header more closely */
+        background: linear-gradient(90deg, #d81b60 0%, #ef3b7b 100%);
+        color: #ffffff;
         border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
     }
 
     .md3-navbar-title {
         font-weight: 600;
         letter-spacing: 0.02em;
-        color: var(--md3-on-surface);
+        color: #ffffff;
+    }
+
+    .md3-navbar .breadcrumb .breadcrumb-item a,
+    .md3-navbar .breadcrumb .breadcrumb-item {
+        color: rgba(255,255,255,0.85) !important;
+    }
+
+    .md3-navbar .text-secondary {
+        color: rgba(255,255,255,0.9) !important;
     }
 
     .btn-md3-logout {
@@ -181,10 +192,10 @@
     <div class="container-fluid py-2 px-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Pages</a></li>
-                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Dashboard</li>
+                <li class="breadcrumb-item text-sm"><a class="opacity-5" href="javascript:;" style="color: rgba(255,255,255,0.7);">Pages</a></li>
+                <li class="breadcrumb-item text-sm active" aria-current="page" style="color: rgba(255,255,255,0.85);">Trưởng dây chuyền</li>
             </ol>
-            <h6 class="md3-navbar-title mb-0">Leader Dashboard</h6>
+            <h6 class="md3-navbar-title mb-0">Trưởng dây chuyền</h6>
         </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <div class="ms-md-auto pe-md-3 d-flex align-items-center justify-content-end w-100">
@@ -205,16 +216,16 @@
                 <div class="card md3-stat-card">
                     <div class="md3-stat-header">
                         <div>
-                            <p class="md3-stat-label">Projects</p>
+                            <p class="md3-stat-label">Tổng Đơn Hàng</p>
                             <h3 class="md3-stat-value counter"><?= $project ?></h3>
                         </div>
                         <div class="md3-stat-icon gradient-primary">
-                            <span class="material-icons-round">add_task</span>
+                            <span class="material-icons-round">task</span>
                         </div>
                     </div>
                     <div class="md3-stat-footer">
                         <span class="material-icons-round" style="font-size:16px;">insights</span>
-                        <span>Tổng số dự án</span>
+                        <span style="margin-left:6px;"><span class="text-success" style="font-weight:600;">+0%</span>&nbsp;so với tháng trước</span>
                     </div>
                 </div>
             </div>
@@ -222,16 +233,16 @@
                 <div class="card md3-stat-card">
                     <div class="md3-stat-header">
                         <div>
-                            <p class="md3-stat-label">Planning</p>
+                            <p class="md3-stat-label">Kế Hoạch Sản Xuất</p>
                             <h3 class="md3-stat-value counter"><?= $planning ?></h3>
                         </div>
                         <div class="md3-stat-icon gradient-success">
-                            <span class="material-icons-round">exit_to_app</span>
+                            <span class="material-icons-round">event_note</span>
                         </div>
                     </div>
                     <div class="md3-stat-footer">
                         <span class="material-icons-round" style="font-size:16px;">event_note</span>
-                        <span>Kế hoạch đã tạo</span>
+                        <span class="text-success" style="margin-left:6px;">Đã lập kế hoạch</span>
                     </div>
                 </div>
             </div>
@@ -239,7 +250,7 @@
                 <div class="card md3-stat-card">
                     <div class="md3-stat-header">
                         <div>
-                            <p class="md3-stat-label">Production</p>
+                            <p class="md3-stat-label">Ca Đã Hoàn Thành</p>
                             <h3 class="md3-stat-value counter"><?= $plan_shift ?></h3>
                         </div>
                         <div class="md3-stat-icon gradient-warning">
@@ -248,7 +259,7 @@
                     </div>
                     <div class="md3-stat-footer">
                         <span class="material-icons-round" style="font-size:16px;">pending_actions</span>
-                        <span>Ca sản xuất đang xử lý</span>
+                        <span class="text-danger" style="margin-left:6px;">Theo ca máy</span>
                     </div>
                 </div>
             </div>
@@ -256,7 +267,7 @@
                 <div class="card md3-stat-card">
                     <div class="md3-stat-header">
                         <div>
-                            <p class="md3-stat-label">Project Progress</p>
+                            <p class="md3-stat-label">Đã Sản Xuất</p>
                             <h3 class="md3-stat-value counter"><?= $finished_report ?></h3>
                         </div>
                         <div class="md3-stat-icon gradient-info">
@@ -265,39 +276,39 @@
                     </div>
                     <div class="md3-stat-footer">
                         <span class="material-icons-round" style="font-size:16px;">update</span>
-                        <span>Dự án đã hoàn thành / đang chạy</span>
+                        <span class="text-success" style="margin-left:6px;">Báo cáo sản xuất</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- CARD FOR DATA BARANG MASUK & BARANG KELUAR -->
-        <div class="row">
+        <div class="row mb-3">
             <div class="col-lg-6 col-md-12 mb-3">
                 <div class="card md3-section-card">
                     <div class="md3-section-header">
-                        <h4 class="card-title">Production Progress</h4>
-                        <p class="card-category">Summary of production progress</p>
+                        <h4 class="card-title">Đơn hàng gần đây</h4>
+                        <p class="card-category">Danh sách đơn hàng mới nhất</p>
                     </div>
                     <div class="card-body table-responsive pt-0">
                         <table class="table table-hover md3-table">
                             <thead>
                                 <th>ID</th>
-                                <th>Customer</th>
-                                <th>Qty Request</th>
-                                <th>Finished</th>
+                                <th>Đơn hàng</th>
+                                <th>Khách hàng</th>
                             </thead>
                             <tbody>
-                            <?php if (!empty($finished)) : $i = 1; foreach ($finished as $value) : ?>
-
+                            <?php if (!empty($finished)) : foreach ($finished as $p) : ?>
                                 <tr>
-                                    <td class ="pl-4"> <?= $i++; ?> </td>
-                                    <td class ="pl-4"> <?= $value->cust_name?> </td>
-                                    <td class ="pl-4"> <?= $value->qty_request?> Kg</td>
-                                    <td class ="pl-4"> <?= $value->total_finished?> Kg</td>
+                                    <td class ="pl-4"> <?= $p->id_project?> </td>
+                                    <td class ="pl-4"> <?= $p->project_name ?? $p->plan_name?> </td>
+                                    <td class ="pl-4"> <?= $p->cust_name?> </td>
                                 </tr>
-                            <?php  endforeach; endif;?>
-
+                            <?php endforeach; else: ?>
+                                <tr>
+                                    <td colspan="3" class="text-center">Chưa có đơn hàng</td>
+                                </tr>
+                            <?php endif;?>
                             </tbody>
                         </table>
                     </div>
@@ -306,26 +317,30 @@
             <div class="col-lg-6 col-md-12 mb-3">
                 <div class="card md3-section-card">
                     <div class="md3-section-header">
-                        <h4 class="card-title">Production History</h4>
-                        <p class="card-category">Summary of last production</p>
+                        <h4 class="card-title">Kế hoạch sản xuất gần đây</h4>
+                        <p class="card-category">Danh sách kế hoạch mới nhất</p>
                     </div>
                     <div class="card-body table-responsive pt-0">
                         <table class="table table-hover md3-table">
                             <thead>
                                 <th>ID</th>
-                                <th>Planning</th>
-                                <th>Shiftment</th>
-                                <th>Finished</th>
+                                <th>Kế hoạch</th>
+                                <th>Đơn hàng</th>
+                                <th>Ngày</th>
                             </thead>
                             <tbody>
-                            <?php if (!empty($sorting)) : $i = 1; foreach ($sorting as $value) : ?>
+                            <?php if (!empty($sorting)) : foreach ($sorting as $pl) : ?>
                                 <tr>
-                                    <td class ="pl-4"> <?= $i++; ?> </td>
-                                    <td class ="pl-4"> <?= $value->plan_name?> </td>
-                                    <td class ="pl-4"> <?= $value->staff_name?> </td>
-                                    <td class ="pl-4"> <?= $value->finished?> Kg</td>
+                                    <td class ="pl-4"> <?= $pl->plan_name?> </td>
+                                    <td class ="pl-4"> <?= $pl->plan_name?> </td>
+                                    <td class ="pl-4"> <?= $pl->project_name ?? '-' ?> </td>
+                                    <td class ="pl-4"> Hôm nay </td>
                                 </tr>
-                            <?php  endforeach; endif;?>
+                            <?php endforeach; else: ?>
+                                <tr>
+                                    <td colspan="4" class="text-center">Chưa có kế hoạch</td>
+                                </tr>
+                            <?php endif;?>
                             </tbody>
                         </table>
                     </div>
@@ -333,68 +348,135 @@
             </div>
         </div>
 
-        <!-- NEW INCIDENT NOTIFICATION BOX -->
+        <div class="row">
+            <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card md3-section-card">
+                    <div class="md3-section-header">
+                        <h4 class="card-title">Công suất máy đang chạy trong ca</h4>
+                        <p class="card-category">Tình trạng và công suất hiện tại</p>
+                    </div>
+                    <div class="card-body table-responsive pt-0">
+                        <table class="table table-hover md3-table">
+                            <thead>
+                                <th>Máy</th>
+                                <th class="text-center">Sản lượng</th>
+                                <th class="text-center">Hiệu suất (%)</th>
+                            </thead>
+                            <tbody>
+                            <?php if (!empty($machine_capacity)) : ?>
+                                <?php foreach ($machine_capacity as $mc) : ?>
+                                    <tr>
+                                        <td class ="pl-4"> <?= htmlspecialchars(($mc['machine_code'] ?? '') . ' - ' . ($mc['machine_name'] ?? '')) ?> </td>
+                                        <td class ="pl-4 text-center"> <?= number_format($mc['total_produced'] ?? 0) ?> </td>
+                                        <td class ="pl-4 text-center"> <?= number_format($mc['avg_efficiency'] ?? 0, 2) ?> </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="3" class="text-center">Không có dữ liệu công suất trong ca hiện tại</td>
+                                </tr>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card md3-section-card">
+                    <div class="md3-section-header">
+                        <h4 class="card-title">Đơn hàng đã sản xuất gần đây</h4>
+                        <p class="card-category">Danh sách đơn hàng đã sản xuất</p>
+                    </div>
+                    <div class="card-body table-responsive pt-0">
+                        <table class="table table-hover md3-table">
+                            <thead>
+                                <th>Dự án</th>
+                                <th>Khách hàng</th>
+                                <th class="text-center">SL Hoàn thành</th>
+                            </thead>
+                            <tbody>
+                            <?php if (!empty($finished)) : $i = 1; foreach ($finished as $value) : ?>
+                                <?php if ($i > 5) break; ?>
+                                <tr>
+                                    <td class ="pl-4"> <?= $value->project_name?> </td>
+                                    <td class ="pl-4"> <?= $value->cust_name?> </td>
+                                    <td class ="pl-4 text-center"> <?= number_format($value->total_finished)?> </td>
+                                </tr>
+                            <?php $i++; endforeach; endif;?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INCIDENT DISPATCH WIDGET -->
         <div class="row mt-4">
             <div class="col-lg-12 col-md-12">
                 <div class="card md3-section-card">
                     <div class="md3-section-header">
-                        <h4 class="card-title">Sự Cố Mới
+                        <h4 class="card-title">Sự Cố Cần Xử Lý
                             <?php if (isset($new_incident_count) && $new_incident_count > 0): ?>
                                 <span class="badge badge-danger" style="background-color: #f4623a; color: white; font-size: 14px; padding: 5px 10px; border-radius: 20px;">
                                     <?= $new_incident_count; ?>
                                 </span>
                             <?php endif; ?>
                         </h4>
-                        <p class="card-category">Danh sách sự cố chưa được xử lý</p>
+                        <p class="card-category">Các sự cố cần điều phối và xử lý</p>
                     </div>
                     <div class="card-body table-responsive pt-0">
                         <?php if (!empty($new_incidents)): ?>
-                            <table class="table table-hover">
-                                <thead class="text-danger">
-                                    <th>ID</th>
-                                    <th>Máy</th>
-                                    <th>Loại Sự Cố</th>
-                                    <th>Mức Độ</th>
-                                    <th>Mô Tả</th>
-                                    <th>Hành Động</th>
+                            <table class="table table-hover md3-table">
+                                <thead>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">STT</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Khu Vực</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Dây Chuyền</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Máy</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Loại</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Mức Độ</th>
+                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Hành Động</th>
                                 </thead>
                                 <tbody>
                                 <?php $i = 1; foreach ($new_incidents as $incident): ?>
                                     <tr>
                                         <td class="pl-4"><?= $i++; ?></td>
-                                        <td class="pl-4"><?= $incident->id_machine; ?></td>
+                                        <td class="pl-4"><?= htmlspecialchars($incident->zone_name ?? '-'); ?></td>
+                                        <td class="pl-4"><span class="badge bg-secondary"><?= htmlspecialchars($incident->line_code ?? '-'); ?></span></td>
+                                        <td class="pl-4"><?= htmlspecialchars($incident->machine_name ?? '-'); ?></td>
                                         <td class="pl-4">
                                             <?php
                                                 $categories = [
-                                                    'equipment' => 'Thiết Bị',
-                                                    'quality' => 'Chất Lượng',
-                                                    'safety' => 'An Toàn',
-                                                    'other' => 'Khác'
+                                                    'equipment' => ['🔧 Thiết Bị', 'primary'],
+                                                    'quality' => ['✓ Chất Lượng', 'info'],
+                                                    'safety' => ['⚠ An Toàn', 'danger'],
+                                                    'other' => ['• Khác', 'secondary']
                                                 ];
-                                                echo $categories[$incident->category] ?? $incident->category;
+                                                $cat = $categories[$incident->category] ?? ['N/A', 'secondary'];
                                             ?>
+                                            <span class="badge bg-<?= $cat[1]; ?>"><?= $cat[0]; ?></span>
                                         </td>
                                         <td class="pl-4">
                                             <?php
-                                                $severityClass = 'badge-md3-severity-2';
-                                                if ($incident->severity_level == 4) {
-                                                    $severityClass = 'badge-md3-severity-4';
-                                                } elseif ($incident->severity_level == 3) {
-                                                    $severityClass = 'badge-md3-severity-3';
-                                                }
+                                                $severity_map = [
+                                                    1 => ['1', 'success'],
+                                                    2 => ['2', 'warning'],
+                                                    3 => ['3', 'danger'],
+                                                    4 => ['4', 'dark']
+                                                ];
+                                                $sev = $severity_map[$incident->severity_level] ?? ['?', 'secondary'];
                                             ?>
-                                            <span class="<?= $severityClass; ?>">Mức <?= $incident->severity_level; ?></span>
+                                            <span class="badge bg-<?= $sev[1]; ?>">Mức <?= $sev[0]; ?></span>
                                         </td>
                                         <td class="pl-4">
-                                            <?= substr($incident->incident_description, 0, 50); ?>...
-                                        </td>
-                                        <td class="pl-4">
-                                            <a href="<?= site_url('uc16_gn_dp/view/' . $incident->id) . '#assign'; ?>" class="btn btn-sm btn-info">Chi tiết / Điều phối</a>
+                                            <a href="<?= site_url('uc16_gn_dp/view/' . $incident->id); ?>" class="btn btn-sm btn-info">Điều phối</a>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                                 </tbody>
                             </table>
+                            <div class="text-center mt-3">
+                                <a href="<?= site_url('uc16_gn_dp'); ?>" class="btn btn-sm btn-primary">Xem tất cả sự cố →</a>
+                            </div>
                         <?php else: ?>
                             <div class="alert alert-success alert-with-icon" data-notify="container" style="border-radius: 16px; border: 0; box-shadow: var(--md3-shadow-soft);">
                                 <span data-notify="icon" class="material-icons-round">check_circle</span>

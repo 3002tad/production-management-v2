@@ -16,6 +16,8 @@
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>Khu Vực</th>
+                  <th>Dây Chuyền</th>
                   <th>Máy</th>
                   <th>Loại</th>
                   <th>Mức độ</th>
@@ -28,32 +30,19 @@
                 <?php if (!empty($incidents)): foreach ($incidents as $incident): ?>
                   <tr>
                     <td><?= $incident->id; ?></td>
-                    <td>
-                      <?php if (!empty($incident->zone_name)): ?>
-                        <small class="text-muted"><?= htmlspecialchars($incident->zone_name); ?></small> &rarr; 
-                      <?php endif; ?>
-                      <?php if (!empty($incident->line_code)): ?>
-                        <span class="badge badge-secondary"><?= htmlspecialchars($incident->line_code); ?></span>
-                      <?php endif; ?>
-                      <?php if (!empty($incident->machine_code)): ?>
-                        &rarr; <strong><?= htmlspecialchars($incident->machine_code); ?></strong>
-                      <?php else: ?>
-                        <em class="text-muted">(Toàn line)</em>
-                      <?php endif; ?>
-                    </td>
+                    <td><?= htmlspecialchars($incident->zone_name ?? '-'); ?></td>
+                    <td><span class="badge badge-secondary"><?= htmlspecialchars($incident->line_code ?? '-'); ?></span></td>
+                    <td><?= htmlspecialchars($incident->machine_name ?? '-'); ?></td>
                     <td><?= $incident->category; ?></td>
                     <td><?= $incident->severity_level; ?></td>
                     <td><?= ($incident->status == 1) ? 'Đã hoàn thành' : (($incident->status==2)?'Đang báo cáo':'Chưa hoàn thành'); ?></td>
                     <td><?= date('d/m/Y H:i', strtotime($incident->created_at)); ?></td>
                     <td>
                       <a href="<?= site_url('uc16_gn_dp/view/' . $incident->id); ?>" class="btn btn-sm btn-info">Chi tiết / Điều phối</a>
-                      <?php if (!empty($can_assign)): ?>
-                        <a href="<?= site_url('uc16_gn_dp/view/' . $incident->id); ?>#assign" class="btn btn-sm btn-warning">Thông báo sự cố</a>
-                      <?php endif; ?>
                     </td>
                   </tr>
                 <?php endforeach; else: ?>
-                  <tr><td colspan="7" class="text-center">Không có báo cáo sự cố</td></tr>
+                  <tr><td colspan="9" class="text-center">Không có báo cáo sự cố</td></tr>
                 <?php endif; ?>
               </tbody>
             </table>
