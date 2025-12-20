@@ -106,8 +106,6 @@ class Warehouse extends CI_Controller
         $shifts = [];
         $plans = [];
         if ($this->db->table_exists('shift_material_confirmations')) {
-            $has_prod_shifts = $this->db->table_exists('production_shifts');
-            $has_planning = $this->db->table_exists('planning');
             // Get shifts from today and previous days based on confirmed_at
             $shifts = $this->db->query('
                 SELECT DISTINCT
@@ -115,16 +113,8 @@ class Warehouse extends CI_Controller
                     smc.shift_id,
                     smc.plan_id as id_plan,
                     DATE(smc.confirmed_at) as confirmed_date,
-                    ' . ($has_prod_shifts ? '
-                    CASE 
-                        WHEN ps.shift_name IS NOT NULL THEN 
-                            CONCAT(\'[\', DATE_FORMAT(smc.confirmed_at, \'%d/%m\'), \'] #\', smc.shift_id, \' - \', ps.shift_name, \' (\', DATE_FORMAT(ps.start_time, \'%H:%i\'), \' - \', DATE_FORMAT(ps.end_time, \'%H:%i\'), \')\' ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                        ELSE 
-                            CONCAT(\'[\', DATE_FORMAT(smc.confirmed_at, \'%d/%m\'), \'] #\', smc.shift_id ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                    END' : 'CONCAT(\'[\', DATE_FORMAT(smc.confirmed_at, \'%d/%m\'), \'] #\', smc.shift_id, \' - Shift \', smc.shift_id)') . ' as ps_name
+                    CONCAT(smc.shift_id, \' - Shift \', smc.shift_id) as ps_name
                 FROM shift_material_confirmations smc
-                ' . ($has_prod_shifts ? 'LEFT JOIN production_shifts ps ON smc.shift_id = ps.shift_id' : '') . '
-                ' . ($has_planning ? 'LEFT JOIN planning p ON smc.plan_id = p.id_plan' : '') . '
                 WHERE smc.status = \'confirmed\'
                 ORDER BY smc.confirmed_at DESC, smc.shift_id DESC
             ')->result();
@@ -1252,24 +1242,14 @@ class Warehouse extends CI_Controller
         $shifts = [];
         
         if ($this->db->table_exists('shift_material_confirmations')) {
-            $has_prod_shifts = $this->db->table_exists('production_shifts');
-            $has_planning = $this->db->table_exists('planning');
             $shifts = $this->db->query('
                 SELECT DISTINCT
                     smc.shift_id as id_planshift,
                     smc.shift_id,
                     smc.plan_id as id_plan,
                     DATE(smc.confirmed_at) as confirmed_date,
-                    ' . ($has_prod_shifts ? '
-                    CASE 
-                        WHEN ps.shift_name IS NOT NULL THEN 
-                            CONCAT(\'#\', smc.shift_id, \' - \', ps.shift_name, \' (\', DATE_FORMAT(ps.start_time, \'%H:%i\'), \' - \', DATE_FORMAT(ps.end_time, \'%H:%i\'), \')\' ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                        ELSE 
-                            CONCAT(\'#\', smc.shift_id ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                    END' : 'CONCAT(\'#\', smc.shift_id, \' - Shift \', smc.shift_id)') . ' as ps_name
+                    CONCAT(smc.shift_id, \' - Shift \', smc.shift_id) as ps_name
                 FROM shift_material_confirmations smc
-                ' . ($has_prod_shifts ? 'LEFT JOIN production_shifts ps ON smc.shift_id = ps.shift_id' : '') . '
-                ' . ($has_planning ? 'LEFT JOIN planning p ON smc.plan_id = p.id_plan' : '') . '
                 WHERE smc.status = \'confirmed\'
                 AND DATE(smc.confirmed_at) = ?
                 ORDER BY smc.shift_id DESC

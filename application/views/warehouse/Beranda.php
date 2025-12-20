@@ -136,52 +136,6 @@
                 .col-five { flex: 0 0 20%; max-width: 20%; }
             }
             .card.card-stats { height: 100%; }
-            
-            .history-container {
-                max-height: 280px;
-                overflow: hidden;
-                transition: max-height 0.3s ease-in-out;
-                position: relative;
-            }
-            .history-container.expanded {
-                max-height: 1000px;
-            }
-            .history-overlay {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 40px;
-                background: linear-gradient(transparent, rgba(255,255,255,0.8));
-                pointer-events: none;
-                display: block;
-            }
-            .history-container.expanded .history-overlay {
-                display: none;
-            }
-            
-            /* Style for filter inputs */
-            .filter-row .input-group {
-                margin-bottom: 0;
-            }
-            .filter-row select.form-control, 
-            .filter-row input.form-control {
-                border: 1px solid #d2d6da !important;
-                border-radius: 4px !important;
-                padding: 4px 8px !important;
-                background-image: none !important;
-            }
-            .filter-row select.form-control:focus, 
-            .filter-row input.form-control:focus {
-                border-color: #e91e63 !important;
-                box-shadow: inset 0 0 0 1px #e91e63 !important;
-            }
-            .filter-row label {
-                margin-bottom: 2px;
-                font-size: 12px;
-                font-weight: 600;
-                color: #7b809a;
-            }
         </style>
 
         <!-- Nút tạo phiếu được dời vào tiêu đề từng bảng lịch sử -->
@@ -262,7 +216,7 @@
                                             <select name="id_planshift" class="form-control" id="shiftSelect">
                                                 <option value="">-- Chọn ca --</option>
                                                 <?php foreach (($shifts ?? []) as $s): ?>
-                                                        <option value="<?= (int)$s->id_planshift ?>" data-date="<?= $s->confirmed_date ?? '' ?>"><?= htmlspecialchars($s->ps_name ?? '') ?></option>
+                                                        <option value="<?= (int)$s->id_planshift ?>" data-date="<?= $s->start_date ?? '' ?>"><?= htmlspecialchars($s->id_planshift.' - '.($s->ps_name ?? '')) ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
@@ -398,68 +352,36 @@
                         <button id="btnToggleIn" class="btn btn-sm btn-success"><i class="material-icons">arrow_downward</i> Tạo phiếu nhập</button>
                     </div>
                     <div class="card-body table-responsive pt-2" style="padding: 10px;">
-                        <div class="row mb-3 px-2 filter-row">
-                            <div class="col-md-7">
-                                <div class="input-group input-group-static">
-                                    <label>Chọn Nguyên Vật Liệu</label>
-                                    <select id="searchIn" class="form-control">
-                                        <option value="">-- Tất cả NVL --</option>
-                                        <?php 
-                                        $uniqueMaterials = [];
-                                        foreach (($materials ?? []) as $m) {
-                                            $name = $m->material_name ?? ($m->name ?? '');
-                                            if ($name && !isset($uniqueMaterials[$name])) {
-                                                $uniqueMaterials[$name] = true;
-                                                echo '<option value="'.strtolower(htmlspecialchars($name)).'">'.htmlspecialchars($name).'</option>';
-                                            }
-                                        }
-                                        ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-5">
-                                <div class="input-group input-group-static">
-                                    <label>Lọc theo ngày</label>
-                                    <input type="date" id="dateIn" class="form-control">
-                                </div>
-                            </div>
-                        </div>
-                        <div id="containerIn" class="history-container">
-                            <table id="tableStockIn" class="table table-hover table-sm" style="margin-bottom: 0;">
-                                <thead class="text-primary">
-                                    <tr style="height: 28px;">
-                                        <th style="padding: 4px 8px;">Thời gian</th>
-                                        <th style="padding: 4px 8px;">NVL</th>
-                                        <th style="padding: 4px 8px;">SL</th>
-                                        <th style="padding: 4px 8px;">Nhà Cung Cấp</th>
-                                        <th style="padding: 4px 8px;">Tệp</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach (($recent_stock_in ?? []) as $r): ?>
-                                    <tr style="height: 24px;" data-name="<?= strtolower(htmlspecialchars($r->material_name ?? '')) ?>" data-date="<?= substr($r->created_at ?? '', 0, 10) ?>">
-                                        <td style="padding: 4px 8px; white-space: nowrap;"><?= substr(htmlspecialchars($r->created_at ?? ''), 0, 16) ?></td>
-                                        <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->material_name ?? '') ?>"><?= htmlspecialchars(substr($r->material_name ?? ('#'.(int)($r->id_material ?? 0)), 0, 20)) ?></td>
-                                        <td style="padding: 4px 8px;"><?= (int)$r->quantity ?></td>
-                                        <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->supplier ?? '') ?>"><?= htmlspecialchars(substr($r->supplier ?? '-', 0, 15)) ?></td>
-                                        <td style="padding: 4px 8px;">
-                                            <?php if (!empty($r->attachment)): ?>
-                                                <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>" style="padding: 2px 6px; font-size: 12px;">
-                                                    <i class="material-icons" style="font-size:14px; vertical-align:middle;">attach_file</i> Xem
-                                                </a>
-                                            <?php else: ?>
-                                                <span class="text-muted">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                            <div class="history-overlay"></div>
-                        </div>
-                        <div class="text-center mt-2">
-                            <button class="btn btn-link btn-sm text-primary p-0 btn-toggle-history" data-target="containerIn">Xem thêm <i class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_more</i></button>
-                        </div>
+                        <table class="table table-hover table-sm" style="margin-bottom: 0;">
+                            <thead class="text-primary">
+                                <tr style="height: 28px;">
+                                    <th style="padding: 4px 8px;">Thời gian</th>
+                                    <th style="padding: 4px 8px;">NVL</th>
+                                    <th style="padding: 4px 8px;">SL</th>
+                                    <th style="padding: 4px 8px;">Nhà Cung Cấp</th>
+                                    <th style="padding: 4px 8px;">Tệp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach (($recent_stock_in ?? []) as $r): ?>
+                                <tr style="height: 24px;">
+                                    <td style="padding: 4px 8px; white-space: nowrap;"><?= substr(htmlspecialchars($r->created_at ?? ''), 0, 16) ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->material_name ?? '') ?>"><?= htmlspecialchars(substr($r->material_name ?? ('#'.(int)($r->id_material ?? 0)), 0, 20)) ?></td>
+                                    <td style="padding: 4px 8px;"><?= (int)$r->quantity ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->supplier ?? '') ?>"><?= htmlspecialchars(substr($r->supplier ?? '-', 0, 15)) ?></td>
+                                    <td style="padding: 4px 8px;">
+                                        <?php if (!empty($r->attachment)): ?>
+                                            <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>" style="padding: 2px 6px; font-size: 12px;">
+                                                <i class="material-icons" style="font-size:14px; vertical-align:middle;">attach_file</i> Xem
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -473,74 +395,36 @@
                         <button id="btnToggleOut" class="btn btn-sm btn-warning"><i class="material-icons">arrow_upward</i> Tạo phiếu xuất</button>
                     </div>
                     <div class="card-body table-responsive pt-2" style="padding: 10px;">
-                        <div class="row mb-3 px-2 filter-row">
-                            <div class="col-md-4">
-                                <div class="input-group input-group-static">
-                                    <label>Chọn Nguyên Vật Liệu</label>
-                                    <select id="searchOut" class="form-control">
-                                        <option value="">-- Tất cả NVL --</option>
-                                        <?php 
-                                        $uniqueMaterials = [];
-                                        foreach (($materials ?? []) as $m) {
-                                            $name = $m->material_name ?? ($m->name ?? '');
-                                            if ($name && !isset($uniqueMaterials[$name])) {
-                                                $uniqueMaterials[$name] = true;
-                                                echo '<option value="'.strtolower(htmlspecialchars($name)).'">'.htmlspecialchars($name).'</option>';
-                                            }
-                                        }
-                                        ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="input-group input-group-static">
-                                    <label>Tìm kế hoạch</label>
-                                    <input type="text" id="searchPlanOut" class="form-control" placeholder="Nhập tên kế hoạch...">
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="input-group input-group-static">
-                                    <label>Lọc theo ngày</label>
-                                    <input type="date" id="dateOut" class="form-control">
-                                </div>
-                            </div>
-                        </div>
-                        <div id="containerOut" class="history-container">
-                            <table id="tableStockOut" class="table table-hover table-sm" style="margin-bottom: 0;">
-                                <thead class="text-info">
-                                    <tr style="height: 28px;">
-                                        <th style="padding: 4px 8px;">Thời gian</th>
-                                        <th style="padding: 4px 8px;">NVL</th>
-                                        <th style="padding: 4px 8px;">SL</th>
-                                        <th style="padding: 4px 8px;">Kế hoạch</th>
-                                        <th style="padding: 4px 8px;">Tệp</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach (($recent_stock_out ?? []) as $r): ?>
-                                    <tr style="height: 24px;" data-name="<?= strtolower(htmlspecialchars($r->material_name ?? '')) ?>" data-plan="<?= strtolower(htmlspecialchars($r->plan_name ?? '')) ?>" data-date="<?= substr($r->created_at ?? '', 0, 10) ?>">
-                                        <td style="padding: 4px 8px; white-space: nowrap;"><?= substr(htmlspecialchars($r->created_at ?? ''), 0, 16) ?></td>
-                                        <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->material_name ?? '') ?>"><?= htmlspecialchars(substr($r->material_name ?? ('#'.(int)($r->id_material ?? 0)), 0, 20)) ?></td>
-                                        <td style="padding: 4px 8px;"><?= (int)$r->quantity ?></td>
-                                        <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->plan_name ?? '') ?>"><?= htmlspecialchars(substr($r->plan_name ?? '-', 0, 15)) ?></td>
-                                        <td style="padding: 4px 8px;">
-                                            <?php if (!empty($r->attachment)): ?>
-                                                <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>" style="padding: 2px 6px; font-size: 12px;">
-                                                    <i class="material-icons" style="font-size:14px; vertical-align:middle;">attach_file</i> Xem
-                                                </a>
-                                            <?php else: ?>
-                                                <span class="text-muted">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                            <div class="history-overlay"></div>
-                        </div>
-                        <div class="text-center mt-2">
-                            <button class="btn btn-link btn-sm text-info p-0 btn-toggle-history" data-target="containerOut">Xem thêm <i class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_more</i></button>
-                        </div>
+                        <table class="table table-hover table-sm" style="margin-bottom: 0;">
+                            <thead class="text-info">
+                                <tr style="height: 28px;">
+                                    <th style="padding: 4px 8px;">Thời gian</th>
+                                    <th style="padding: 4px 8px;">NVL</th>
+                                    <th style="padding: 4px 8px;">SL</th>
+                                    <th style="padding: 4px 8px;">Kế hoạch</th>
+                                    <th style="padding: 4px 8px;">Tệp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach (($recent_stock_out ?? []) as $r): ?>
+                                <tr style="height: 24px;">
+                                    <td style="padding: 4px 8px; white-space: nowrap;"><?= substr(htmlspecialchars($r->created_at ?? ''), 0, 16) ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->material_name ?? '') ?>"><?= htmlspecialchars(substr($r->material_name ?? ('#'.(int)($r->id_material ?? 0)), 0, 20)) ?></td>
+                                    <td style="padding: 4px 8px;"><?= (int)$r->quantity ?></td>
+                                    <td style="padding: 4px 8px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?= htmlspecialchars($r->plan_name ?? '') ?>"><?= htmlspecialchars(substr($r->plan_name ?? '-', 0, 15)) ?></td>
+                                    <td style="padding: 4px 8px;">
+                                        <?php if (!empty($r->attachment)): ?>
+                                            <a class="btn btn-xs btn-outline-primary" target="_blank" href="<?= base_url($r->attachment) ?>" style="padding: 2px 6px; font-size: 12px;">
+                                                <i class="material-icons" style="font-size:14px; vertical-align:middle;">attach_file</i> Xem
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -615,7 +499,7 @@
                                     let html = '<option value="">-- Chọn ca --</option>';
                                     data.shifts.forEach(function(shift){
                                         const shiftId = parseInt(shift.id_planshift||0);
-                                        const shiftName = shift.ps_name || '';
+                                        const shiftName = shift.id_planshift + ' - ' + (shift.ps_name || '');
                                         html += '<option value="' + shiftId + '">' + shiftName + '</option>';
                                     });
                                     
@@ -835,69 +719,6 @@
                                     }
                                 });
                             }
-
-                            // Setup history table filters
-                            function setupTableFilter(tableId, searchId, dateId, planSearchId) {
-                                var table = document.getElementById(tableId);
-                                var searchInput = document.getElementById(searchId);
-                                var dateInput = document.getElementById(dateId);
-                                var planSearchInput = planSearchId ? document.getElementById(planSearchId) : null;
-                                
-                                if (!table || !searchInput || !dateInput) return;
-
-                                function filter() {
-                                    var searchText = searchInput.value.toLowerCase();
-                                    var filterDate = dateInput.value;
-                                    var planText = planSearchInput ? planSearchInput.value.toLowerCase() : '';
-                                    var rows = table.querySelectorAll('tbody tr');
-
-                                    rows.forEach(function(row) {
-                                        var name = row.getAttribute('data-name') || '';
-                                        var date = row.getAttribute('data-date') || '';
-                                        var plan = row.getAttribute('data-plan') || '';
-                                        var show = true;
-
-                                        if (searchText && name.indexOf(searchText) === -1) {
-                                            show = false;
-                                        }
-                                        if (filterDate && date !== filterDate) {
-                                            show = false;
-                                        }
-                                        if (planText && plan.indexOf(planText) === -1) {
-                                            show = false;
-                                        }
-
-                                        row.style.display = show ? '' : 'none';
-                                    });
-                                }
-
-                                searchInput.addEventListener('change', filter);
-                                searchInput.addEventListener('input', filter);
-                                dateInput.addEventListener('change', filter);
-                                if (planSearchInput) {
-                                    planSearchInput.addEventListener('input', filter);
-                                }
-                            }
-
-                            setupTableFilter('tableStockIn', 'searchIn', 'dateIn');
-                            setupTableFilter('tableStockOut', 'searchOut', 'dateOut', 'searchPlanOut');
-
-                            // Toggle history expansion
-                            document.querySelectorAll('.btn-toggle-history').forEach(function(btn) {
-                                btn.addEventListener('click', function() {
-                                    var targetId = this.getAttribute('data-target');
-                                    var container = document.getElementById(targetId);
-                                    if (!container) return;
-
-                                    if (container.classList.contains('expanded')) {
-                                        container.classList.remove('expanded');
-                                        this.innerHTML = 'Xem thêm <i class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_more</i>';
-                                    } else {
-                                        container.classList.add('expanded');
-                                        this.innerHTML = 'Thu gọn <i class="material-icons" style="font-size: 14px; vertical-align: middle;">expand_less</i>';
-                                    }
-                                });
-                            });
                         })();
                     });
                 </script>
