@@ -106,8 +106,6 @@ class Warehouse extends CI_Controller
         $shifts = [];
         $plans = [];
         if ($this->db->table_exists('shift_material_confirmations')) {
-            $has_prod_shifts = $this->db->table_exists('production_shifts');
-            $has_planning = $this->db->table_exists('planning');
             // Get shifts from today and previous days based on confirmed_at
             $shifts = $this->db->query('
                 SELECT DISTINCT
@@ -115,16 +113,8 @@ class Warehouse extends CI_Controller
                     smc.shift_id,
                     smc.plan_id as id_plan,
                     DATE(smc.confirmed_at) as confirmed_date,
-                    ' . ($has_prod_shifts ? '
-                    CASE 
-                        WHEN ps.shift_name IS NOT NULL THEN 
-                            CONCAT(\'[\', DATE_FORMAT(smc.confirmed_at, \'%d/%m\'), \'] #\', smc.shift_id, \' - \', ps.shift_name, \' (\', DATE_FORMAT(ps.start_time, \'%H:%i\'), \' - \', DATE_FORMAT(ps.end_time, \'%H:%i\'), \')\' ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                        ELSE 
-                            CONCAT(\'[\', DATE_FORMAT(smc.confirmed_at, \'%d/%m\'), \'] #\', smc.shift_id ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                    END' : 'CONCAT(\'[\', DATE_FORMAT(smc.confirmed_at, \'%d/%m\'), \'] #\', smc.shift_id, \' - Shift \', smc.shift_id)') . ' as ps_name
+                    CONCAT(smc.shift_id, \' - Shift \', smc.shift_id) as ps_name
                 FROM shift_material_confirmations smc
-                ' . ($has_prod_shifts ? 'LEFT JOIN production_shifts ps ON smc.shift_id = ps.shift_id' : '') . '
-                ' . ($has_planning ? 'LEFT JOIN planning p ON smc.plan_id = p.id_plan' : '') . '
                 WHERE smc.status = \'confirmed\'
                 ORDER BY smc.confirmed_at DESC, smc.shift_id DESC
             ')->result();
@@ -1252,24 +1242,14 @@ class Warehouse extends CI_Controller
         $shifts = [];
         
         if ($this->db->table_exists('shift_material_confirmations')) {
-            $has_prod_shifts = $this->db->table_exists('production_shifts');
-            $has_planning = $this->db->table_exists('planning');
             $shifts = $this->db->query('
                 SELECT DISTINCT
                     smc.shift_id as id_planshift,
                     smc.shift_id,
                     smc.plan_id as id_plan,
                     DATE(smc.confirmed_at) as confirmed_date,
-                    ' . ($has_prod_shifts ? '
-                    CASE 
-                        WHEN ps.shift_name IS NOT NULL THEN 
-                            CONCAT(\'#\', smc.shift_id, \' - \', ps.shift_name, \' (\', DATE_FORMAT(ps.start_time, \'%H:%i\'), \' - \', DATE_FORMAT(ps.end_time, \'%H:%i\'), \')\' ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                        ELSE 
-                            CONCAT(\'#\', smc.shift_id ' . ($has_planning ? ', \' - \', COALESCE(p.plan_name, \'\')' : '') . ')
-                    END' : 'CONCAT(\'#\', smc.shift_id, \' - Shift \', smc.shift_id)') . ' as ps_name
+                    CONCAT(smc.shift_id, \' - Shift \', smc.shift_id) as ps_name
                 FROM shift_material_confirmations smc
-                ' . ($has_prod_shifts ? 'LEFT JOIN production_shifts ps ON smc.shift_id = ps.shift_id' : '') . '
-                ' . ($has_planning ? 'LEFT JOIN planning p ON smc.plan_id = p.id_plan' : '') . '
                 WHERE smc.status = \'confirmed\'
                 AND DATE(smc.confirmed_at) = ?
                 ORDER BY smc.shift_id DESC
@@ -1749,17 +1729,37 @@ class Warehouse extends CI_Controller
     public function finished_receipt_form()
     {
         $this->load->model('FinishedReceiptModel');
-        $batches = $this->FinishedReceiptModel->getQcPassedBatches();
+        
+        // Clear any previous error flashdata to prevent stale errors showing
+        $this->session->unset_userdata('error');
+        
+        $batches = [];
+        $projects = [];
+        
+        try {
+            $batches = $this->FinishedReceiptModel->getQcPassedBatches();
+        } catch (Exception $e) {
+            log_message('error', 'Error in getQcPassedBatches: ' . $e->getMessage());
+            $batches = [];
+        }
 
         // Load projects list for dropdown with stats
-        $projects = [];
         if ($this->db->table_exists('project')) {
-            $this->db->select('p.id_project, p.project_name, p.qty_request as qty_target');
-            $this->db->select('COALESCE((SELECT SUM(quantity_received) FROM finished_receipt WHERE id_project = p.id_project AND status = "posted"), 0) as qty_received');
-            $this->db->from('project p');
-            // Chỉ lấy các dự án chưa nhập đủ số lượng
-            $this->db->having('qty_received < qty_target');
-            $projects = $this->db->get()->result();
+            try {
+                $projects = $this->db->query('
+                    SELECT 
+                        p.id_project, 
+                        p.project_name, 
+                        p.qty_request as qty_target,
+                        COALESCE((SELECT SUM(quantity_received) FROM finished_receipt WHERE id_project = p.id_project AND status = "posted"), 0) as qty_received
+                    FROM project p
+                    WHERE COALESCE((SELECT SUM(quantity_received) FROM finished_receipt WHERE id_project = p.id_project AND status = "posted"), 0) < p.qty_request
+                    ORDER BY p.project_name
+                ')->result();
+            } catch (Exception $e) {
+                log_message('error', 'Error loading projects: ' . $e->getMessage());
+                $projects = [];
+            }
         }
 
         $data = [
@@ -1814,37 +1814,49 @@ class Warehouse extends CI_Controller
      */
     public function finished_delivery_form()
     {
-        // Compute current stock
-        $current_stock = 0;
-        if ($this->db->table_exists('finished_stock')) {
-            $row = $this->db->select('SUM(quantity_in_stock) as qty')->get('finished_stock')->row();
-            if ($row && isset($row->qty)) {
-                $current_stock = (int)$row->qty;
-            }
-        }
-
         // Load projects (orders) with quantities from finished_issue
         $projects = [];
         if ($this->db->table_exists('project')) {
             $sql = "SELECT 
                       p.id_project,
+                      p.id_product,
                       p.project_name,
                       p.qty_request,
                       COALESCE(SUM(CASE WHEN fi.status IN ('full', 'partial') THEN fi.quantity_issued ELSE 0 END), 0) AS qty_already_issued
                     FROM project p
                     LEFT JOIN finished_issue fi ON p.id_project = fi.id_project
-                    GROUP BY p.id_project, p.project_name, p.qty_request
+                    GROUP BY p.id_project, p.id_product, p.project_name, p.qty_request
                     ORDER BY p.id_project DESC
                     LIMIT 50";
             
             $projects = $this->db->query($sql)->result();
             
-            // Calculate remaining quantities for each project
+            // Calculate remaining quantities and get product-specific stock for each project
             foreach ($projects as $p) {
                 $p->qty_request = (int)$p->qty_request;
                 $p->qty_already_issued = (int)$p->qty_already_issued;
                 $p->qty_remaining = max(0, $p->qty_request - $p->qty_already_issued);
-                $p->qty_available = $current_stock; // Available stock from finished_stock
+                
+                // Get stock for this specific product
+                $p->qty_available = 0;
+                if ($this->db->table_exists('finished_stock') && isset($p->id_product)) {
+                    $stock = $this->db->select('quantity_in_stock')
+                                     ->where('id_product', $p->id_product)
+                                     ->get('finished_stock')
+                                     ->row();
+                    if ($stock) {
+                        $p->qty_available = (int)$stock->quantity_in_stock;
+                    }
+                }
+            }
+        }
+
+        // Compute total current stock for display
+        $current_stock = 0;
+        if ($this->db->table_exists('finished_stock')) {
+            $row = $this->db->select('SUM(quantity_in_stock) as qty')->get('finished_stock')->row();
+            if ($row && isset($row->qty)) {
+                $current_stock = (int)$row->qty;
             }
         }
 
@@ -1979,13 +1991,11 @@ class Warehouse extends CI_Controller
             $this->db->insert('finished_issue', $issue_data);
             $issue_id = $this->db->insert_id();
 
-            // Update stock
+            // Update stock - use model method for consistency
             if ($this->db->table_exists('finished_stock')) {
                 $product_id = $project->id_product ?? 1;
-                $this->db->set('quantity_in_stock', 'quantity_in_stock - ' . $quantity_issued, FALSE)
-                         ->set('quantity_issued', 'quantity_issued + ' . $quantity_issued, FALSE)
-                         ->where('id_product', $product_id)
-                         ->update('finished_stock');
+                $this->load->model('FinishedReceiptModel');
+                $this->FinishedReceiptModel->updateStockAfterIssue($quantity_issued, $product_id);
             }
 
             $this->session->set_flashdata('success', 'Xuất thành công - Phiếu #' . $issue_id);

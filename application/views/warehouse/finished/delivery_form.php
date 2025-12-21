@@ -106,7 +106,7 @@
               <div class="col-md-3">
                 <label class="form-label">Tồn Kho</label>
                 <div class="input-group">
-                  <input type="text" id="qty_avail" class="form-control fw-bold text-info" readonly value="<?= $current_stock; ?>">
+                  <input type="text" id="qty_avail" class="form-control fw-bold text-info" readonly>
                   <span class="input-group-text">cái</span>
                 </div>
               </div>
@@ -151,17 +151,17 @@ function updateProjectInfo() {
   const qtyAvail = parseInt(option.getAttribute('data-qty-avail')) || 0;
   const qtyIssued = parseInt(option.getAttribute('data-qty-issued')) || 0;
   const qtyRemaining = parseInt(option.getAttribute('data-qty-remaining')) || 0;
-  const currentStock = <?= $current_stock; ?>;
 
   document.getElementById('qty_request').value = qtyReq;
   document.getElementById('qty_issued').value = qtyIssued;
   document.getElementById('qty_remaining').value = qtyRemaining;
-  document.getElementById('quantity_issued').value = Math.min(qtyRemaining, currentStock);
-  document.getElementById('quantity_issued').max = currentStock;
+  document.getElementById('qty_avail').value = qtyAvail;
+  document.getElementById('quantity_issued').value = Math.min(qtyRemaining, qtyAvail);
+  document.getElementById('quantity_issued').max = qtyAvail;
   document.getElementById('quantity_issued').focus();
 
   // Show warning if not enough stock
-  if (qtyRemaining > currentStock) {
+  if (qtyRemaining > qtyAvail) {
     document.getElementById('stock-warning').style.display = 'block';
   } else {
     document.getElementById('stock-warning').style.display = 'none';
@@ -170,9 +170,9 @@ function updateProjectInfo() {
 
 // Validate quantity on input
 document.getElementById('quantity_issued')?.addEventListener('input', function() {
-  const max = <?= $current_stock; ?>;
+  const qtyAvail = parseInt(document.getElementById('qty_avail').value) || 0;
   const warning = document.getElementById('stock-warning');
-  if (parseInt(this.value) > max) {
+  if (parseInt(this.value) > qtyAvail) {
     warning.style.display = 'block';
   }
 });

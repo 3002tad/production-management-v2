@@ -202,6 +202,37 @@ class FinishedReceiptModel extends CI_Model {
     }
 
     /**
+     * Update stock after issuing (exporting) finished products
+     */
+    public function updateStockAfterIssue($quantity, $product_id = 1)
+    {
+        if (!$this->db->table_exists('finished_stock')) {
+            return false;
+        }
+
+        // Check if stock record exists and has enough quantity
+        $stock = $this->db->where('id_product', $product_id)->get('finished_stock')->row();
+
+        if ($stock) {
+            if ($stock->quantity_in_stock < $quantity) {
+                // Not enough stock
+                return false;
+            }
+            
+            // Update existing - reduce stock
+            $this->db->where('id_product', $product_id)
+                     ->update('finished_stock', [
+                         'quantity_in_stock' => $stock->quantity_in_stock - $quantity,
+                         'quantity_issued' => (isset($stock->quantity_issued) ? $stock->quantity_issued : 0) + $quantity,
+                         'last_updated' => date('Y-m-d H:i:s')
+                     ]);
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
      * Hủy phiếu nhập
      */
     public function cancelReceipt($receipt_id)

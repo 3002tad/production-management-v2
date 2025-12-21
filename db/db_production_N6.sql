@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 19, 2025 at 03:14 AM
+-- Generation Time: Dec 21, 2025 at 09:59 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -29,7 +29,6 @@ USE `db_production`;
 -- Table structure for table `adjustment_requests`
 --
 
-DROP TABLE IF EXISTS `adjustment_requests`;
 CREATE TABLE `adjustment_requests` (
   `id` int(10) UNSIGNED NOT NULL,
   `code` varchar(50) NOT NULL COMMENT 'Format: AR-YYYYMMDD-NNNN',
@@ -50,7 +49,6 @@ CREATE TABLE `adjustment_requests` (
 -- Table structure for table `audit_log`
 --
 
-DROP TABLE IF EXISTS `audit_log`;
 CREATE TABLE `audit_log` (
   `log_id` bigint(20) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
@@ -205,7 +203,95 @@ INSERT INTO `audit_log` (`log_id`, `user_id`, `username`, `action`, `module`, `r
 (133, 6, 'qc', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:05:47'),
 (134, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:05:55'),
 (135, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:12:39'),
-(136, 8, 'Le Van A', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:12:59');
+(136, 8, 'Le Van A', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:12:59'),
+(137, 8, 'Le Van A', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:19:22'),
+(138, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:34:11'),
+(139, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:41:00'),
+(140, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:42:08'),
+(141, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 02:50:32'),
+(142, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:14:00'),
+(143, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:14:15'),
+(144, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:14:54'),
+(145, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:16:04'),
+(146, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:30:20'),
+(147, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:40:28'),
+(148, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:43:06'),
+(149, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 04:43:11'),
+(150, 6, 'qc', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 05:57:28'),
+(151, 6, 'qc', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 05:59:00'),
+(152, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 05:59:06'),
+(153, 6, 'qc', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 05:59:16'),
+(154, 6, 'qc', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 06:04:16'),
+(155, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 06:04:25'),
+(156, 6, 'qc', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 06:07:26'),
+(157, 6, 'qc', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 06:25:10'),
+(158, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 06:25:16'),
+(159, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 07:29:12'),
+(160, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 18:20:45'),
+(161, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 18:21:22'),
+(162, 6, 'qc', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 18:21:28'),
+(163, 6, 'qc', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 18:23:09'),
+(164, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 18:24:34'),
+(165, 8, 'Le Van A', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 18:29:38'),
+(166, 8, 'Le Van A', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-19 18:32:54'),
+(167, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 06:11:26'),
+(168, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 08:52:22'),
+(169, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 09:04:09'),
+(170, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 10:03:17'),
+(171, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 10:03:27'),
+(172, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:07:00'),
+(173, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:07:20'),
+(174, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:07:26'),
+(175, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:07:58'),
+(176, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:08:09'),
+(177, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:17:28'),
+(178, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:24:28'),
+(179, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:24:37'),
+(180, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 11:50:09'),
+(181, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 14:58:17'),
+(182, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:04:36'),
+(183, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:06:51'),
+(184, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:06:59'),
+(185, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:07:06'),
+(186, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:26:13'),
+(187, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:26:26'),
+(188, 2, 'leader', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:31:40'),
+(189, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:31:46'),
+(190, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 15:38:04'),
+(191, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 16:16:28'),
+(192, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 16:19:27'),
+(193, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 16:19:32'),
+(194, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 17:18:11'),
+(195, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 17:41:54'),
+(196, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 17:41:59'),
+(197, 8, 'Le Van A', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 18:12:13'),
+(198, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 18:13:28'),
+(199, 8, 'Le Van A', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 18:24:13'),
+(200, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 18:24:18'),
+(201, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:24:42'),
+(202, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:26:15'),
+(203, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:30:23'),
+(204, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:31:54'),
+(205, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:32:11'),
+(206, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:33:23'),
+(207, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:34:15'),
+(208, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:36:57'),
+(209, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:37:01'),
+(210, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:41:12'),
+(211, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:41:17'),
+(212, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:43:05'),
+(213, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:51:48'),
+(214, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:53:53'),
+(215, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:54:36'),
+(216, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 19:54:41'),
+(217, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:11:45'),
+(218, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:17:40'),
+(219, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:17:48'),
+(220, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:18:25'),
+(221, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:20:22'),
+(222, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:20:28'),
+(223, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-21 08:27:50'),
+(224, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-21 08:58:39');
 
 -- --------------------------------------------------------
 
@@ -213,7 +299,6 @@ INSERT INTO `audit_log` (`log_id`, `user_id`, `username`, `action`, `module`, `r
 -- Table structure for table `capacity_config`
 --
 
-DROP TABLE IF EXISTS `capacity_config`;
 CREATE TABLE `capacity_config` (
   `id_config` int(11) NOT NULL,
   `level` tinyint(4) NOT NULL,
@@ -242,7 +327,6 @@ INSERT INTO `capacity_config` (`id_config`, `level`, `level_name`, `hours_per_sh
 -- Table structure for table `customer`
 --
 
-DROP TABLE IF EXISTS `customer`;
 CREATE TABLE `customer` (
   `id_cust` int(25) NOT NULL,
   `cust_name` varchar(50) NOT NULL,
@@ -270,7 +354,6 @@ INSERT INTO `customer` (`id_cust`, `cust_name`, `address`, `telp`, `email`, `is_
 -- Table structure for table `defect_reasons`
 --
 
-DROP TABLE IF EXISTS `defect_reasons`;
 CREATE TABLE `defect_reasons` (
   `reason_id` int(11) NOT NULL,
   `reason_code` varchar(50) NOT NULL,
@@ -299,7 +382,6 @@ INSERT INTO `defect_reasons` (`reason_id`, `reason_code`, `reason_name`, `catego
 -- Table structure for table `downtime_reasons`
 --
 
-DROP TABLE IF EXISTS `downtime_reasons`;
 CREATE TABLE `downtime_reasons` (
   `id` int(11) NOT NULL,
   `reason_code` varchar(20) NOT NULL COMMENT 'Mã lý do',
@@ -331,7 +413,6 @@ INSERT INTO `downtime_reasons` (`id`, `reason_code`, `reason_name`, `category`, 
 -- Table structure for table `finished_issue`
 --
 
-DROP TABLE IF EXISTS `finished_issue`;
 CREATE TABLE `finished_issue` (
   `id_issue` int(11) NOT NULL,
   `issue_code` varchar(50) NOT NULL COMMENT 'Mã phiếu xuất',
@@ -345,13 +426,20 @@ CREATE TABLE `finished_issue` (
   `status` enum('full','partial','cancelled') DEFAULT 'full' COMMENT 'Trạng thái: full=giao đủ, partial=giao một phần, cancelled=hủy'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Phiếu xuất giao hàng thành phẩm';
 
+--
+-- Dumping data for table `finished_issue`
+--
+
+INSERT INTO `finished_issue` (`id_issue`, `issue_code`, `id_project`, `quantity_requested`, `quantity_issued`, `created_by`, `created_by_name`, `created_date`, `notes`, `status`) VALUES
+(1, 'XK-20251221152902-701', 1003, 900, 2, 5, 'warehouse', '2025-12-21 15:29:02', '', 'partial'),
+(2, 'XK-20251221155810-628', 1003, 900, 8, 5, 'warehouse', '2025-12-21 15:58:10', '', 'partial');
+
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `finished_receipt`
 --
 
-DROP TABLE IF EXISTS `finished_receipt`;
 CREATE TABLE `finished_receipt` (
   `id_receipt` int(11) NOT NULL,
   `receipt_code` varchar(50) NOT NULL COMMENT 'Mã phiếu nhập (tự động sinh)',
@@ -382,29 +470,24 @@ INSERT INTO `finished_receipt` (`id_receipt`, `receipt_code`, `id_project`, `id_
 --
 -- Triggers `finished_receipt`
 --
-DROP TRIGGER IF EXISTS `before_finished_receipt_insert`;
 DELIMITER $$
 CREATE TRIGGER `before_finished_receipt_insert` BEFORE INSERT ON `finished_receipt` FOR EACH ROW BEGIN
-  DECLARE v_can_receive_fg TINYINT(1);
-  DECLARE v_status VARCHAR(20);
+  DECLARE v_qc_approved INT DEFAULT 0;
   
-  -- If requires_qc_approval is set to true, check QC approval
+  -- Nếu yêu cầu QC duyệt và có liên kết tới ca sản xuất (closure_id)
   IF NEW.requires_qc_approval = 1 AND NEW.id_finished_report IS NOT NULL THEN
-    -- Check if shift_closure is QC approved
-    SELECT can_receive_fg, status INTO v_can_receive_fg, v_status
-    FROM shift_closures
-    WHERE id = NEW.id_finished_report
+    -- Kiểm tra xem ca sản xuất đã được QC duyệt APPROVE chưa thông qua bảng qc_decisions
+    SELECT COUNT(*) INTO v_qc_approved
+    FROM qc_sessions qs
+    JOIN qc_decisions qd ON qs.id = qd.session_id
+    WHERE qs.closure_id = NEW.id_finished_report
+      AND qd.result = 'APPROVE'
     LIMIT 1;
     
-    -- If not approved, raise error
-    IF v_can_receive_fg IS NULL OR v_can_receive_fg = 0 THEN
+    -- Nếu chưa có quyết định APPROVE, chặn việc nhập kho
+    IF v_qc_approved = 0 THEN
       SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'ERRO_QC_NOT_APPROVED: Shift closure chưa được QC duyệt. Không thể nhập kho!';
-    END IF;
-    
-    IF v_status != 'VERIFIED' THEN
-      SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'ERROR_CLOSURE_NOT_VERIFIED: Trạng thái shift closure không hợp lệ';
     END IF;
   END IF;
 END
@@ -417,7 +500,6 @@ DELIMITER ;
 -- Table structure for table `finished_report`
 --
 
-DROP TABLE IF EXISTS `finished_report`;
 CREATE TABLE `finished_report` (
   `id_finished` int(11) NOT NULL,
   `id_project` int(11) NOT NULL,
@@ -440,7 +522,6 @@ INSERT INTO `finished_report` (`id_finished`, `id_project`, `total_finished`, `f
 -- Table structure for table `finished_stock`
 --
 
-DROP TABLE IF EXISTS `finished_stock`;
 CREATE TABLE `finished_stock` (
   `id_stock` int(11) NOT NULL,
   `id_product` int(11) DEFAULT NULL,
@@ -455,7 +536,7 @@ CREATE TABLE `finished_stock` (
 --
 
 INSERT INTO `finished_stock` (`id_stock`, `id_product`, `quantity_in_stock`, `quantity_received`, `quantity_issued`, `last_updated`) VALUES
-(1, 1001, 0, 35, 41000, '2025-12-16 21:33:33'),
+(1, 1001, 0, 35, 41010, '2025-12-21 15:58:10'),
 (5, 1002, 0, 10, 0, '2025-12-15 04:40:56'),
 (6, 1003, 2, 200, 0, '2025-12-18 20:19:30'),
 (7, 1004, 0, 50, 0, '2025-12-16 21:36:31');
@@ -466,7 +547,6 @@ INSERT INTO `finished_stock` (`id_stock`, `id_product`, `quantity_in_stock`, `qu
 -- Table structure for table `incident_coordination`
 --
 
-DROP TABLE IF EXISTS `incident_coordination`;
 CREATE TABLE `incident_coordination` (
   `id` int(10) UNSIGNED NOT NULL,
   `incident_id` int(10) UNSIGNED NOT NULL,
@@ -486,7 +566,6 @@ CREATE TABLE `incident_coordination` (
 -- Table structure for table `incident_reports`
 --
 
-DROP TABLE IF EXISTS `incident_reports`;
 CREATE TABLE `incident_reports` (
   `id` int(11) NOT NULL COMMENT 'ID báo cáo sự cố',
   `user_id` int(11) NOT NULL COMMENT 'Người báo cáo (worker/technical)',
@@ -511,7 +590,8 @@ CREATE TABLE `incident_reports` (
 --
 
 INSERT INTO `incident_reports` (`id`, `user_id`, `id_machine`, `line_id`, `shift_id`, `id_planshift`, `category`, `severity_level`, `incident_description`, `media_path`, `status`, `assignee_id`, `resolution_notes`, `resolved_at`, `created_at`, `updated_at`) VALUES
-(5, 8, 3, 1, NULL, NULL, 'equipment', 1, 'Thiết bị rò rỉ điện', NULL, 0, NULL, NULL, NULL, '2025-12-17 17:27:22', '2025-12-17 17:27:22');
+(5, 8, 3, 1, NULL, NULL, 'equipment', 1, 'Thiết bị rò rỉ điện', NULL, 0, NULL, NULL, NULL, '2025-12-17 17:27:22', '2025-12-20 23:36:11'),
+(6, 8, 3, 1, 14, NULL, 'safety', 2, 'rò rỉ điện gây nguy hiểm', NULL, 0, NULL, NULL, NULL, '2025-12-21 01:23:58', '2025-12-21 01:23:58');
 
 -- --------------------------------------------------------
 
@@ -519,7 +599,6 @@ INSERT INTO `incident_reports` (`id`, `user_id`, `id_machine`, `line_id`, `shift
 -- Table structure for table `machine`
 --
 
-DROP TABLE IF EXISTS `machine`;
 CREATE TABLE `machine` (
   `id_machine` int(50) NOT NULL,
   `machine_name` varchar(50) NOT NULL,
@@ -538,7 +617,6 @@ INSERT INTO `machine` (`id_machine`, `machine_name`, `capacity`, `mc_status`) VA
 --
 -- Triggers `machine`
 --
-DROP TRIGGER IF EXISTS `validate_machine_capacity`;
 DELIMITER $$
 CREATE TRIGGER `validate_machine_capacity` BEFORE INSERT ON `machine` FOR EACH ROW BEGIN
     IF NEW.capacity <= 0 THEN
@@ -561,7 +639,6 @@ DELIMITER ;
 -- Table structure for table `machines`
 --
 
-DROP TABLE IF EXISTS `machines`;
 CREATE TABLE `machines` (
   `id` int(11) NOT NULL,
   `line_id` int(11) DEFAULT NULL,
@@ -590,8 +667,8 @@ CREATE TABLE `machines` (
 INSERT INTO `machines` (`id`, `line_id`, `code`, `name`, `capacity`, `stage_type`, `machine_type`, `equipment_category`, `status`, `machine_role`, `description`, `location`, `purchase_date`, `warranty_until`, `created_at`, `updated_at`, `created_by`, `updated_by`) VALUES
 (1, 1, 'ML001', 'Máy ép nhựa số 1', 1000.00, 'molding', 'production', 'production', 'active', 'primary', 'Máy ép nhựa chính cho sản xuất vỏ bút', 'Khu A - Line 1', NULL, NULL, '2025-12-05 19:12:29', '2025-12-16 14:05:42', 'system', NULL),
 (2, 1, 'ML002', 'Máy ép nhựa số 2', 1200.00, 'molding', 'production', 'production', 'active', 'primary', 'Máy ép nhựa dự phòng', 'Khu A - Line 2', NULL, NULL, '2025-12-05 19:12:29', '2025-12-16 14:05:42', 'system', NULL),
-(3, 1, 'AS001', 'Dây chuyền lắp ráp 1', 800.00, 'assembly', 'production', 'production', 'active', 'primary', 'Dây chuyền lắp ráp chính', 'Khu B - Line 1', NULL, NULL, '2025-12-05 19:12:29', '2025-12-16 14:05:42', 'system', NULL),
-(4, 2, 'AS002', 'Dây chuyền lắp ráp 2', 750.00, 'assembly', 'production', 'production', 'maintenance', 'primary', 'Dây chuyền lắp ráp phụ', 'Khu B - Line 2', NULL, NULL, '2025-12-05 19:12:29', '2025-12-16 14:05:42', 'system', NULL),
+(3, 1, 'AS001', 'Máy lắp ráp 1', 800.00, 'assembly', 'production', 'production', 'active', 'primary', 'Dây chuyền lắp ráp chính', 'Khu B - Line 1', NULL, NULL, '2025-12-05 19:12:29', '2025-12-20 10:53:09', 'system', NULL),
+(4, 2, 'AS002', 'Máy lắp ráp 2', 750.00, 'assembly', 'production', 'production', 'maintenance', 'primary', 'Dây chuyền lắp ráp phụ', 'Khu B - Line 2', NULL, NULL, '2025-12-05 19:12:29', '2025-12-20 10:53:24', 'system', NULL),
 (5, 2, 'PK001', 'Máy đóng gói tự động', 2000.00, 'packaging', 'production', 'production', 'active', 'primary', 'Máy đóng gói và dán nhãn tự động', 'Khu C - Line 1', NULL, NULL, '2025-12-05 19:12:29', '2025-12-16 14:05:42', 'system', NULL),
 (6, 2, 'QC001', 'Máy kiểm tra chất lượng', 500.00, 'quality_check', 'quality_control', 'quality_control', 'active', 'primary', 'Máy kiểm tra tự động', 'Khu D - QC', NULL, NULL, '2025-12-05 19:12:29', '2025-12-18 12:59:54', 'system', NULL);
 
@@ -601,7 +678,6 @@ INSERT INTO `machines` (`id`, `line_id`, `code`, `name`, `capacity`, `stage_type
 -- Table structure for table `machine_breakdown_logs`
 --
 
-DROP TABLE IF EXISTS `machine_breakdown_logs`;
 CREATE TABLE `machine_breakdown_logs` (
   `log_id` int(11) NOT NULL,
   `shift_id` int(11) NOT NULL,
@@ -620,7 +696,6 @@ CREATE TABLE `machine_breakdown_logs` (
 -- Table structure for table `machine_maintenances`
 --
 
-DROP TABLE IF EXISTS `machine_maintenances`;
 CREATE TABLE `machine_maintenances` (
   `id` int(11) NOT NULL,
   `machine_id` int(11) NOT NULL,
@@ -655,7 +730,6 @@ INSERT INTO `machine_maintenances` (`id`, `machine_id`, `title`, `description`, 
 -- Table structure for table `machine_status_logs`
 --
 
-DROP TABLE IF EXISTS `machine_status_logs`;
 CREATE TABLE `machine_status_logs` (
   `id` int(11) NOT NULL,
   `machine_id` int(11) NOT NULL,
@@ -686,7 +760,6 @@ INSERT INTO `machine_status_logs` (`id`, `machine_id`, `old_status`, `new_status
 -- Table structure for table `material`
 --
 
-DROP TABLE IF EXISTS `material`;
 CREATE TABLE `material` (
   `id_material` int(50) NOT NULL,
   `material_name` varchar(50) NOT NULL,
@@ -708,17 +781,16 @@ CREATE TABLE `material` (
 INSERT INTO `material` (`id_material`, `material_name`, `stock`, `min_stock`, `uom`, `material_type`, `supplier`, `date_entry`, `attachment`, `created_at`, `updated_at`) VALUES
 (1001, 'Test Matereal', 5000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL),
 (1002, 'Nhựa ABS', 10000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL),
-(1003, 'Mực gel xanh', 5000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL),
-(1004, 'Mực gel đen', 5000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL),
+(1003, 'Mực gel xanh', 50000, 0, 'g', NULL, NULL, NULL, NULL, NULL, '2025-12-19 05:42:06'),
+(1004, 'Mực gel đen', 50000, 0, 'g', NULL, NULL, NULL, NULL, NULL, '2025-12-19 05:42:03'),
 (1005, 'Bi kim loại 0.5mm', 2000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL),
 (1006, 'Bi kim loại 0.7mm', 3000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL),
 (1007, 'Bi kim loại 1.0mm', 2000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL),
-(1008, 'Lò xo thép', 1000, 0, 'g', NULL, NULL, NULL, NULL, NULL, NULL);
+(1008, 'Lò xo thép', 10000, 0, 'g', NULL, NULL, NULL, NULL, NULL, '2025-12-19 05:42:31');
 
 --
 -- Triggers `material`
 --
-DROP TRIGGER IF EXISTS `validate_material_stock`;
 DELIMITER $$
 CREATE TRIGGER `validate_material_stock` BEFORE INSERT ON `material` FOR EACH ROW BEGIN
     IF NEW.stock < 0 THEN
@@ -735,7 +807,6 @@ DELIMITER ;
 -- Table structure for table `modules`
 --
 
-DROP TABLE IF EXISTS `modules`;
 CREATE TABLE `modules` (
   `module_id` int(11) NOT NULL,
   `module_name` varchar(50) NOT NULL,
@@ -779,7 +850,6 @@ INSERT INTO `modules` (`module_id`, `module_name`, `module_display_name`, `descr
 -- Table structure for table `permissions`
 --
 
-DROP TABLE IF EXISTS `permissions`;
 CREATE TABLE `permissions` (
   `permission_id` int(11) NOT NULL,
   `module_id` int(11) DEFAULT NULL,
@@ -976,7 +1046,6 @@ INSERT INTO `permissions` (`permission_id`, `module_id`, `permission_name`, `per
 -- Table structure for table `planning`
 --
 
-DROP TABLE IF EXISTS `planning`;
 CREATE TABLE `planning` (
   `id_plan` int(15) NOT NULL,
   `plan_name` varchar(25) NOT NULL,
@@ -999,7 +1068,7 @@ CREATE TABLE `planning` (
 --
 
 INSERT INTO `planning` (`id_plan`, `plan_name`, `id_project`, `qty_target`, `end_date`, `pl_status`, `start_date`, `created_at`, `updated_at`, `note`, `suggested_shifts`, `materials`, `lines`, `needs_review`) VALUES
-(1001, 'Plan-test', 1001, 2000, '2023-11-14', 1, NULL, '2025-12-16 10:25:51', '2025-12-16 10:29:43', NULL, NULL, NULL, NULL, 0),
+(1001, 'Plan-test', 1001, 2000, '2023-11-14', 1, NULL, '2025-12-16 10:25:51', '2025-12-20 23:21:11', NULL, 3, NULL, NULL, 0),
 (1087, 'KH-1001-1765116526', 1001, 9965, '2023-11-06', 1, '2023-11-04', '2025-12-07 21:08:46', '2025-12-07 21:08:46', NULL, 4, '[\"Bi kim loại 0.7mm — Yêu cầu: 9,965 — Thiếu: 6,965\",\"Lò xo thép — Yêu cầu: 9,965 — Thiếu: 8,965\"]', 'Dây chuyền 1 (công suất: 500.00)', 0);
 
 -- --------------------------------------------------------
@@ -1008,7 +1077,6 @@ INSERT INTO `planning` (`id_plan`, `plan_name`, `id_project`, `qty_target`, `end
 -- Table structure for table `plan_shift`
 --
 
-DROP TABLE IF EXISTS `plan_shift`;
 CREATE TABLE `plan_shift` (
   `id_planshift` int(15) NOT NULL,
   `id_plan` int(15) NOT NULL,
@@ -1032,7 +1100,6 @@ INSERT INTO `plan_shift` (`id_planshift`, `id_plan`, `id_shift`, `id_staff`, `st
 -- Table structure for table `product`
 --
 
-DROP TABLE IF EXISTS `product`;
 CREATE TABLE `product` (
   `id_product` int(25) NOT NULL,
   `product_name` varchar(50) NOT NULL,
@@ -1051,9 +1118,9 @@ CREATE TABLE `product` (
 --
 
 INSERT INTO `product` (`id_product`, `product_name`, `summary`, `application`, `diameter`, `bom`, `is_active`, `created_at`, `updated_at`, `created_by`) VALUES
-(1001, 'Bút bi TL-079', 'Bút bi mực gel, thân nhựa trong suốt, viết mượt', 'Xanh dương', 0.5, NULL, 1, '2025-12-18 18:51:41', '2025-12-18 18:51:41', NULL),
+(1001, 'Bút bi TL-079', 'Bút bi mực gel, thân nhựa trong suốt, viết mượt', 'Xanh dương', 0.5, '[{\"id_material\":\"1005\",\"material_name\":\"Bi kim loại 0.5mm\",\"quantity_per_unit\":1,\"uom\":\"g\"},{\"id_material\":\"1008\",\"material_name\":\"Lò xo thép\",\"quantity_per_unit\":1,\"uom\":\"g\"},{\"id_material\":\"1004\",\"material_name\":\"Mực gel đen\",\"quantity_per_unit\":5,\"uom\":\"g\"},{\"id_material\":\"1002\",\"material_name\":\"Nhựa ABS\",\"quantity_per_unit\":5,\"uom\":\"g\"}]', 1, '2025-12-18 18:51:41', '2025-12-19 05:24:50', NULL),
 (1002, 'Bút bi TL-050', 'Bút bi dầu, thân nhựa màu, giá rẻ', 'Đen', 0.5, NULL, 1, '2025-12-18 18:51:41', '2025-12-18 18:51:41', NULL),
-(1003, 'Bút bi TL-100', 'Bút bi cao cấp, thân kim loại', 'Đỏ', 0.5, NULL, 1, '2025-12-18 18:51:41', '2025-12-18 18:51:41', NULL),
+(1003, 'Bút bi TL-100', 'Bút bi cao cấp, thân kim loại', 'Đỏ', 0.5, '[{\"id_material\":\"1005\",\"material_name\":\"Bi kim loại 0.5mm\",\"quantity_per_unit\":1,\"uom\":\"g\"},{\"id_material\":\"1008\",\"material_name\":\"Lò xo thép\",\"quantity_per_unit\":1,\"uom\":\"g\"},{\"id_material\":\"1004\",\"material_name\":\"Mực gel đen\",\"quantity_per_unit\":5,\"uom\":\"g\"},{\"id_material\":\"1002\",\"material_name\":\"Nhựa ABS\",\"quantity_per_unit\":5,\"uom\":\"g\"}]', 1, '2025-12-18 18:51:41', '2025-12-19 04:41:49', NULL),
 (1004, 'Bút bi TL-Multi', 'Bút bi 4 màu, đa năng', 'Nhiều màu', 0.5, NULL, 1, '2025-12-18 18:51:41', '2025-12-18 18:51:41', NULL),
 (1005, 'bút mực', NULL, 'tím', 0.7, NULL, 1, '2025-12-18 18:51:41', '2025-12-18 18:51:41', NULL);
 
@@ -1063,7 +1130,6 @@ INSERT INTO `product` (`id_product`, `product_name`, `summary`, `application`, `
 -- Table structure for table `production_lines`
 --
 
-DROP TABLE IF EXISTS `production_lines`;
 CREATE TABLE `production_lines` (
   `id` int(11) NOT NULL,
   `zone_id` int(11) DEFAULT NULL,
@@ -1094,7 +1160,6 @@ INSERT INTO `production_lines` (`id`, `zone_id`, `line_code`, `line_name`, `line
 -- Table structure for table `production_records`
 --
 
-DROP TABLE IF EXISTS `production_records`;
 CREATE TABLE `production_records` (
   `id` int(11) NOT NULL,
   `shift_id` int(11) NOT NULL COMMENT 'ID ca làm việc',
@@ -1123,7 +1188,10 @@ INSERT INTO `production_records` (`id`, `shift_id`, `machine_id`, `staff_id`, `t
 (2, 1, 2, 8, '2025-12-18 23:34:32', 52, 2, 62, 0, NULL, 87.10, 4.75, NULL, 1, '2025-12-18 16:34:32', '2025-12-18 16:34:32'),
 (3, 1, 3, 8, '2025-12-18 23:34:32', 117, 4, 140, 0, NULL, 86.43, 3.70, NULL, 1, '2025-12-18 16:34:32', '2025-12-18 16:34:32'),
 (4, 3, 5, 8, '2025-12-19 00:56:37', 188, 9, 225, 13, 'Vấn đề chất lượng', 87.56, 5.13, NULL, 1, '2025-12-18 17:56:37', '2025-12-18 17:56:37'),
-(5, 3, 6, 6, '2025-12-19 00:56:37', 120, 4, 144, 0, NULL, 86.11, 3.75, NULL, 1, '2025-12-18 17:56:37', '2025-12-18 17:56:37');
+(5, 3, 6, 6, '2025-12-19 00:56:37', 120, 4, 144, 0, NULL, 86.11, 3.75, NULL, 1, '2025-12-18 17:56:37', '2025-12-18 17:56:37'),
+(21, 14, 1, 8, '2025-12-20 23:32:57', 94, 4, 112, 0, NULL, 87.50, 5.14, NULL, 1, '2025-12-20 16:32:57', '2025-12-20 16:32:57'),
+(22, 14, 2, 8, '2025-12-20 23:32:57', 144, 1, 172, 0, NULL, 84.30, 1.14, NULL, 1, '2025-12-20 16:32:57', '2025-12-20 16:32:57'),
+(23, 14, 3, 8, '2025-12-20 23:32:57', 183, 13, 219, 0, NULL, 89.50, 7.29, NULL, 1, '2025-12-20 16:32:57', '2025-12-20 16:32:57');
 
 -- --------------------------------------------------------
 
@@ -1131,7 +1199,6 @@ INSERT INTO `production_records` (`id`, `shift_id`, `machine_id`, `staff_id`, `t
 -- Table structure for table `production_shifts`
 --
 
-DROP TABLE IF EXISTS `production_shifts`;
 CREATE TABLE `production_shifts` (
   `shift_id` int(11) NOT NULL,
   `shift_code` varchar(50) NOT NULL COMMENT 'Mã ca: CA01, CA02...',
@@ -1165,7 +1232,7 @@ CREATE TABLE `production_shifts` (
 INSERT INTO `production_shifts` (`shift_id`, `shift_code`, `shift_name`, `line_id`, `id_plan`, `shift_date`, `start_time`, `end_time`, `target_quantity`, `actual_quantity`, `shift_status`, `started_at`, `started_by`, `ended_at`, `ended_by`, `is_closed`, `staff_status`, `machine_status`, `leader_id`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
 (1, 'CA-S-001', 'Ca Sáng - Dây chuyền 1', 1, 1001, '2025-12-16', '07:00:00', '15:00:00', 500, 0, 3, '2025-12-19 00:41:23', 2, '2025-12-19 00:44:44', 2, 1, 'insufficient', 'unassigned', NULL, 'Ca sáng hôm nay', 1, '2025-12-16 11:14:22', '2025-12-18 17:44:44'),
 (3, 'CA-S-002', 'Ca Sáng - Dây chuyền 2', 2, 1001, '2025-12-16', '07:00:00', '15:00:00', 800, 0, 3, '2025-12-19 00:56:22', 2, '2025-12-19 00:57:02', 2, 1, 'pending', 'unassigned', NULL, NULL, 1, '2025-12-16 11:14:22', '2025-12-18 17:57:02'),
-(12, '', 'Ca Sáng', 1, 1087, '2025-12-19', '07:00:00', '09:30:00', 2000, 0, 1, NULL, NULL, NULL, NULL, 0, 'pending', 'unassigned', NULL, '', 2, '2025-12-18 19:13:11', '2025-12-18 19:13:11');
+(14, 'CA3', 'Ca Sáng', 1, 1087, '2025-12-20', '05:30:00', '11:00:00', 100, 0, 2, '2025-12-21 01:13:41', 2, NULL, NULL, 0, 'pending', 'unassigned', NULL, '', 2, '2025-12-20 16:32:13', '2025-12-20 18:13:41');
 
 -- --------------------------------------------------------
 
@@ -1173,7 +1240,6 @@ INSERT INTO `production_shifts` (`shift_id`, `shift_code`, `shift_name`, `line_i
 -- Table structure for table `project`
 --
 
-DROP TABLE IF EXISTS `project`;
 CREATE TABLE `project` (
   `id_project` int(25) NOT NULL,
   `project_name` varchar(50) NOT NULL,
@@ -1193,17 +1259,18 @@ CREATE TABLE `project` (
   `warning_details` longtext DEFAULT NULL,
   `capacity_level_used` tinyint(4) DEFAULT 1,
   `material_shifts_available` int(11) DEFAULT NULL,
-  `finished_stock_available` int(11) DEFAULT 0
+  `finished_stock_available` int(11) DEFAULT 0,
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng dự án - qty_request: cái (số lượng bút), diameter: mm (đường kính bi)';
 
 --
 -- Dumping data for table `project`
 --
 
-INSERT INTO `project` (`id_project`, `project_name`, `id_cust`, `id_product`, `diameter`, `qty_request`, `entry_date`, `pr_status`, `risk_flag`, `customer_request`, `created_at`, `stock_allocation`, `cancel_reason`, `warning_flag`, `warning_type`, `warning_details`, `capacity_level_used`, `material_shifts_available`, `finished_stock_available`) VALUES
-(1001, 'PJ-TEST', 1001, 1001, 7.0, 10000, '2023-11-06', 1, 0, NULL, '2025-11-02 12:20:42', NULL, NULL, 0, NULL, NULL, 1, NULL, 0),
-(1002, 'ORD-1001', 1001, 1001, 0.5, 300, '2025-12-30', 1, 0, NULL, '2025-12-13 17:00:00', '{\"from_stock\":0,\"for_production\":300}', NULL, 1, 'ok', '{}', 1, 1, 0),
-(1003, 'ORD-1002', 1001, 1001, 0.5, 900, '2025-12-25', 1, 0, NULL, '2025-12-13 17:00:00', '{\"from_stock\":0,\"for_production\":900}', NULL, 1, 'material_shortage', '{}', 1, 1, 0);
+INSERT INTO `project` (`id_project`, `project_name`, `id_cust`, `id_product`, `diameter`, `qty_request`, `entry_date`, `pr_status`, `risk_flag`, `customer_request`, `created_at`, `stock_allocation`, `cancel_reason`, `warning_flag`, `warning_type`, `warning_details`, `capacity_level_used`, `material_shifts_available`, `finished_stock_available`, `updated_at`) VALUES
+(1001, 'PJ-TEST', 1001, 1001, 7.0, 10000, '2023-11-06', 1, 0, NULL, '2025-11-02 12:20:42', NULL, NULL, 0, NULL, NULL, 1, NULL, 0, '2025-12-20 09:03:50'),
+(1002, 'ORD-1001', 1001, 1001, 0.5, 300, '2025-12-30', 1, 0, NULL, '2025-12-13 17:00:00', '{\"from_stock\":0,\"for_production\":300}', NULL, 1, 'ok', '{}', 1, 1, 0, '2025-12-20 09:03:50'),
+(1003, 'ORD-1002', 1001, 1001, 0.5, 900, '2025-12-25', 1, 0, NULL, '2025-12-13 17:00:00', '{\"from_stock\":0,\"for_production\":900}', NULL, 1, 'material_shortage', '{}', 1, 1, 0, '2025-12-20 09:03:50');
 
 -- --------------------------------------------------------
 
@@ -1211,7 +1278,6 @@ INSERT INTO `project` (`id_project`, `project_name`, `id_cust`, `id_product`, `d
 -- Table structure for table `p_machine`
 --
 
-DROP TABLE IF EXISTS `p_machine`;
 CREATE TABLE `p_machine` (
   `id_pmachine` int(15) NOT NULL,
   `id_planshift` int(15) NOT NULL,
@@ -1232,7 +1298,6 @@ INSERT INTO `p_machine` (`id_pmachine`, `id_planshift`, `id_machine`, `mc_stats`
 -- Table structure for table `p_material`
 --
 
-DROP TABLE IF EXISTS `p_material`;
 CREATE TABLE `p_material` (
   `id_pmaterial` int(15) NOT NULL,
   `id_planshift` int(15) NOT NULL,
@@ -1253,7 +1318,6 @@ INSERT INTO `p_material` (`id_pmaterial`, `id_planshift`, `id_material`, `used_s
 -- Table structure for table `qc_attachments`
 --
 
-DROP TABLE IF EXISTS `qc_attachments`;
 CREATE TABLE `qc_attachments` (
   `id` int(10) UNSIGNED NOT NULL,
   `session_id` int(10) UNSIGNED NOT NULL COMMENT 'FK to qc_sessions.id',
@@ -1271,7 +1335,6 @@ CREATE TABLE `qc_attachments` (
 -- Table structure for table `qc_checklist_master`
 --
 
-DROP TABLE IF EXISTS `qc_checklist_master`;
 CREATE TABLE `qc_checklist_master` (
   `id` int(10) UNSIGNED NOT NULL,
   `code` varchar(50) NOT NULL COMMENT 'Checklist item code',
@@ -1301,7 +1364,12 @@ INSERT INTO `qc_checklist_master` (`id`, `code`, `product_code`, `variant`, `ite
 (6, 'CHK-BP-002-01', 'PROD-BP-002', NULL, 'Visual Inspection - Body Defects', 'Check for cracks, scratches, discoloration on pen body', 50, 2.50, 'visual', 1, 1, '2025-11-02 14:34:42', '2025-11-02 14:34:42'),
 (7, 'CHK-BP-002-02', 'PROD-BP-002', NULL, 'Ink Flow Test', 'Write 10 meters continuously without skipping', 20, 1.50, 'functional', 2, 1, '2025-11-02 14:34:42', '2025-11-02 14:34:42'),
 (8, 'CHK-BP-002-03', 'PROD-BP-002', NULL, 'Cap Fit Test', 'Cap must fit snugly without wobbling', 30, 2.00, 'functional', 3, 1, '2025-11-02 14:34:42', '2025-11-02 14:34:42'),
-(9, 'CHK-BP-002-04', 'PROD-BP-002', NULL, 'Red Ink Color Match', 'Color must match approved red standard', 25, 1.50, 'visual', 4, 1, '2025-11-02 14:34:42', '2025-11-02 14:34:42');
+(9, 'CHK-BP-002-04', 'PROD-BP-002', NULL, 'Red Ink Color Match', 'Color must match approved red standard', 25, 1.50, 'visual', 4, 1, '2025-11-02 14:34:42', '2025-11-02 14:34:42'),
+(10, 'CHK-TL-079-01', 'Bút bi TL-079', 'Xanh dương', 'Visual Inspection - Body Defects', 'Check for cracks, scratches, discoloration on pen body', 50, 2.50, 'visual', 1, 1, '2025-12-19 06:07:16', '2025-12-19 06:07:16'),
+(11, 'CHK-TL-079-02', 'Bút bi TL-079', 'Xanh dương', 'Ink Flow Test', 'Write 10 meters continuously without skipping', 20, 1.50, 'functional', 2, 1, '2025-12-19 06:07:16', '2025-12-19 06:07:16'),
+(12, 'CHK-TL-079-03', 'Bút bi TL-079', 'Xanh dương', 'Dimensional Check - Length', 'Length must be 145mm ± 0.5mm', 30, 2.50, 'dimensional', 3, 1, '2025-12-19 06:07:16', '2025-12-19 06:07:16'),
+(13, 'CHK-TL-079-04', 'Bút bi TL-079', 'Xanh dương', 'Clip Strength Test', 'Clip must withstand 500g pull force', 15, 1.00, 'functional', 4, 1, '2025-12-19 06:07:16', '2025-12-19 06:07:16'),
+(14, 'CHK-TL-079-05', 'Bút bi TL-079', 'Xanh dương', 'Ink Color Consistency', 'Color must match Pantone standard within tolerance', 25, 2.00, 'visual', 5, 1, '2025-12-19 06:07:16', '2025-12-19 06:07:16');
 
 -- --------------------------------------------------------
 
@@ -1309,7 +1377,6 @@ INSERT INTO `qc_checklist_master` (`id`, `code`, `product_code`, `variant`, `ite
 -- Table structure for table `qc_config`
 --
 
-DROP TABLE IF EXISTS `qc_config`;
 CREATE TABLE `qc_config` (
   `id` int(10) UNSIGNED NOT NULL,
   `config_key` varchar(100) NOT NULL,
@@ -1334,7 +1401,6 @@ INSERT INTO `qc_config` (`id`, `config_key`, `config_value`, `description`, `upd
 -- Table structure for table `qc_decisions`
 --
 
-DROP TABLE IF EXISTS `qc_decisions`;
 CREATE TABLE `qc_decisions` (
   `id` int(10) UNSIGNED NOT NULL,
   `session_id` int(10) UNSIGNED NOT NULL COMMENT 'FK to qc_sessions.id',
@@ -1347,13 +1413,19 @@ CREATE TABLE `qc_decisions` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='QC final decisions';
 
+--
+-- Dumping data for table `qc_decisions`
+--
+
+INSERT INTO `qc_decisions` (`id`, `session_id`, `result`, `aql`, `defect_rate`, `reason`, `decided_at`, `decided_by`, `created_at`) VALUES
+(11, 15, 'APPROVE', 2.50, 0.00, NULL, '2025-12-19 13:15:51', 'qc', '2025-12-19 06:15:51');
+
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `qc_items`
 --
 
-DROP TABLE IF EXISTS `qc_items`;
 CREATE TABLE `qc_items` (
   `id` int(10) UNSIGNED NOT NULL,
   `session_id` int(10) UNSIGNED NOT NULL COMMENT 'FK to qc_sessions.id',
@@ -1369,13 +1441,23 @@ CREATE TABLE `qc_items` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='QC checklist item inspection results';
 
+--
+-- Dumping data for table `qc_items`
+--
+
+INSERT INTO `qc_items` (`id`, `session_id`, `checklist_item_code`, `checklist_item_name`, `measure_value`, `defect_code`, `defect_count`, `severity`, `result`, `note`, `created_at`, `updated_at`) VALUES
+(30, 15, 'CHK-TL-079-01', NULL, NULL, NULL, 0, NULL, 'PASS', NULL, '2025-12-19 06:07:45', '2025-12-19 06:07:45'),
+(31, 15, 'CHK-TL-079-02', NULL, NULL, NULL, 0, NULL, 'PASS', NULL, '2025-12-19 06:07:45', '2025-12-19 06:07:45'),
+(32, 15, 'CHK-TL-079-03', NULL, NULL, NULL, 0, NULL, 'PASS', NULL, '2025-12-19 06:07:45', '2025-12-19 06:07:45'),
+(33, 15, 'CHK-TL-079-04', NULL, NULL, NULL, 0, NULL, 'PASS', NULL, '2025-12-19 06:07:45', '2025-12-19 06:07:45'),
+(34, 15, 'CHK-TL-079-05', NULL, NULL, NULL, 0, NULL, 'PASS', NULL, '2025-12-19 06:07:45', '2025-12-19 06:07:45');
+
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `qc_sessions`
 --
 
-DROP TABLE IF EXISTS `qc_sessions`;
 CREATE TABLE `qc_sessions` (
   `id` int(10) UNSIGNED NOT NULL,
   `code` varchar(50) NOT NULL COMMENT 'Format: QCS-YYYYMMDD-NNNN',
@@ -1388,13 +1470,20 @@ CREATE TABLE `qc_sessions` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='QC inspection session records';
 
+--
+-- Dumping data for table `qc_sessions`
+--
+
+INSERT INTO `qc_sessions` (`id`, `code`, `closure_id`, `inspector_code`, `inspector_name`, `started_at`, `status`, `created_at`, `updated_at`) VALUES
+(14, 'QCS-20251219-0001', 2, 'qc', 'Phạm Văn D - Nhân viên QC', '2025-12-19 12:57:32', 'OPEN', '2025-12-19 05:57:32', '2025-12-19 05:57:32'),
+(15, 'QCS-20251219-0002', 1, 'qc', 'Phạm Văn D - Nhân viên QC', '2025-12-19 13:07:30', 'DECIDED', '2025-12-19 06:07:30', '2025-12-19 06:15:51');
+
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `roles`
 --
 
-DROP TABLE IF EXISTS `roles`;
 CREATE TABLE `roles` (
   `role_id` int(11) NOT NULL,
   `role_name` varchar(50) NOT NULL,
@@ -1425,7 +1514,6 @@ INSERT INTO `roles` (`role_id`, `role_name`, `role_display_name`, `description`,
 -- Table structure for table `role_permissions`
 --
 
-DROP TABLE IF EXISTS `role_permissions`;
 CREATE TABLE `role_permissions` (
   `id` int(11) NOT NULL,
   `role_id` int(11) NOT NULL,
@@ -1726,7 +1814,6 @@ INSERT INTO `role_permissions` (`id`, `role_id`, `permission_id`, `created_at`) 
 -- Table structure for table `shiftment`
 --
 
-DROP TABLE IF EXISTS `shiftment`;
 CREATE TABLE `shiftment` (
   `id_shift` int(11) NOT NULL,
   `shift_name` varchar(50) NOT NULL,
@@ -1749,7 +1836,6 @@ INSERT INTO `shiftment` (`id_shift`, `shift_name`, `start_time`, `end_time`) VAL
 -- Table structure for table `shift_closures`
 --
 
-DROP TABLE IF EXISTS `shift_closures`;
 CREATE TABLE `shift_closures` (
   `closure_id` int(11) NOT NULL,
   `shift_id` int(11) NOT NULL,
@@ -1778,7 +1864,7 @@ CREATE TABLE `shift_closures` (
 --
 
 INSERT INTO `shift_closures` (`closure_id`, `shift_id`, `closure_code`, `closure_date`, `closed_by`, `total_target`, `total_produced`, `total_good`, `total_defect`, `total_downtime`, `efficiency_rate`, `defect_rate`, `has_warnings`, `warning_details`, `notes`, `confirmed_quantities`, `status`, `warehouse_request_id`, `created_at`, `updated_at`) VALUES
-(1, 1, 'SC-20251219-001', '2025-12-19 00:44:44', 2, 401, 344, 335, 9, 26, 85.79, 2.62, 0, NULL, '', '{\"1\":{\"good\":166,\"defect\":3},\"2\":{\"good\":52,\"defect\":2},\"3\":{\"good\":117,\"defect\":4}}', 'confirmed', 1, '2025-12-18 17:44:44', '2025-12-18 17:44:44'),
+(1, 1, 'SC-20251219-001', '2025-12-19 00:44:44', 2, 401, 344, 335, 9, 26, 85.79, 2.62, 0, NULL, '', '{\"1\":{\"good\":166,\"defect\":3},\"2\":{\"good\":52,\"defect\":2},\"3\":{\"good\":117,\"defect\":4}}', '', 1, '2025-12-18 17:44:44', '2025-12-19 06:15:51'),
 (2, 3, 'SC-20251219-002', '2025-12-19 00:57:02', 2, 369, 321, 308, 13, 13, 86.99, 4.05, 1, '[{\"type\":\"warning\",\"machine_id\":\"5\",\"machine_name\":\"M\\u00e1y \\u0111\\u00f3ng g\\u00f3i t\\u1ef1 \\u0111\\u1ed9ng\",\"message\":\"T\\u1ef7 l\\u1ec7 ph\\u1ebf ph\\u1ea9m cao: 5.13% (>= 5%)\",\"defect_rate\":\"5.13\"}]', '', '{\"5\":{\"good\":188,\"defect\":9},\"6\":{\"good\":120,\"defect\":4}}', 'confirmed', 2, '2025-12-18 17:57:02', '2025-12-18 17:57:02');
 
 -- --------------------------------------------------------
@@ -1787,7 +1873,6 @@ INSERT INTO `shift_closures` (`closure_id`, `shift_id`, `closure_code`, `closure
 -- Table structure for table `shift_closure_defects`
 --
 
-DROP TABLE IF EXISTS `shift_closure_defects`;
 CREATE TABLE `shift_closure_defects` (
   `id` int(11) NOT NULL,
   `closure_machine_id` int(11) NOT NULL,
@@ -1803,7 +1888,6 @@ CREATE TABLE `shift_closure_defects` (
 -- Table structure for table `shift_closure_machines`
 --
 
-DROP TABLE IF EXISTS `shift_closure_machines`;
 CREATE TABLE `shift_closure_machines` (
   `id` int(11) NOT NULL,
   `closure_id` int(11) NOT NULL,
@@ -1842,7 +1926,6 @@ INSERT INTO `shift_closure_machines` (`id`, `closure_id`, `machine_id`, `staff_i
 -- Table structure for table `shift_machine_staff`
 --
 
-DROP TABLE IF EXISTS `shift_machine_staff`;
 CREATE TABLE `shift_machine_staff` (
   `id` int(11) NOT NULL,
   `shift_id` int(11) NOT NULL COMMENT 'ID ca làm việc',
@@ -1863,7 +1946,39 @@ INSERT INTO `shift_machine_staff` (`id`, `shift_id`, `machine_id`, `staff_id`, `
 (2, 1, 1, 8, '2025-12-18 14:54:27', 2, 1, ''),
 (3, 1, 2, 8, '2025-12-18 14:54:33', 2, 1, ''),
 (4, 3, 5, 8, '2025-12-18 17:47:28', 2, 1, ''),
-(5, 3, 6, 6, '2025-12-18 17:56:13', 2, 1, '');
+(5, 3, 6, 6, '2025-12-18 17:56:13', 2, 1, ''),
+(9, 14, 3, 8, '2025-12-20 16:32:27', 2, 1, ''),
+(10, 14, 1, 8, '2025-12-20 16:32:32', 2, 0, ''),
+(11, 14, 2, 8, '2025-12-20 16:32:37', 2, 1, ''),
+(12, 14, 1, 8, '2025-12-20 20:22:14', 2, 1, '');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `shift_material_confirmations`
+--
+
+CREATE TABLE `shift_material_confirmations` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `shift_id` int(11) NOT NULL,
+  `plan_id` int(11) DEFAULT NULL,
+  `product_id` int(11) DEFAULT NULL,
+  `qty_calculated` decimal(15,3) DEFAULT NULL,
+  `status` varchar(20) DEFAULT 'confirmed',
+  `coverage_ok` tinyint(1) DEFAULT 1,
+  `confirmed_by` int(11) DEFAULT NULL,
+  `confirmed_username` varchar(100) DEFAULT NULL,
+  `confirmed_at` datetime NOT NULL,
+  `snapshot_json` longtext DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `shift_material_confirmations`
+--
+
+INSERT INTO `shift_material_confirmations` (`id`, `shift_id`, `plan_id`, `product_id`, `qty_calculated`, `status`, `coverage_ok`, `confirmed_by`, `confirmed_username`, `confirmed_at`, `snapshot_json`) VALUES
+(1, 12, 1087, 1001, 2000.000, 'confirmed', 1, 2, 'leader', '2025-12-19 12:48:35', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":2000,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":2000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":10000,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":10000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":2000,\"bom_source\":\"product_bom\"}}'),
+(2, 14, 1087, 1001, 100.000, 'confirmed', 1, 2, 'leader', '2025-12-20 23:32:43', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":100,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":100,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":500,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":500,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":100,\"bom_source\":\"product_bom\"}}');
 
 -- --------------------------------------------------------
 
@@ -1871,7 +1986,6 @@ INSERT INTO `shift_machine_staff` (`id`, `shift_id`, `machine_id`, `staff_id`, `
 -- Table structure for table `simulator_settings`
 --
 
-DROP TABLE IF EXISTS `simulator_settings`;
 CREATE TABLE `simulator_settings` (
   `id` int(11) NOT NULL,
   `setting_key` varchar(100) NOT NULL COMMENT 'Khóa cấu hình',
@@ -1887,17 +2001,17 @@ CREATE TABLE `simulator_settings` (
 --
 
 INSERT INTO `simulator_settings` (`id`, `setting_key`, `setting_value`, `setting_type`, `description`, `updated_by`, `updated_at`) VALUES
-(1, 'simulator_enabled', '0', 'boolean', 'Bật/tắt simulator (0=Off, 1=On)', 'leader', '2025-12-18 17:56:42'),
-(2, 'simulator_interval', '60', 'integer', 'Khoảng thời gian ghi nhận (giây)', 'leader', '2025-12-18 16:32:58'),
-(3, 'good_count_min', '50', 'integer', 'Số lượng thành phẩm tối thiểu mỗi lần ghi', 'leader', '2025-12-18 16:32:58'),
-(4, 'good_count_max', '200', 'integer', 'Số lượng thành phẩm tối đa mỗi lần ghi', 'leader', '2025-12-18 16:32:58'),
-(5, 'defect_rate_min', '1', 'float', 'Tỷ lệ phế phẩm tối thiểu (%)', 'leader', '2025-12-18 16:32:58'),
-(6, 'defect_rate_max', '8', 'float', 'Tỷ lệ phế phẩm tối đa (%)', 'leader', '2025-12-18 16:32:58'),
-(7, 'downtime_probability', '0.15', 'float', 'Xác suất xảy ra downtime (0-1)', 'leader', '2025-12-18 16:32:58'),
-(8, 'downtime_min', '5', 'integer', 'Thời gian downtime tối thiểu (phút)', 'leader', '2025-12-18 16:32:58'),
-(9, 'downtime_max', '30', 'integer', 'Thời gian downtime tối đa (phút)', 'leader', '2025-12-18 16:32:58'),
-(10, 'target_multiplier', '1.2', 'float', 'Hệ số nhân cho target (target = good_count * multiplier)', 'leader', '2025-12-18 16:32:58'),
-(11, 'simulate_active_shifts_only', '0', 'boolean', 'Chỉ giả lập cho ca đang chạy (1=Yes, 0=No)', 'leader', '2025-12-18 16:32:58');
+(1, 'simulator_enabled', '0', 'boolean', 'Bật/tắt simulator (0=Off, 1=On)', 'leader', '2025-12-20 16:33:03'),
+(2, 'simulator_interval', '60', 'integer', 'Khoảng thời gian ghi nhận (giây)', 'leader', '2025-12-19 07:31:58'),
+(3, 'good_count_min', '50', 'integer', 'Số lượng thành phẩm tối thiểu mỗi lần ghi', 'leader', '2025-12-19 07:31:58'),
+(4, 'good_count_max', '200', 'integer', 'Số lượng thành phẩm tối đa mỗi lần ghi', 'leader', '2025-12-19 07:31:58'),
+(5, 'defect_rate_min', '1', 'float', 'Tỷ lệ phế phẩm tối thiểu (%)', 'leader', '2025-12-19 07:31:58'),
+(6, 'defect_rate_max', '8', 'float', 'Tỷ lệ phế phẩm tối đa (%)', 'leader', '2025-12-19 07:31:58'),
+(7, 'downtime_probability', '0.15', 'float', 'Xác suất xảy ra downtime (0-1)', 'leader', '2025-12-19 07:31:58'),
+(8, 'downtime_min', '5', 'integer', 'Thời gian downtime tối thiểu (phút)', 'leader', '2025-12-19 07:31:58'),
+(9, 'downtime_max', '30', 'integer', 'Thời gian downtime tối đa (phút)', 'leader', '2025-12-19 07:31:58'),
+(10, 'target_multiplier', '1.2', 'float', 'Hệ số nhân cho target (target = good_count * multiplier)', 'leader', '2025-12-19 07:31:58'),
+(11, 'simulate_active_shifts_only', '0', 'boolean', 'Chỉ giả lập cho ca đang chạy (1=Yes, 0=No)', 'leader', '2025-12-19 07:31:58');
 
 -- --------------------------------------------------------
 
@@ -1905,7 +2019,6 @@ INSERT INTO `simulator_settings` (`id`, `setting_key`, `setting_value`, `setting
 -- Table structure for table `sorting_report`
 --
 
-DROP TABLE IF EXISTS `sorting_report`;
 CREATE TABLE `sorting_report` (
   `id_sorting` int(15) NOT NULL,
   `id_planshift` int(15) NOT NULL,
@@ -1926,11 +2039,10 @@ INSERT INTO `sorting_report` (`id_sorting`, `id_planshift`, `waste`, `finished`)
 -- Table structure for table `staff`
 --
 
-DROP TABLE IF EXISTS `staff`;
 CREATE TABLE `staff` (
   `id_staff` int(11) NOT NULL,
   `staff_name` varchar(50) NOT NULL,
-  `phone` int(15) NOT NULL,
+  `phone` varchar(15) DEFAULT NULL,
   `email` varchar(25) NOT NULL,
   `department` varchar(100) DEFAULT NULL,
   `position` varchar(100) DEFAULT NULL,
@@ -1944,20 +2056,20 @@ CREATE TABLE `staff` (
 --
 
 INSERT INTO `staff` (`id_staff`, `staff_name`, `phone`, `email`, `department`, `position`, `st_status`, `created_at`, `updated_at`) VALUES
-(1001, 'Leader1', 8212312, 'leader1@mail.com', 'Sản Xuất', 'Leader', 2, '2025-12-11 15:09:49', '2025-12-12 08:21:14'),
-(1002, 'Leader2', 8923321, 'leader2@mail.com', 'Sản Xuất', 'Leader', 1, '2025-12-11 15:09:49', '2025-12-12 08:21:14'),
-(1003, 'Administrator', 0, '', 'IT', 'Administrator', 1, '2025-11-01 08:49:53', '2025-12-12 01:21:14'),
-(1004, 'Trưởng dây chuyền', 0, '', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:49:53', '2025-12-12 01:21:14'),
-(1005, 'Nguyễn Văn A - Giám Đốc', 0, 'bod@company.com', 'Ban Giám Đốc', 'Giám Đốc', 1, '2025-11-01 08:53:44', '2025-12-12 01:21:14'),
-(1006, 'Trần Văn B - Trưởng line 2', 0, 'linemanager@company.com', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
-(1007, 'Lê Thị C - Nhân viên kho', 0, 'warehouse@company.com', 'Kho', 'Nhân Viên Kho', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
-(1008, 'Phạm Văn D - Nhân viên QC', 0, 'qc@company.com', 'QC', 'Nhân Viên QC', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
-(1009, 'Hoàng Văn E - Kỹ thuật viên', 0, 'technical@company.com', 'Kỹ Thuật', 'Kỹ Thuật Viên', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
-(1010, 'Nguyễn Thị F - Công nhân', 0, 'worker@company.com', 'Sản Xuất', 'Công Nhân', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
-(1011, 'công ', 2147483647, 'danh12345@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-01 09:02:29', '2025-12-12 01:21:14'),
-(1012, 'anh', 2147483647, 'danh@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-03 01:55:13', '2025-12-12 01:21:14'),
-(1013, 'cong danh', 0, 'danh66667@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-07 07:38:47', '2025-12-12 01:21:14'),
-(1033, 'danh', 9769857, 'danh77656@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-03 01:45:13', '2025-12-12 01:21:14');
+(1001, 'Leader1', '0228212312', 'leader1@mail.com', NULL, NULL, 1, '2025-12-11 15:09:49', '2025-12-20 17:35:39'),
+(1002, 'Leader2', '8923321', 'leader2@mail.com', 'Sản Xuất', 'Leader', 1, '2025-12-11 15:09:49', '2025-12-12 08:21:14'),
+(1003, 'Administrator', '0', '', 'IT', 'Administrator', 1, '2025-11-01 08:49:53', '2025-12-12 01:21:14'),
+(1004, 'Trưởng dây chuyền', '0', '', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:49:53', '2025-12-12 01:21:14'),
+(1005, 'Nguyễn Văn A - Giám Đốc', '0', 'bod@company.com', 'Ban Giám Đốc', 'Giám Đốc', 1, '2025-11-01 08:53:44', '2025-12-12 01:21:14'),
+(1006, 'Trần Văn B - Trưởng line 2', '0', 'linemanager@company.com', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
+(1007, 'Lê Thị C - Nhân viên kho', '0', 'warehouse@company.com', 'Kho', 'Nhân Viên Kho', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
+(1008, 'Phạm Văn D - Nhân viên QC', '0', 'qc@company.com', 'QC', 'Nhân Viên QC', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
+(1009, 'Hoàng Văn E - Kỹ thuật viên', '0', 'technical@company.com', 'Kỹ Thuật', 'Kỹ Thuật Viên', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
+(1010, 'Nguyễn Thị F - Công nhân', '0', 'worker@company.com', 'Sản Xuất', 'Công Nhân', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
+(1011, 'công', '0214748364', 'danh12345@mail.com', 'Sản Xuất', 'Nhân Viên Kho', 1, '2025-12-01 09:02:29', '2025-12-20 17:38:59'),
+(1012, 'anh', '2147483647', 'danh@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-03 01:55:13', '2025-12-12 01:21:14'),
+(1013, 'cong danh', '0', 'danh66667@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-07 07:38:47', '2025-12-12 01:21:14'),
+(1033, 'danh', '9769857', 'danh77656@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-03 01:45:13', '2025-12-12 01:21:14');
 
 -- --------------------------------------------------------
 
@@ -1965,7 +2077,6 @@ INSERT INTO `staff` (`id_staff`, `staff_name`, `phone`, `email`, `department`, `
 -- Table structure for table `system_config`
 --
 
-DROP TABLE IF EXISTS `system_config`;
 CREATE TABLE `system_config` (
   `config_key` varchar(100) NOT NULL,
   `config_value` text NOT NULL,
@@ -1992,7 +2103,6 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 -- Table structure for table `user`
 --
 
-DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
   `user_id` int(11) NOT NULL,
   `username` varchar(11) NOT NULL,
@@ -2016,14 +2126,14 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`user_id`, `username`, `password`, `temp_password`, `must_change_password`, `role_id`, `staff_id`, `full_name`, `email`, `phone`, `is_active`, `last_login`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'admin', NULL, 0, 4, 1003, 'Administrator', NULL, NULL, 1, '2025-12-19 01:50:08', NULL, '2025-11-01 15:49:53', '2025-12-19 01:50:08'),
-(2, 'leader', 'leader', NULL, 0, 2, 1004, 'Trưởng dây chuyền', NULL, NULL, 1, '2025-12-18 19:07:12', NULL, '2025-11-01 15:49:53', '2025-12-18 19:07:12'),
-(3, 'bod', 'bod123', NULL, 0, 1, 1005, 'Nguyễn Văn A - Giám Đốc', 'bod@company.com', NULL, 1, '2025-12-18 19:15:46', NULL, '2025-11-01 15:53:44', '2025-12-18 19:15:46'),
+(1, 'admin', 'admin', NULL, 0, 4, 1003, 'Administrator', NULL, NULL, 1, '2025-12-20 19:53:53', NULL, '2025-11-01 15:49:53', '2025-12-20 19:53:53'),
+(2, 'leader', 'leader', NULL, 0, 2, 1004, 'Trưởng dây chuyền', NULL, NULL, 1, '2025-12-20 20:20:28', NULL, '2025-11-01 15:49:53', '2025-12-20 20:20:28'),
+(3, 'bod', 'bod123', NULL, 0, 1, 1005, 'Nguyễn Văn A - Giám Đốc', 'bod@company.com', NULL, 1, '2025-12-20 20:18:25', NULL, '2025-11-01 15:53:44', '2025-12-20 20:18:25'),
 (4, 'line_manage', 'line123', NULL, 0, 2, 1006, 'Trần Văn B - Trưởng line 2', 'linemanager@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
-(5, 'warehouse', 'wh123', NULL, 0, 3, 1007, 'Lê Thị C - Nhân viên kho', 'warehouse@company.com', NULL, 1, '2025-12-19 02:05:55', NULL, '2025-11-01 15:53:45', '2025-12-19 02:05:55'),
-(6, 'qc', 'qc123', NULL, 0, 5, 1008, 'Phạm Văn D - Nhân viên QC', 'qc@company.com', NULL, 1, '2025-12-19 02:05:36', NULL, '2025-11-01 15:53:45', '2025-12-19 02:05:36'),
+(5, 'warehouse', 'wh123', NULL, 0, 3, 1007, 'Lê Thị C - Nhân viên kho', 'warehouse@company.com', NULL, 1, '2025-12-21 08:27:50', NULL, '2025-11-01 15:53:45', '2025-12-21 08:27:50'),
+(6, 'qc', 'qc123', NULL, 0, 5, 1008, 'Phạm Văn D - Nhân viên QC', 'qc@company.com', NULL, 1, '2025-12-19 18:21:28', NULL, '2025-11-01 15:53:45', '2025-12-19 18:21:28'),
 (7, 'technical', 'tech123', NULL, 0, 6, 1009, 'Hoàng Văn E - Kỹ thuật viên', 'technical@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
-(8, 'Le Van A', 'worker123', NULL, 0, 7, 1010, 'Nguyễn Thị F - Công nhân', 'worker@company.com', NULL, 1, '2025-12-19 02:12:59', NULL, '2025-11-01 15:53:45', '2025-12-19 02:12:59');
+(8, 'Le Van A', 'worker123', NULL, 0, 7, 1010, 'Nguyễn Thị F - Công nhân', 'worker@company.com', NULL, 1, '2025-12-20 18:12:13', NULL, '2025-11-01 15:53:45', '2025-12-20 18:12:13');
 
 -- --------------------------------------------------------
 
@@ -2031,7 +2141,6 @@ INSERT INTO `user` (`user_id`, `username`, `password`, `temp_password`, `must_ch
 -- Stand-in structure for view `v_machine_status`
 -- (See below for the actual view)
 --
-DROP VIEW IF EXISTS `v_machine_status`;
 CREATE TABLE `v_machine_status` (
 `id_machine` int(50)
 ,`machine_name` varchar(50)
@@ -2046,7 +2155,6 @@ CREATE TABLE `v_machine_status` (
 -- Stand-in structure for view `v_material_stock`
 -- (See below for the actual view)
 --
-DROP VIEW IF EXISTS `v_material_stock`;
 CREATE TABLE `v_material_stock` (
 `id_material` int(50)
 ,`material_name` varchar(50)
@@ -2060,7 +2168,6 @@ CREATE TABLE `v_material_stock` (
 -- Stand-in structure for view `v_production_summary`
 -- (See below for the actual view)
 --
-DROP VIEW IF EXISTS `v_production_summary`;
 CREATE TABLE `v_production_summary` (
 `shift_id` int(11)
 ,`machine_id` int(11)
@@ -2089,7 +2196,6 @@ CREATE TABLE `v_production_summary` (
 -- Stand-in structure for view `v_project_details`
 -- (See below for the actual view)
 --
-DROP VIEW IF EXISTS `v_project_details`;
 CREATE TABLE `v_project_details` (
 `id_project` int(25)
 ,`project_name` varchar(50)
@@ -2107,7 +2213,6 @@ CREATE TABLE `v_project_details` (
 -- Stand-in structure for view `v_shift_closure_summary`
 -- (See below for the actual view)
 --
-DROP VIEW IF EXISTS `v_shift_closure_summary`;
 CREATE TABLE `v_shift_closure_summary` (
 `closure_id` int(11)
 ,`closure_code` varchar(50)
@@ -2130,7 +2235,6 @@ CREATE TABLE `v_shift_closure_summary` (
 -- Table structure for table `warehouse_import_requests`
 --
 
-DROP TABLE IF EXISTS `warehouse_import_requests`;
 CREATE TABLE `warehouse_import_requests` (
   `request_id` int(11) NOT NULL,
   `request_code` varchar(50) NOT NULL,
@@ -2170,7 +2274,6 @@ INSERT INTO `warehouse_import_requests` (`request_id`, `request_code`, `closure_
 -- Table structure for table `zones`
 --
 
-DROP TABLE IF EXISTS `zones`;
 CREATE TABLE `zones` (
   `zone_id` int(11) NOT NULL,
   `zone_code` varchar(50) NOT NULL COMMENT 'Mã khu: ZONE_A, ZONE_B...',
@@ -2199,7 +2302,6 @@ INSERT INTO `zones` (`zone_id`, `zone_code`, `zone_name`, `description`, `floor`
 --
 DROP TABLE IF EXISTS `v_machine_status`;
 
-DROP VIEW IF EXISTS `v_machine_status`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_machine_status`  AS SELECT `machine`.`id_machine` AS `id_machine`, `machine`.`machine_name` AS `machine_name`, concat(`machine`.`capacity`,' cái/giờ') AS `capacity_display`, CASE `machine`.`mc_status` WHEN 1 THEN 'Sẵn sàng' WHEN 2 THEN 'Đang sử dụng' WHEN 3 THEN 'Sự cố' WHEN 4 THEN 'Bảo trì' ELSE 'Không xác định' END AS `status_name`, `machine`.`mc_status` AS `mc_status` FROM `machine` ;
 
 -- --------------------------------------------------------
@@ -2209,7 +2311,6 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `v_material_stock`;
 
-DROP VIEW IF EXISTS `v_material_stock`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_material_stock`  AS SELECT `material`.`id_material` AS `id_material`, `material`.`material_name` AS `material_name`, concat(`material`.`stock`,' gram') AS `stock_display`, `material`.`stock` AS `stock` FROM `material` ;
 
 -- --------------------------------------------------------
@@ -2219,7 +2320,6 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `v_production_summary`;
 
-DROP VIEW IF EXISTS `v_production_summary`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_production_summary`  AS SELECT `pr`.`shift_id` AS `shift_id`, `pr`.`machine_id` AS `machine_id`, `m`.`code` AS `machine_code`, `m`.`name` AS `machine_name`, `ps`.`shift_name` AS `shift_name`, `ps`.`shift_date` AS `shift_date`, `ps`.`start_time` AS `start_time`, `ps`.`end_time` AS `end_time`, count(`pr`.`id`) AS `record_count`, sum(`pr`.`good_count`) AS `total_good`, sum(`pr`.`defect_count`) AS `total_defect`, sum(`pr`.`good_count` + `pr`.`defect_count`) AS `total_produced`, avg(`pr`.`target_count`) AS `avg_target`, sum(`pr`.`downtime_minutes`) AS `total_downtime_minutes`, avg(`pr`.`efficiency_rate`) AS `avg_efficiency`, avg(`pr`.`defect_rate`) AS `avg_defect_rate`, min(`pr`.`timestamp`) AS `first_record_time`, max(`pr`.`timestamp`) AS `last_record_time`, max(`pr`.`is_simulated`) AS `has_simulated_data` FROM ((`production_records` `pr` join `machines` `m` on(`pr`.`machine_id` = `m`.`id`)) join `production_shifts` `ps` on(`pr`.`shift_id` = `ps`.`shift_id`)) GROUP BY `pr`.`shift_id`, `pr`.`machine_id` ;
 
 -- --------------------------------------------------------
@@ -2229,7 +2329,6 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `v_project_details`;
 
-DROP VIEW IF EXISTS `v_project_details`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_project_details`  AS SELECT `p`.`id_project` AS `id_project`, `p`.`project_name` AS `project_name`, `c`.`cust_name` AS `cust_name`, `pr`.`product_name` AS `product_name`, concat(`p`.`diameter` / 10,' mm') AS `diameter_display`, concat(`p`.`qty_request`,' cái') AS `qty_request_display`, `p`.`entry_date` AS `entry_date`, `p`.`pr_status` AS `pr_status` FROM ((`project` `p` left join `customer` `c` on(`p`.`id_cust` = `c`.`id_cust`)) left join `product` `pr` on(`p`.`id_product` = `pr`.`id_product`)) ;
 
 -- --------------------------------------------------------
@@ -2239,7 +2338,6 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `v_shift_closure_summary`;
 
-DROP VIEW IF EXISTS `v_shift_closure_summary`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_shift_closure_summary`  AS SELECT `sc`.`closure_id` AS `closure_id`, `sc`.`closure_code` AS `closure_code`, `sc`.`closure_date` AS `closure_date`, `sc`.`status` AS `status`, `ps`.`shift_name` AS `shift_name`, `ps`.`shift_date` AS `shift_date`, `u`.`username` AS `closed_by_name`, `sc`.`total_target` AS `total_target`, `sc`.`total_good` AS `total_good`, `sc`.`total_defect` AS `total_defect`, `sc`.`efficiency_rate` AS `efficiency_rate`, `sc`.`defect_rate` AS `defect_rate`, count(`scm`.`id`) AS `total_machines` FROM (((`shift_closures` `sc` join `production_shifts` `ps` on(`sc`.`shift_id` = `ps`.`shift_id`)) join `user` `u` on(`sc`.`closed_by` = `u`.`user_id`)) left join `shift_closure_machines` `scm` on(`sc`.`closure_id` = `scm`.`closure_id`)) GROUP BY `sc`.`closure_id` ;
 
 --
@@ -2603,6 +2701,13 @@ ALTER TABLE `shift_machine_staff`
   ADD KEY `idx_staff_id` (`staff_id`);
 
 --
+-- Indexes for table `shift_material_confirmations`
+--
+ALTER TABLE `shift_material_confirmations`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_shift` (`shift_id`);
+
+--
 -- Indexes for table `simulator_settings`
 --
 ALTER TABLE `simulator_settings`
@@ -2667,7 +2772,7 @@ ALTER TABLE `adjustment_requests`
 -- AUTO_INCREMENT for table `audit_log`
 --
 ALTER TABLE `audit_log`
-  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
+  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=225;
 
 --
 -- AUTO_INCREMENT for table `customer`
@@ -2691,19 +2796,19 @@ ALTER TABLE `downtime_reasons`
 -- AUTO_INCREMENT for table `finished_issue`
 --
 ALTER TABLE `finished_issue`
-  MODIFY `id_issue` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_issue` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `incident_coordination`
 --
 ALTER TABLE `incident_coordination`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `incident_reports`
 --
 ALTER TABLE `incident_reports`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID báo cáo sự cố', AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID báo cáo sự cố', AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `machine`
@@ -2781,19 +2886,19 @@ ALTER TABLE `production_lines`
 -- AUTO_INCREMENT for table `production_records`
 --
 ALTER TABLE `production_records`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `production_shifts`
 --
 ALTER TABLE `production_shifts`
-  MODIFY `shift_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `shift_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `project`
 --
 ALTER TABLE `project`
-  MODIFY `id_project` int(25) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1004;
+  MODIFY `id_project` int(25) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1005;
 
 --
 -- AUTO_INCREMENT for table `qc_attachments`
@@ -2805,7 +2910,7 @@ ALTER TABLE `qc_attachments`
 -- AUTO_INCREMENT for table `qc_checklist_master`
 --
 ALTER TABLE `qc_checklist_master`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `qc_config`
@@ -2817,19 +2922,19 @@ ALTER TABLE `qc_config`
 -- AUTO_INCREMENT for table `qc_decisions`
 --
 ALTER TABLE `qc_decisions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `qc_items`
 --
 ALTER TABLE `qc_items`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `qc_sessions`
 --
 ALTER TABLE `qc_sessions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -2853,7 +2958,7 @@ ALTER TABLE `shiftment`
 -- AUTO_INCREMENT for table `shift_closures`
 --
 ALTER TABLE `shift_closures`
-  MODIFY `closure_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `closure_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=124;
 
 --
 -- AUTO_INCREMENT for table `shift_closure_defects`
@@ -2871,7 +2976,13 @@ ALTER TABLE `shift_closure_machines`
 -- AUTO_INCREMENT for table `shift_machine_staff`
 --
 ALTER TABLE `shift_machine_staff`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `shift_material_confirmations`
+--
+ALTER TABLE `shift_material_confirmations`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `simulator_settings`
