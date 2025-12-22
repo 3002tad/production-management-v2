@@ -503,9 +503,19 @@ class UC15_BCSC extends CI_Controller
 
         // Get current shift for user
         $current_shift = $this->get_current_shift_for_user($user_id);
+        
+        // Get production records for current shift (only for user's assigned machines)
+        if ($current_shift) {
+            $current_shift->production_records = $this->get_shift_production_records($current_shift->shift_id, $user_id);
+        }
 
         // Get shift history for user
         $shift_history = $this->get_shift_history_for_user($user_id);
+        
+        // Get production records for each shift in history (only for user's assigned machines)
+        foreach ($shift_history as &$shift) {
+            $shift->production_records = $this->get_shift_production_records($shift->shift_id, $user_id);
+        }
 
         $data = [
             'current_shift' => $current_shift,
@@ -556,6 +566,28 @@ class UC15_BCSC extends CI_Controller
         $this->db->order_by('ps.shift_date', 'DESC');
         $this->db->order_by('ps.start_time', 'DESC');
         $this->db->limit(10); // Last 10 shifts
+        return $this->db->get()->result();
+    }
+
+    /**
+     * Get production records for a shift (for assigned user's machines only)
+     */
+    private function get_shift_production_records($shift_id, $staff_id = null)
+    {
+        $this->db->select('pr.*, m.code as machine_code, m.name as machine_name, u.full_name as staff_name');
+        $this->db->from('production_records pr');
+        $this->db->join('machines m', 'pr.machine_id = m.id', 'left');
+        $this->db->join('user u', 'pr.staff_id = u.user_id', 'left');
+        $this->db->where('pr.shift_id', $shift_id);
+        
+        // If staff_id provided, filter only records for machines assigned to that staff
+        if (!is_null($staff_id)) {
+            $this->db->join('shift_machine_staff sms', 'sms.machine_id = pr.machine_id AND sms.shift_id = pr.shift_id', 'inner');
+            $this->db->where('sms.staff_id', $staff_id);
+            $this->db->where('sms.status', 1); // Only active assignments
+        }
+        
+        $this->db->order_by('pr.timestamp', 'ASC');
         return $this->db->get()->result();
     }
 

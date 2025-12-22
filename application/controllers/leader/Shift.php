@@ -91,11 +91,17 @@ class Shift extends CI_Controller
             $this->db->select('production_shifts.*, 
                 pl.line_code, pl.line_name,
                 z.zone_code, z.zone_name,
-                COUNT(DISTINCT sms.staff_id) as assigned_staff_count');
+                COUNT(DISTINCT sms.staff_id) as assigned_staff_count,
+                COALESCE(u_created.full_name, u_created.username, \'N/A\') as created_by_username,
+                COALESCE(u_started.full_name, u_started.username, \'N/A\') as started_by_username,
+                COALESCE(u_ended.full_name, u_ended.username, \'N/A\') as ended_by_username');
             $this->db->from('production_shifts');
             $this->db->join('production_lines pl', 'production_shifts.line_id = pl.id', 'left');
             $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
             $this->db->join('shift_machine_staff sms', 'sms.shift_id = production_shifts.shift_id AND sms.status = 1', 'left');
+            $this->db->join('user u_created', 'production_shifts.created_by = u_created.user_id', 'left');
+            $this->db->join('user u_started', 'production_shifts.started_by = u_started.user_id', 'left');
+            $this->db->join('user u_ended', 'production_shifts.ended_by = u_ended.user_id', 'left');
             $this->db->where('production_shifts.id_plan', $plan->id_plan);
             
             // Apply filters
@@ -865,6 +871,10 @@ class Shift extends CI_Controller
      */
     public function store()
     {
+        // Get current user info
+        $user_id = $this->session->userdata('user_id');
+        $username = $this->session->userdata('username');
+
         $shift_data = [
             'line_id' => $this->input->post('line_id'),
             'shift_name' => $this->input->post('shift_name'),
@@ -873,7 +883,7 @@ class Shift extends CI_Controller
             'end_time' => $this->input->post('end_time'),
             'target_quantity' => $this->input->post('target_quantity'),
             'notes' => $this->input->post('notes'),
-            'created_by' => $this->session->userdata('user_id')
+            'created_by' => $user_id  // Store user_id as before
         ];
 
         // Add id_plan if provided

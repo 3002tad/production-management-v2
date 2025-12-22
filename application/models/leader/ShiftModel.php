@@ -26,11 +26,17 @@ class ShiftModel extends CI_Model
             pl.line_code, pl.line_name,
             z.zone_code, z.zone_name,
             COUNT(DISTINCT ssa.staff_id) as assigned_staff_count,
-            COUNT(DISTINCT ssa.machine_id) as assigned_machine_count');
+            COUNT(DISTINCT ssa.machine_id) as assigned_machine_count,
+            COALESCE(u_created.full_name, u_created.username, \'N/A\') as created_by_username,
+            COALESCE(u_started.full_name, u_started.username, \'N/A\') as started_by_username,
+            COALESCE(u_ended.full_name, u_ended.username, \'N/A\') as ended_by_username');
         $this->db->from($this->table_shifts);
         $this->db->join('production_lines pl', 'production_shifts.line_id = pl.id', 'left');
         $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
         $this->db->join($this->table_staff_assignments . ' ssa', 'ssa.shift_id = production_shifts.shift_id AND ssa.status = 1', 'left');
+        $this->db->join('user u_created', 'production_shifts.created_by = u_created.user_id', 'left');
+        $this->db->join('user u_started', 'production_shifts.started_by = u_started.user_id', 'left');
+        $this->db->join('user u_ended', 'production_shifts.ended_by = u_ended.user_id', 'left');
 
         if (!empty($filters['line_id'])) {
             $this->db->where('production_shifts.line_id', $filters['line_id']);
@@ -71,11 +77,15 @@ class ShiftModel extends CI_Model
         $this->db->select('production_shifts.*, 
             pl.line_code, pl.line_name,
             z.zone_code, z.zone_name,
-            u.username as created_by_username');
+            COALESCE(u_created.full_name, u_created.username, \'N/A\') as created_by_username,
+            COALESCE(u_started.full_name, u_started.username, \'N/A\') as started_by_username,
+            COALESCE(u_ended.full_name, u_ended.username, \'N/A\') as ended_by_username');
         $this->db->from($this->table_shifts);
         $this->db->join('production_lines pl', 'production_shifts.line_id = pl.id', 'left');
         $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
-        $this->db->join('user u', 'production_shifts.created_by = u.user_id', 'left');
+        $this->db->join('user u_created', 'production_shifts.created_by = u_created.user_id', 'left');
+        $this->db->join('user u_started', 'production_shifts.started_by = u_started.user_id', 'left');
+        $this->db->join('user u_ended', 'production_shifts.ended_by = u_ended.user_id', 'left');
         $this->db->where('production_shifts.shift_id', $shift_id);
         return $this->db->get()->row();
     }
@@ -90,7 +100,15 @@ class ShiftModel extends CI_Model
             $data['shift_code'] = $this->generateShiftCode(
                 isset($data['shift_date']) ? $data['shift_date'] : null,
                 isset($data['start_time']) ? $data['start_time'] : null,
-                isset($data['end_time']) ? $data['end_time'] : null
+                isset($data['end_time']) ? $data['end_time'] : null,
+                isset($data['id_plan']) ? $data['id_plan'] : null
+            );
+        }
+
+        // Auto-generate shift_name if not provided
+        if (!isset($data['shift_name']) || $data['shift_name'] === '' || $data['shift_name'] === null) {
+            $data['shift_name'] = $this->generateShiftName(
+                isset($data['id_plan']) ? $data['id_plan'] : null
             );
         }
 
@@ -99,32 +117,63 @@ class ShiftModel extends CI_Model
     }
 
     /**
-     * Sinh mã ca (shift_code) dựa trên khung giờ
-     * Quy ước mặc định:
-     *  - 06:00-<14:00  => CA1
-     *  - 14:00-<22:00  => CA2
-     *  - Còn lại       => CA3 (ca đêm)
+     * Sinh mã ca (shift_code) theo format "CAxx"
+     * Với xx là số thứ tự ca của kế hoạch (01, 02, 03, 04...)
+     * VD: CA01, CA02, CA03, CA04
      */
-    private function generateShiftCode($shift_date = null, $start_time = null, $end_time = null)
+    private function generateShiftCode($shift_date = null, $start_time = null, $end_time = null, $id_plan = null)
     {
-        // Nếu thiếu start_time thì dùng CA1 làm mặc định an toàn
-        if (empty($start_time)) {
-            return 'CA1';
+        // Lấy kế hoạch từ data nếu có
+        if (empty($id_plan)) {
+            // Nếu không có id_plan, dùng số sequence toàn cục
+            $last_shift = $this->db->order_by('shift_id', 'DESC')->get($this->table_shifts, 1)->row();
+            $sequence = $last_shift ? (intval(substr($last_shift->shift_code, 2)) + 1) : 1;
+        } else {
+            // Đếm số ca của kế hoạch này
+            $shift_count = $this->db->where('id_plan', $id_plan)->count_all_results($this->table_shifts);
+            $sequence = $shift_count + 1;
         }
 
-        // Lấy giờ bắt đầu (0-23)
-        $hour = (int)substr($start_time, 0, 2);
-
-        if ($hour >= 6 && $hour < 14) {
-            return 'CA1';
+        // Giới hạn sequence từ 01 đến 99
+        if ($sequence > 99) {
+            $sequence = 99;
         }
 
-        if ($hour >= 14 && $hour < 22) {
-            return 'CA2';
+        // Format: CAxx (zero-padded 2 chữ số)
+        return 'CA' . str_pad($sequence, 2, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Tự động tạo tên ca theo format: CA-x-tên_kế_hoạch
+     * Với x là số thứ tự ca (1,2,3,4) của kế hoạch
+     */
+    private function generateShiftName($id_plan = null)
+    {
+        // Nếu không có kế hoạch, trả về tên mặc định
+        if (empty($id_plan)) {
+            return 'Ca';
         }
 
-        // Các khung còn lại coi như ca đêm
-        return 'CA3';
+        // Lấy tên kế hoạch
+        $plan = $this->db->select('plan_name')->from('planning')->where('id_plan', $id_plan)->get()->row();
+        
+        if (!$plan || empty($plan->plan_name)) {
+            return 'Ca';
+        }
+
+        // Đếm số ca hiện có của kế hoạch này
+        $shift_count = $this->db->where('id_plan', $id_plan)->count_all_results($this->table_shifts);
+        
+        // Số thứ tự ca = số ca hiện tại + 1
+        $shift_number = $shift_count + 1;
+
+        // Giới hạn số thứ tự ca là 1-4
+        if ($shift_number > 4) {
+            $shift_number = 4;
+        }
+
+        // Format: CA-x-tên_kế_hoạch
+        return 'CA-' . $shift_number . '-' . $plan->plan_name;
     }
 
     /**
@@ -469,7 +518,7 @@ class ShiftModel extends CI_Model
     public function getStaffByMachine($shift_id, $machine_id)
     {
         $this->db->select('shift_machine_staff.id, shift_machine_staff.shift_id, shift_machine_staff.machine_id, shift_machine_staff.staff_id, 
-            COALESCE(staff.staff_name, user.full_name, user.username) as staff_name,
+            COALESCE(user.full_name, user.username, \'Unknown\') as staff_name,
             user.username, user.email, 
             staff.department, staff.position,
             roles.role_name');

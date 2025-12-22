@@ -246,7 +246,7 @@ class ShiftClosureModel extends CI_Model
      * @param string $notes Notes from user
      * @return array Success status with closure_id or error
      */
-    public function createClosure($shift_id, $user_id, $confirmed_data = [], $notes = '')
+    public function createClosure($shift_id, $user_id, $confirmed_data = [], $notes = '', $quantity_overrides = [])
     {
         // Start transaction
         $this->db->trans_start();
@@ -269,6 +269,23 @@ class ShiftClosureModel extends CI_Model
                 throw new Exception('Không thể tổng hợp dữ liệu ca');
             }
             
+            // Apply quantity overrides if provided
+            $final_raw_qty = $data['totals']['total_produced'];
+            $final_good_qty = $data['totals']['total_good'];
+            $final_defect_qty = $data['totals']['total_defect'];
+            
+            if (!empty($quantity_overrides)) {
+                if (isset($quantity_overrides['raw_qty']) && $quantity_overrides['raw_qty'] !== null) {
+                    $final_raw_qty = (int)$quantity_overrides['raw_qty'];
+                }
+                if (isset($quantity_overrides['good_qty']) && $quantity_overrides['good_qty'] !== null) {
+                    $final_good_qty = (int)$quantity_overrides['good_qty'];
+                }
+                if (isset($quantity_overrides['defect_qty']) && $quantity_overrides['defect_qty'] !== null) {
+                    $final_defect_qty = (int)$quantity_overrides['defect_qty'];
+                }
+            }
+            
             // Generate closure code
             $closure_code = $this->generateClosureCode();
             
@@ -279,9 +296,9 @@ class ShiftClosureModel extends CI_Model
                 'closure_date' => date('Y-m-d H:i:s'),
                 'closed_by' => $user_id,
                 'total_target' => $data['totals']['total_target'],
-                'total_produced' => $data['totals']['total_produced'],
-                'total_good' => $data['totals']['total_good'],
-                'total_defect' => $data['totals']['total_defect'],
+                'total_produced' => $final_raw_qty,
+                'total_good' => $final_good_qty,
+                'total_defect' => $final_defect_qty,
                 'total_downtime' => $data['totals']['total_downtime'],
                 'efficiency_rate' => $data['totals']['efficiency_rate'],
                 'defect_rate' => $data['totals']['defect_rate'],
@@ -328,8 +345,8 @@ class ShiftClosureModel extends CI_Model
                 $this->db->insert('shift_closure_machines', $machine_insert);
             }
             
-            // Create warehouse import request
-            $warehouse_result = $this->createWarehouseRequest($closure_id, $shift_id, $data['totals']['total_good'], $user_id);
+            // Create warehouse import request (use final quantities)
+            $warehouse_result = $this->createWarehouseRequest($closure_id, $shift_id, $final_good_qty, $user_id);
             
             if ($warehouse_result['success']) {
                 // Update closure with warehouse_request_id
@@ -337,8 +354,8 @@ class ShiftClosureModel extends CI_Model
                 $this->db->update('shift_closures', ['warehouse_request_id' => $warehouse_result['request_id']]);
             }
             
-            // Update shift status to completed and closed
-            $this->updateShiftStatus($shift_id, 3, $user_id, true); // 3 = Completed
+            // Update shift status to completed and closed, with actual quantity
+            $this->updateShiftStatus($shift_id, 3, $user_id, true, $final_raw_qty); // 3 = Completed, pass actual quantity
             
             // Complete transaction
             $this->db->trans_complete();
@@ -486,7 +503,7 @@ class ShiftClosureModel extends CI_Model
      * @param bool $is_closed Is shift closed
      * @return bool Success
      */
-    public function updateShiftStatus($shift_id, $new_status, $user_id, $is_closed = false)
+    public function updateShiftStatus($shift_id, $new_status, $user_id, $is_closed = false, $actual_quantity = null)
     {
         $update_data = [
             'shift_status' => $new_status
@@ -496,12 +513,17 @@ class ShiftClosureModel extends CI_Model
         if ($new_status == 2) {
             // Starting shift
             $update_data['started_at'] = date('Y-m-d H:i:s');
-            $update_data['started_by'] = $user_id;
+            $update_data['started_by'] = $user_id;  // Store user_id as before
         } elseif ($new_status == 3 && $is_closed) {
             // Completing and closing shift
             $update_data['ended_at'] = date('Y-m-d H:i:s');
-            $update_data['ended_by'] = $user_id;
+            $update_data['ended_by'] = $user_id;  // Store user_id as before
             $update_data['is_closed'] = 1;
+            
+            // Update actual_quantity if provided
+            if ($actual_quantity !== null) {
+                $update_data['actual_quantity'] = (int)$actual_quantity;
+            }
         }
         
         $this->db->where('shift_id', $shift_id);

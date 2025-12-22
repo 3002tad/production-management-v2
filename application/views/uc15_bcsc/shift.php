@@ -15,35 +15,105 @@
                 <?php if ($current_shift): ?>
                     <div class="px-4 py-3">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <h5 class="text-primary mb-3"><?= $current_shift->shift_name ?> (<?= $current_shift->shift_code ?>)</h5>
-                                <p class="mb-2"><strong>Ngày:</strong> <?= date('d/m/Y', strtotime($current_shift->shift_date)) ?></p>
-                                <p class="mb-2"><strong>Thời gian:</strong> <?= $current_shift->start_time ?> - <?= $current_shift->end_time ?></p>
-                                <p class="mb-2"><strong>Trạng thái:</strong>
-                                    <?php
-                                    $status_map = [
-                                        1 => ['Chờ bắt đầu', 'warning'],
-                                        2 => ['Đang chạy', 'success'],
-                                        3 => ['Đã kết thúc', 'info'],
-                                        4 => ['Đã chốt', 'secondary']
-                                    ];
-                                    $status = $status_map[$current_shift->shift_status] ?? ['N/A', 'secondary'];
-                                    ?>
-                                    <span class="badge badge-<?= $status[1] ?>"><?= $status[0] ?></span>
-                                </p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="material-icons text-info me-2" style="font-size: 20px;">event</i>
+                                            <div>
+                                                <h6 class="text-xs text-secondary mb-0">Ngày</h6>
+                                                <p class="text-sm font-weight-bold mb-0"><?= date('d/m/Y', strtotime($current_shift->shift_date)) ?></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="material-icons text-warning me-2" style="font-size: 20px;">schedule</i>
+                                            <div>
+                                                <h6 class="text-xs text-secondary mb-0">Thời gian</h6>
+                                                <p class="text-sm font-weight-bold mb-0"><?= $current_shift->start_time ?> - <?= $current_shift->end_time ?></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center mt-2">
+                                    <i class="material-icons text-success me-2" style="font-size: 20px;">info</i>
+                                    <div>
+                                        <h6 class="text-xs text-secondary mb-0">Trạng thái</h6>
+                                        <p class="text-sm font-weight-bold mb-0">
+                                            <?php
+                                            $status_map = [
+                                                1 => ['Chờ bắt đầu', 'warning'],
+                                                2 => ['Đang chạy', 'success'],
+                                                3 => ['Đã kết thúc', 'info'],
+                                                4 => ['Đã chốt', 'secondary']
+                                            ];
+                                            $status = $status_map[$current_shift->shift_status] ?? ['N/A', 'secondary'];
+                                            ?>
+                                            <span class="badge badge-<?= $status[1] ?>"><?= $status[0] ?></span>
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <?php if (!empty($current_shift->zone_name)): ?>
-                                    <p class="mb-2"><strong>Khu vực:</strong> <?= $current_shift->zone_name ?> (<?= $current_shift->zone_code ?>)</p>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="material-icons text-primary me-2" style="font-size: 18px;">domain</i>
+                                        <div>
+                                            <h6 class="text-xs text-secondary mb-0">Khu vực</h6>
+                                            <p class="text-xs font-weight-bold mb-0"><?= $current_shift->zone_name ?> (<?= $current_shift->zone_code ?>)</p>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                                 <?php if (!empty($current_shift->line_name)): ?>
-                                    <p class="mb-2"><strong>Dây chuyền:</strong> <?= $current_shift->line_name ?> (<?= $current_shift->line_code ?>)</p>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="material-icons text-info me-2" style="font-size: 18px;">view_timeline</i>
+                                        <div>
+                                            <h6 class="text-xs text-secondary mb-0">Dây chuyền</h6>
+                                            <p class="text-xs font-weight-bold mb-0"><?= $current_shift->line_name ?> (<?= $current_shift->line_code ?>)</p>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                                 <?php if (!empty($current_shift->machine_name)): ?>
-                                    <p class="mb-2"><strong>Máy được gán:</strong> <?= $current_shift->machine_name ?> (<?= $current_shift->machine_code ?>)</p>
+                                    <div class="d-flex align-items-center">
+                                        <i class="material-icons text-warning me-2" style="font-size: 18px;">precision_manufacturing</i>
+                                        <div>
+                                            <h6 class="text-xs text-secondary mb-0">Máy được gán</h6>
+                                            <p class="text-xs font-weight-bold mb-0"><?= $current_shift->machine_name ?> (<?= $current_shift->machine_code ?>)</p>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         </div>
+                        <!-- Production Data for Current Shift -->
+                        <?php if (!empty($current_shift->production_records)): ?>
+                        <div class="mt-4">
+                            <h6 class="text-sm font-weight-bold mb-3">Dữ liệu sản lượng</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Thời gian</th>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Máy</th>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Tốt/Lỗi</th>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Hiệu suất</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($current_shift->production_records as $record): ?>
+                                        <tr>
+                                            <td class="text-xs"><?= date('H:i', strtotime($record->timestamp)) ?></td>
+                                            <td class="text-xs"><?= $record->machine_code; ?></td>
+                                            <td class="text-xs"><span class="text-success"><?= $record->good_count; ?></span>/<span class="text-danger"><?= $record->defect_count; ?></span></td>
+                                            <td class="text-xs <?= ($record->efficiency_rate >= 80) ? 'text-success' : (($record->efficiency_rate >= 70) ? 'text-warning' : 'text-danger'); ?>"><?= number_format($record->efficiency_rate, 1); ?>%</td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 <?php else: ?>
                     <div class="text-center py-5">
@@ -67,53 +137,58 @@
             </div>
             <div class="card-body px-0 pb-2">
                 <?php if (!empty($shift_history)): ?>
-                    <div class="table-responsive p-0">
-                        <table class="table align-items-center justify-content-center mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Ca làm việc</th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Ngày</th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Thời gian</th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Dây chuyền</th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Máy</th>
-                                    <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Trạng thái</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($shift_history as $shift): ?>
-                                    <tr>
-                                        <td class="pl-4">
+                    <?php foreach ($shift_history as $shift): ?>
+                    <div class="mb-4 pb-4" style="border-bottom: 1px solid #e9ecef;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3"><?= $shift->shift_code; ?> - <?= $shift->shift_name; ?></h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="material-icons text-info me-2" style="font-size: 18px;">event</i>
                                             <div>
-                                                <span class="text-xs font-weight-bold"><?= $shift->shift_code; ?></span>
-                                                <br>
-                                                <span class="text-xs text-secondary"><?= $shift->shift_name; ?></span>
+                                                <h6 class="text-xs text-secondary mb-0">Ngày</h6>
+                                                <p class="text-xs font-weight-bold mb-0"><?= date('d/m/Y', strtotime($shift->shift_date)) ?></p>
                                             </div>
-                                        </td>
-                                        <td class="pl-4">
-                                            <span class="text-xs"><?= date('d/m/Y', strtotime($shift->shift_date)) ?></span>
-                                        </td>
-                                        <td class="pl-4">
-                                            <span class="text-xs"><?= $shift->start_time ?> - <?= $shift->end_time ?></span>
-                                        </td>
-                                        <td class="pl-4">
-                                            <?php if (!empty($shift->line_name)): ?>
-                                                <span class="text-xs font-weight-bold"><?= $shift->line_code; ?></span>
-                                                <br>
-                                                <span class="text-xs text-secondary"><?= $shift->line_name; ?></span>
-                                            <?php else: ?>
-                                                <span class="text-xs text-secondary">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="pl-4">
-                                            <?php if (!empty($shift->machine_name)): ?>
-                                                <span class="text-xs font-weight-bold"><?= $shift->machine_code; ?></span>
-                                                <br>
-                                                <span class="text-xs text-secondary"><?= $shift->machine_name; ?></span>
-                                            <?php else: ?>
-                                                <span class="text-xs text-secondary">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="pl-4">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="material-icons text-warning me-2" style="font-size: 18px;">schedule</i>
+                                            <div>
+                                                <h6 class="text-xs text-secondary mb-0">Giờ</h6>
+                                                <p class="text-xs font-weight-bold mb-0"><?= $shift->start_time ?> - <?= $shift->end_time ?></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="material-icons text-info me-2" style="font-size: 18px;">view_timeline</i>
+                                            <div>
+                                                <h6 class="text-xs text-secondary mb-0">Dây chuyền</h6>
+                                                <p class="text-xs font-weight-bold mb-0"><?= $shift->line_code ?? '-'; ?></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="material-icons text-warning me-2" style="font-size: 18px;">precision_manufacturing</i>
+                                            <div>
+                                                <h6 class="text-xs text-secondary mb-0">Máy</h6>
+                                                <p class="text-xs font-weight-bold mb-0"><?= $shift->machine_code ?? '-'; ?></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="material-icons text-success me-2" style="font-size: 18px;">info</i>
+                                    <div>
+                                        <h6 class="text-xs text-secondary mb-0">Trạng thái</h6>
+                                        <p class="text-xs font-weight-bold mb-0">
                                             <?php
                                             $status_map = [
                                                 1 => ['Chờ bắt đầu', 'warning'],
@@ -124,12 +199,44 @@
                                             $status = $status_map[$shift->shift_status] ?? ['N/A', 'secondary'];
                                             ?>
                                             <span class="badge badge-<?= $status[1] ?> badge-sm"><?= $status[0] ?></span>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Production Data -->
+                        <?php if (!empty($shift->production_records)): ?>
+                        <div class="mt-3">
+                            <p class="text-xs font-weight-bold mb-2">Dữ liệu sản lượng:</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Thời gian</th>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Nhân viên</th>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Tốt/Lỗi/Tổng</th>
+                                            <th class="text-uppercase text-secondary text-xs font-weight-bolder opacity-7">Hiệu suất</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($shift->production_records as $record): ?>
+                                        <tr>
+                                            <td class="text-xs"><?= date('H:i', strtotime($record->timestamp)) ?></td>
+                                            <td class="text-xs"><?= $record->staff_name ?: 'N/A'; ?></td>
+                                            <td class="text-xs"><span class="text-success"><?= $record->good_count; ?></span>/<span class="text-danger"><?= $record->defect_count; ?></span>/<span class="font-weight-bold"><?= ($record->good_count + $record->defect_count); ?></span></td>
+                                            <td class="text-xs <?= ($record->efficiency_rate >= 80) ? 'text-success' : (($record->efficiency_rate >= 70) ? 'text-warning' : 'text-danger'); ?>"><?= number_format($record->efficiency_rate, 1); ?>%</td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <?php else: ?>
+                        <p class="text-xs text-secondary mb-0">Không có dữ liệu sản lượng</p>
+                        <?php endif; ?>
                     </div>
+                    <?php endforeach; ?>
                 <?php else: ?>
                     <div class="text-center py-5">
                         <i class="material-icons text-secondary" style="font-size: 48px;">history</i>

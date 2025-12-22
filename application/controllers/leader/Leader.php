@@ -1514,6 +1514,66 @@ class Leader extends CI_Controller
                 return;
             }
             
+            // ===== NEW VALIDATION: Check if all machines have staff assignments =====
+            // Get line_id from shift
+            $line_id = $shift->line_id;
+            
+            // Get all machines in this line
+            $this->db->select('id, code, name');
+            $this->db->where('line_id', $line_id);
+            $machines_query = $this->db->get('machines');
+            $machines = $machines_query->result();
+            
+            if (empty($machines)) {
+                $this->session->set_flashdata('error', 'Dây chuyền chưa có máy nào');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            // Check if each machine has at least one staff assigned
+            $machines_without_staff = [];
+            foreach ($machines as $machine) {
+                $this->db->where('shift_id', $shift_id);
+                $this->db->where('machine_id', $machine->id);
+                $staff_query = $this->db->get('shift_machine_staff');
+                
+                if ($staff_query->num_rows() == 0) {
+                    $machines_without_staff[] = $machine->code . ' (' . $machine->name . ')';
+                }
+            }
+            
+            if (!empty($machines_without_staff)) {
+                $machine_list = implode(', ', $machines_without_staff);
+                $this->session->set_flashdata('error', 'Các máy chưa được phân nhân sự: ' . $machine_list);
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            // ===== END VALIDATION =====
+            
+            // ===== NEW VALIDATION: Check if materials are confirmed =====
+            // Check if shift has material confirmation
+            $this->db->where('shift_id', $shift_id);
+            $material_query = $this->db->get('shift_material_confirmations');
+            
+            if ($material_query->num_rows() == 0) {
+                $this->session->set_flashdata('error', 'Vật liệu chưa được xác nhận, không thể bắt đầu ca');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            
+            // Check if all materials are confirmed with status 'confirmed'
+            $this->db->where('shift_id', $shift_id);
+            $this->db->where('status', 'confirmed');
+            $confirmed_count = $this->db->count_all_results('shift_material_confirmations');
+            $total_count = $material_query->num_rows();
+            
+            if ($confirmed_count != $total_count) {
+                $this->session->set_flashdata('error', 'Tất cả vật liệu phải được xác nhận mới có thể bắt đầu ca');
+                redirect('leader/shift/detail/' . $shift_id);
+                return;
+            }
+            // ===== END VALIDATION =====
+            
             // Update status to Running
             $user_id = $this->session->userdata('user_id');
             $result = $this->shiftClosure->updateShiftStatus($shift_id, 2, $user_id);
@@ -1670,6 +1730,12 @@ class Leader extends CI_Controller
             $shift_id = $this->input->post('shift_id');
             $notes = $this->input->post('notes');
             $confirmed_data = $this->input->post('confirmed_data');
+            
+            // Get quantity confirmation from form
+            $confirmed_raw_qty = (int)$this->input->post('confirmed_raw_qty') ?: null;
+            $confirmed_good_qty = (int)$this->input->post('confirmed_good_qty') ?: null;
+            $confirmed_defect_qty = (int)$this->input->post('confirmed_defect_qty') ?: null;
+            
             $user_id = $this->session->userdata('user_id');
             
             // Decode confirmed data from JSON
@@ -1688,8 +1754,24 @@ class Leader extends CI_Controller
                 return;
             }
             
-            // Create closure via model
-            $result = $this->shiftClosure->createClosure($shift_id, $user_id, $confirmed_data, $notes);
+            // Validate quantity: good + defect should equal raw (if values provided)
+            if ($confirmed_raw_qty !== null && ($confirmed_good_qty !== null || $confirmed_defect_qty !== null)) {
+                $sum = ($confirmed_good_qty ?? 0) + ($confirmed_defect_qty ?? 0);
+                if ($sum !== $confirmed_raw_qty) {
+                    $this->output->set_content_type('application/json')->set_status_header(400)->set_output(json_encode([
+                        'success' => false, 
+                        'message' => 'Tổng thành phẩm (' . ($confirmed_good_qty ?? 0) . ') + phế phẩm (' . ($confirmed_defect_qty ?? 0) . ') không bằng sản lượng thô (' . $confirmed_raw_qty . ')'
+                    ]));
+                    return;
+                }
+            }
+            
+            // Create closure via model, passing quantity confirmations
+            $result = $this->shiftClosure->createClosure($shift_id, $user_id, $confirmed_data, $notes, [
+                'raw_qty' => $confirmed_raw_qty,
+                'good_qty' => $confirmed_good_qty,
+                'defect_qty' => $confirmed_defect_qty
+            ]);
 
             // Normalize response to include success boolean and message
             if (is_array($result) || is_object($result)) {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 22, 2025 at 05:37 PM
+-- Generation Time: Dec 22, 2025 at 09:11 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -300,7 +300,26 @@ INSERT INTO `audit_log` (`log_id`, `user_id`, `username`, `action`, `module`, `r
 (230, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 13:11:02'),
 (231, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 13:13:59'),
 (232, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 14:45:09'),
-(233, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 16:26:29');
+(233, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 16:26:29'),
+(234, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 17:51:45'),
+(235, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 17:51:51'),
+(236, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 17:52:02');
+INSERT INTO `audit_log` (`log_id`, `user_id`, `username`, `action`, `module`, `record_id`, `old_value`, `new_value`, `ip_address`, `user_agent`, `created_at`) VALUES
+(237, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 17:52:07'),
+(238, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 17:54:37'),
+(239, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:01:15'),
+(240, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:01:20'),
+(241, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:02:40'),
+(242, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:02:49'),
+(243, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:25:09'),
+(244, 1, 'admin', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:25:43'),
+(245, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:26:03'),
+(246, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 18:38:19'),
+(247, 8, 'Le Van A', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 19:33:43'),
+(248, 8, 'Le Van A', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 19:38:54'),
+(249, 8, 'Le Van A', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 19:39:03'),
+(250, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 19:39:47'),
+(251, 8, 'Le Van A', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 20:09:41');
 
 -- --------------------------------------------------------
 
@@ -595,8 +614,8 @@ CREATE TABLE `incident_reports` (
 --
 
 INSERT INTO `incident_reports` (`id`, `user_id`, `id_machine`, `line_id`, `shift_id`, `id_planshift`, `category`, `severity_level`, `incident_description`, `media_path`, `status`, `assignee_id`, `resolution_notes`, `resolved_at`, `created_at`, `updated_at`) VALUES
-(5, 8, 3, 1, NULL, NULL, 'equipment', 1, 'Thiết bị rò rỉ điện', NULL, 0, NULL, NULL, NULL, '2025-12-17 17:27:22', '2025-12-20 23:36:11'),
-(6, 8, 3, 1, 14, NULL, 'safety', 2, 'rò rỉ điện gây nguy hiểm', NULL, 0, NULL, NULL, NULL, '2025-12-21 01:23:58', '2025-12-21 01:23:58');
+(5, 8, 3, 1, NULL, NULL, 'equipment', 1, 'Thiết bị rò rỉ điện', NULL, 1, NULL, NULL, '2025-12-23 01:07:16', '2025-12-17 17:27:22', '2025-12-23 01:07:16'),
+(6, 8, 3, 1, NULL, NULL, 'safety', 2, 'rò rỉ điện gây nguy hiểm', NULL, 0, NULL, NULL, NULL, '2025-12-21 01:23:58', '2025-12-21 01:23:58');
 
 -- --------------------------------------------------------
 
@@ -1194,9 +1213,11 @@ INSERT INTO `production_records` (`id`, `shift_id`, `machine_id`, `staff_id`, `t
 (3, 1, 3, 8, '2025-12-18 23:34:32', 117, 4, 140, 0, NULL, 86.43, 3.70, NULL, 1, '2025-12-18 16:34:32', '2025-12-18 16:34:32'),
 (4, 3, 5, 8, '2025-12-19 00:56:37', 188, 9, 225, 13, 'Vấn đề chất lượng', 87.56, 5.13, NULL, 1, '2025-12-18 17:56:37', '2025-12-18 17:56:37'),
 (5, 3, 6, 6, '2025-12-19 00:56:37', 120, 4, 144, 0, NULL, 86.11, 3.75, NULL, 1, '2025-12-18 17:56:37', '2025-12-18 17:56:37'),
-(21, 14, 1, 8, '2025-12-20 23:32:57', 94, 4, 112, 0, NULL, 87.50, 5.14, NULL, 1, '2025-12-20 16:32:57', '2025-12-20 16:32:57'),
-(22, 14, 2, 8, '2025-12-20 23:32:57', 144, 1, 172, 0, NULL, 84.30, 1.14, NULL, 1, '2025-12-20 16:32:57', '2025-12-20 16:32:57'),
-(23, 14, 3, 8, '2025-12-20 23:32:57', 183, 13, 219, 0, NULL, 89.50, 7.29, NULL, 1, '2025-12-20 16:32:57', '2025-12-20 16:32:57');
+(27, 17, 5, 8, '2025-12-23 01:39:22', 73, 3, 87, 0, NULL, 87.36, 4.98, NULL, 1, '2025-12-22 18:39:22', '2025-12-22 18:39:22'),
+(28, 17, 6, 6, '2025-12-23 01:39:22', 150, 9, 180, 22, 'Bảo trì định kỳ', 88.33, 6.02, NULL, 1, '2025-12-22 18:39:22', '2025-12-22 18:39:22'),
+(29, 19, 5, 8, '2025-12-23 02:31:54', 146, 3, 175, 0, NULL, 85.14, 2.59, NULL, 1, '2025-12-22 19:31:54', '2025-12-22 19:31:54'),
+(30, 19, 6, 6, '2025-12-23 02:31:54', 60, 2, 72, 0, NULL, 86.11, 4.82, NULL, 1, '2025-12-22 19:31:54', '2025-12-22 19:31:54'),
+(31, 20, 3, 8, '2025-12-23 02:53:18', 68, 2, 81, 0, NULL, 86.42, 3.83, NULL, 1, '2025-12-22 19:53:18', '2025-12-22 19:53:18');
 
 -- --------------------------------------------------------
 
@@ -1221,9 +1242,6 @@ CREATE TABLE `production_shifts` (
   `ended_at` datetime DEFAULT NULL COMMENT 'Thời điểm kết thúc ca thực tế',
   `ended_by` int(11) DEFAULT NULL COMMENT 'Người kết thúc ca',
   `is_closed` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = Đã chốt ca',
-  `staff_status` varchar(20) DEFAULT 'pending' COMMENT 'pending/sufficient/insufficient/conflict',
-  `machine_status` varchar(20) DEFAULT 'unassigned' COMMENT 'unassigned/assigned/maintenance/down',
-  `leader_id` int(11) DEFAULT NULL COMMENT 'Leader phụ trách ca này',
   `notes` text DEFAULT NULL COMMENT 'Ghi chú',
   `created_by` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -1234,10 +1252,14 @@ CREATE TABLE `production_shifts` (
 -- Dumping data for table `production_shifts`
 --
 
-INSERT INTO `production_shifts` (`shift_id`, `shift_code`, `shift_name`, `line_id`, `id_plan`, `shift_date`, `start_time`, `end_time`, `target_quantity`, `actual_quantity`, `shift_status`, `started_at`, `started_by`, `ended_at`, `ended_by`, `is_closed`, `staff_status`, `machine_status`, `leader_id`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'CA-S-001', 'Ca Sáng - Dây chuyền 1', 1, 1001, '2025-12-16', '07:00:00', '15:00:00', 500, 0, 3, '2025-12-19 00:41:23', 2, '2025-12-19 00:44:44', 2, 1, 'insufficient', 'unassigned', NULL, 'Ca sáng hôm nay', 1, '2025-12-16 11:14:22', '2025-12-18 17:44:44'),
-(3, 'CA-S-002', 'Ca Sáng - Dây chuyền 2', 2, 1001, '2025-12-16', '07:00:00', '15:00:00', 800, 0, 3, '2025-12-19 00:56:22', 2, '2025-12-19 00:57:02', 2, 1, 'pending', 'unassigned', NULL, NULL, 1, '2025-12-16 11:14:22', '2025-12-18 17:57:02'),
-(14, 'CA3', 'Ca Sáng', 1, 1087, '2025-12-20', '05:30:00', '11:00:00', 100, 0, 2, '2025-12-21 01:13:41', 2, NULL, NULL, 0, 'pending', 'unassigned', NULL, '', 2, '2025-12-20 16:32:13', '2025-12-20 18:13:41');
+INSERT INTO `production_shifts` (`shift_id`, `shift_code`, `shift_name`, `line_id`, `id_plan`, `shift_date`, `start_time`, `end_time`, `target_quantity`, `actual_quantity`, `shift_status`, `started_at`, `started_by`, `ended_at`, `ended_by`, `is_closed`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'CA-S-001', 'Ca Sáng - Dây chuyền 1', 1, 1001, '2025-12-16', '07:00:00', '15:00:00', 500, 0, 3, '2025-12-19 00:41:23', 2, '2025-12-19 00:44:44', 2, 1, 'Ca sáng hôm nay', 1, '2025-12-16 11:14:22', '2025-12-18 17:44:44'),
+(3, 'CA-S-002', 'Ca Sáng - Dây chuyền 2', 2, 1001, '2025-12-16', '07:00:00', '15:00:00', 800, 0, 3, '2025-12-19 00:56:22', 2, '2025-12-19 00:57:02', 2, 1, NULL, 1, '2025-12-16 11:14:22', '2025-12-18 17:57:02'),
+(17, 'CA3', 'CA-2-KH-1001-1765116526', 2, 1087, '2025-12-23', '01:34:00', '05:34:00', 1000, 0, 3, '2025-12-23 01:39:13', 2, '2025-12-23 01:50:02', 2, 1, '', 2, '2025-12-22 18:34:36', '2025-12-22 18:50:02'),
+(19, 'CA02', 'CA-2-KH-1001-1765116526', 2, 1087, '2025-12-23', '02:30:00', '05:30:00', 100, 211, 3, '2025-12-23 02:31:44', 2, '2025-12-23 02:32:39', 2, 1, '', 2, '2025-12-22 19:30:56', '2025-12-22 19:32:39'),
+(20, 'CA03', 'CA-3-KH-1001-1765116526', 1, 1087, '2025-12-23', '02:40:00', '05:40:00', 1000, 0, 2, '2025-12-23 02:52:51', 2, NULL, NULL, 0, '', 2, '2025-12-22 19:40:14', '2025-12-22 19:52:51'),
+(21, 'CA04', 'CA-4-KH-1001-1765116526', 1, 1087, '2025-12-23', '02:55:00', '05:55:00', 1000, 0, 2, '2025-12-23 02:55:35', 2, NULL, NULL, 0, '', 2, '2025-12-22 19:55:22', '2025-12-22 19:55:35'),
+(22, 'CA05', 'CA-4-KH-1001-1765116526', 1, 1087, '2025-12-23', '04:01:00', '08:01:00', 100, 0, 2, '2025-12-23 03:05:41', 2, NULL, NULL, 0, '', 2, '2025-12-22 20:02:01', '2025-12-22 20:05:41');
 
 -- --------------------------------------------------------
 
@@ -1870,7 +1892,9 @@ CREATE TABLE `shift_closures` (
 
 INSERT INTO `shift_closures` (`closure_id`, `shift_id`, `closure_code`, `closure_date`, `closed_by`, `total_target`, `total_produced`, `total_good`, `total_defect`, `total_downtime`, `efficiency_rate`, `defect_rate`, `has_warnings`, `warning_details`, `notes`, `confirmed_quantities`, `status`, `warehouse_request_id`, `created_at`, `updated_at`) VALUES
 (1, 1, 'SC-20251219-001', '2025-12-19 00:44:44', 2, 401, 344, 335, 9, 26, 85.79, 2.62, 0, NULL, '', '{\"1\":{\"good\":166,\"defect\":3},\"2\":{\"good\":52,\"defect\":2},\"3\":{\"good\":117,\"defect\":4}}', '', 1, '2025-12-18 17:44:44', '2025-12-19 06:15:51'),
-(2, 3, 'SC-20251219-002', '2025-12-19 00:57:02', 2, 369, 321, 308, 13, 13, 86.99, 4.05, 1, '[{\"type\":\"warning\",\"machine_id\":\"5\",\"machine_name\":\"M\\u00e1y \\u0111\\u00f3ng g\\u00f3i t\\u1ef1 \\u0111\\u1ed9ng\",\"message\":\"T\\u1ef7 l\\u1ec7 ph\\u1ebf ph\\u1ea9m cao: 5.13% (>= 5%)\",\"defect_rate\":\"5.13\"}]', '', '{\"5\":{\"good\":188,\"defect\":9},\"6\":{\"good\":120,\"defect\":4}}', 'confirmed', 2, '2025-12-18 17:57:02', '2025-12-18 17:57:02');
+(2, 3, 'SC-20251219-002', '2025-12-19 00:57:02', 2, 369, 321, 308, 13, 13, 86.99, 4.05, 1, '[{\"type\":\"warning\",\"machine_id\":\"5\",\"machine_name\":\"M\\u00e1y \\u0111\\u00f3ng g\\u00f3i t\\u1ef1 \\u0111\\u1ed9ng\",\"message\":\"T\\u1ef7 l\\u1ec7 ph\\u1ebf ph\\u1ea9m cao: 5.13% (>= 5%)\",\"defect_rate\":\"5.13\"}]', '', '{\"5\":{\"good\":188,\"defect\":9},\"6\":{\"good\":120,\"defect\":4}}', 'confirmed', 2, '2025-12-18 17:57:02', '2025-12-18 17:57:02'),
+(124, 17, 'SC-20251223-001', '2025-12-23 01:50:02', 2, 267, 235, 223, 12, 22, 88.01, 5.11, 1, '[{\"type\":\"warning\",\"machine_id\":\"6\",\"machine_name\":\"M\\u00e1y ki\\u1ec3m tra ch\\u1ea5t l\\u01b0\\u1ee3ng\",\"message\":\"T\\u1ef7 l\\u1ec7 ph\\u1ebf ph\\u1ea9m cao: 6.02% (>= 5%)\",\"defect_rate\":\"6.02\"}]', '', '{\"5\":{\"good\":73,\"defect\":3},\"6\":{\"good\":150,\"defect\":9}}', 'confirmed', 3, '2025-12-22 18:50:02', '2025-12-22 18:50:02'),
+(125, 19, 'SC-20251223-002', '2025-12-23 02:32:39', 2, 247, 211, 206, 5, 0, 85.43, 2.37, 0, NULL, '', '{\"5\":{\"good\":146,\"defect\":3},\"6\":{\"good\":60,\"defect\":2}}', 'confirmed', 4, '2025-12-22 19:32:39', '2025-12-22 19:32:39');
 
 -- --------------------------------------------------------
 
@@ -1923,7 +1947,11 @@ INSERT INTO `shift_closure_machines` (`id`, `closure_id`, `machine_id`, `staff_i
 (2, 1, 2, 8, 62, 54, 52, 2, 0, 87.10, 4.75, 52, 2, NULL, NULL, 0, NULL, '2025-12-18 17:44:44'),
 (3, 1, 3, 8, 140, 121, 117, 4, 0, 86.43, 3.70, 117, 4, NULL, NULL, 0, NULL, '2025-12-18 17:44:44'),
 (4, 2, 5, 8, 225, 197, 188, 9, 13, 87.56, 5.13, 188, 9, NULL, '[{\"downtime_minutes\":\"13\",\"downtime_reason\":\"V\\u1ea5n \\u0111\\u1ec1 ch\\u1ea5t l\\u01b0\\u1ee3ng\",\"timestamp\":\"2025-12-19 00:56:37\"}]', 1, NULL, '2025-12-18 17:57:02'),
-(5, 2, 6, 6, 144, 124, 120, 4, 0, 86.11, 3.75, 120, 4, NULL, NULL, 0, NULL, '2025-12-18 17:57:02');
+(5, 2, 6, 6, 144, 124, 120, 4, 0, 86.11, 3.75, 120, 4, NULL, NULL, 0, NULL, '2025-12-18 17:57:02'),
+(6, 124, 5, 8, 87, 76, 73, 3, 0, 87.36, 4.98, 73, 3, NULL, NULL, 0, NULL, '2025-12-22 18:50:02'),
+(7, 124, 6, 6, 180, 159, 150, 9, 22, 88.33, 6.02, 150, 9, NULL, '[{\"downtime_minutes\":\"22\",\"downtime_reason\":\"B\\u1ea3o tr\\u00ec \\u0111\\u1ecbnh k\\u1ef3\",\"timestamp\":\"2025-12-23 01:39:22\"}]', 1, NULL, '2025-12-22 18:50:02'),
+(8, 125, 5, 8, 175, 149, 146, 3, 0, 85.14, 2.59, 146, 3, NULL, NULL, 0, NULL, '2025-12-22 19:32:39'),
+(9, 125, 6, 6, 72, 62, 60, 2, 0, 86.11, 4.82, 60, 2, NULL, NULL, 0, NULL, '2025-12-22 19:32:39');
 
 -- --------------------------------------------------------
 
@@ -1952,10 +1980,16 @@ INSERT INTO `shift_machine_staff` (`id`, `shift_id`, `machine_id`, `staff_id`, `
 (3, 1, 2, 8, '2025-12-18 14:54:33', 2, 1, ''),
 (4, 3, 5, 8, '2025-12-18 17:47:28', 2, 1, ''),
 (5, 3, 6, 6, '2025-12-18 17:56:13', 2, 1, ''),
-(9, 14, 3, 8, '2025-12-20 16:32:27', 2, 1, ''),
-(10, 14, 1, 8, '2025-12-20 16:32:32', 2, 0, ''),
-(11, 14, 2, 8, '2025-12-20 16:32:37', 2, 1, ''),
-(12, 14, 1, 8, '2025-12-20 20:22:14', 2, 1, '');
+(15, 17, 5, 8, '2025-12-22 18:35:28', 2, 1, ''),
+(16, 17, 6, 6, '2025-12-22 18:35:33', 2, 1, ''),
+(17, 19, 5, 8, '2025-12-22 19:31:08', 2, 1, ''),
+(18, 19, 6, 6, '2025-12-22 19:31:13', 2, 1, ''),
+(19, 20, 3, 8, '2025-12-22 19:40:39', 2, 0, ''),
+(20, 20, 3, 8, '2025-12-22 19:44:52', 2, 1, ''),
+(21, 21, 3, 8, '2025-12-22 19:55:31', 2, 1, ''),
+(22, 22, 3, 8, '2025-12-22 20:04:09', 2, 1, ''),
+(23, 22, 1, 8, '2025-12-22 20:04:14', 2, 1, ''),
+(24, 22, 2, 8, '2025-12-22 20:04:19', 2, 1, '');
 
 -- --------------------------------------------------------
 
@@ -1983,7 +2017,11 @@ CREATE TABLE `shift_material_confirmations` (
 
 INSERT INTO `shift_material_confirmations` (`id`, `shift_id`, `plan_id`, `product_id`, `qty_calculated`, `status`, `coverage_ok`, `confirmed_by`, `confirmed_username`, `confirmed_at`, `snapshot_json`) VALUES
 (1, 12, 1087, 1001, 2000.000, 'confirmed', 1, 2, 'leader', '2025-12-19 12:48:35', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":2000,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":2000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":10000,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":10000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":2000,\"bom_source\":\"product_bom\"}}'),
-(2, 14, 1087, 1001, 100.000, 'confirmed', 1, 2, 'leader', '2025-12-20 23:32:43', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":100,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":100,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":500,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":500,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":100,\"bom_source\":\"product_bom\"}}');
+(2, 14, 1087, 1001, 100.000, 'confirmed', 1, 2, 'leader', '2025-12-20 23:32:43', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":100,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":100,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":500,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":500,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":100,\"bom_source\":\"product_bom\"}}'),
+(5, 17, 1087, 1001, 1000.000, 'confirmed', 1, 2, 'leader', '2025-12-23 01:35:15', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":1000,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":1000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":5000,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":5000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":1000,\"bom_source\":\"product_bom\"}}'),
+(6, 19, 1087, 1001, 100.000, 'confirmed', 1, 2, 'leader', '2025-12-23 02:31:19', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":100,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":100,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":500,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":500,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":100,\"bom_source\":\"product_bom\"}}'),
+(7, 20, 1087, 1001, 1000.000, 'confirmed', 1, 2, 'leader', '2025-12-23 02:41:28', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":1000,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":1000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":5000,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":5000,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":1000,\"bom_source\":\"product_bom\"}}'),
+(8, 22, 1087, 1001, 100.000, 'confirmed', 1, 2, 'leader', '2025-12-23 03:05:38', '{\"ok\":true,\"details\":[{\"material_name\":\"Bi kim loại 0.5mm\",\"required_qty\":100,\"available_qty\":2000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1005\"},{\"material_name\":\"Lò xo thép\",\"required_qty\":100,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1008\"},{\"material_name\":\"Mực gel đen\",\"required_qty\":500,\"available_qty\":50000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1004\"},{\"material_name\":\"Nhựa ABS\",\"required_qty\":500,\"available_qty\":10000,\"shortage\":0,\"unit\":\"g\",\"id_material\":\"1002\"}],\"_meta\":{\"product_id\":\"1001\",\"plan_id\":\"1087\",\"plan_name\":\"KH-1001-1765116526\",\"qty_for_calc\":100,\"bom_source\":\"product_bom\"}}');
 
 -- --------------------------------------------------------
 
@@ -2006,7 +2044,7 @@ CREATE TABLE `simulator_settings` (
 --
 
 INSERT INTO `simulator_settings` (`id`, `setting_key`, `setting_value`, `setting_type`, `description`, `updated_by`, `updated_at`) VALUES
-(1, 'simulator_enabled', '0', 'boolean', 'Bật/tắt simulator (0=Off, 1=On)', 'leader', '2025-12-20 16:33:03'),
+(1, 'simulator_enabled', '0', 'boolean', 'Bật/tắt simulator (0=Off, 1=On)', 'leader', '2025-12-22 19:53:24'),
 (2, 'simulator_interval', '60', 'integer', 'Khoảng thời gian ghi nhận (giây)', 'leader', '2025-12-19 07:31:58'),
 (3, 'good_count_min', '50', 'integer', 'Số lượng thành phẩm tối thiểu mỗi lần ghi', 'leader', '2025-12-19 07:31:58'),
 (4, 'good_count_max', '200', 'integer', 'Số lượng thành phẩm tối đa mỗi lần ghi', 'leader', '2025-12-19 07:31:58'),
@@ -2061,20 +2099,16 @@ CREATE TABLE `staff` (
 --
 
 INSERT INTO `staff` (`id_staff`, `staff_name`, `phone`, `email`, `department`, `position`, `st_status`, `created_at`, `updated_at`) VALUES
-(1001, 'Leader1', '0228212312', 'leader1@mail.com', NULL, NULL, 1, '2025-12-11 15:09:49', '2025-12-20 17:35:39'),
-(1002, 'Leader2', '8923321', 'leader2@mail.com', 'Sản Xuất', 'Leader', 1, '2025-12-11 15:09:49', '2025-12-12 08:21:14'),
-(1003, 'Administrator', '0', '', 'IT', 'Administrator', 1, '2025-11-01 08:49:53', '2025-12-12 01:21:14'),
-(1004, 'Trưởng dây chuyền', '0', '', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:49:53', '2025-12-12 01:21:14'),
-(1005, 'Nguyễn Văn A - Giám Đốc', '0', 'bod@company.com', 'Ban Giám Đốc', 'Giám Đốc', 1, '2025-11-01 08:53:44', '2025-12-12 01:21:14'),
+(1001, 'Leader1', '0228212311', 'leader1@mail.com', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-12-11 15:09:49', '2025-12-22 17:20:11'),
+(1002, 'Leader2', '0228212312', 'leader2@mail.com', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-12-11 15:09:49', '2025-12-22 17:55:17'),
+(1003, 'Administrator', '0228212313', 'dat1@mail.com', 'IT', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:49:53', '2025-12-22 18:02:06'),
+(1004, 'Trưởng dây chuyền', '0228212311', 'dat@mail.com', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:49:53', '2025-12-22 17:32:55'),
+(1005, 'Nguyễn Văn A - Giám Đốc', '0123456789', 'bod@mail.com', 'Ban Giám Đốc', 'Giám Đốc', 1, '2025-11-01 08:53:44', '2025-12-22 18:25:31'),
 (1006, 'Trần Văn B - Trưởng line 2', '0', 'linemanager@company.com', 'Sản Xuất', 'Trưởng Dây Chuyền', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
 (1007, 'Lê Thị C - Nhân viên kho', '0', 'warehouse@company.com', 'Kho', 'Nhân Viên Kho', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
 (1008, 'Phạm Văn D - Nhân viên QC', '0', 'qc@company.com', 'QC', 'Nhân Viên QC', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
 (1009, 'Hoàng Văn E - Kỹ thuật viên', '0', 'technical@company.com', 'Kỹ Thuật', 'Kỹ Thuật Viên', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
-(1010, 'Nguyễn Thị F - Công nhân', '0', 'worker@company.com', 'Sản Xuất', 'Công Nhân', 1, '2025-11-01 08:53:45', '2025-12-12 01:21:14'),
-(1011, 'công', '0214748364', 'danh12345@mail.com', 'Sản Xuất', 'Nhân Viên Kho', 1, '2025-12-01 09:02:29', '2025-12-20 17:38:59'),
-(1012, 'anh', '2147483647', 'danh@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-03 01:55:13', '2025-12-12 01:21:14'),
-(1013, 'cong danh', '0', 'danh66667@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-07 07:38:47', '2025-12-12 01:21:14'),
-(1033, 'danh', '9769857', 'danh77656@gmail.com', 'Chưa Phân Loại', 'Chưa Phân Loại', 1, '2025-12-03 01:45:13', '2025-12-12 01:21:14');
+(1010, 'Le Van A  - Công nhân', '0228212314', 'worker@mail.com', 'Sản Xuất', NULL, 1, '2025-11-01 08:53:45', '2025-12-22 19:41:08');
 
 -- --------------------------------------------------------
 
@@ -2131,14 +2165,14 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`user_id`, `username`, `password`, `temp_password`, `must_change_password`, `role_id`, `staff_id`, `full_name`, `email`, `phone`, `is_active`, `last_login`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'admin', NULL, 0, 4, 1003, 'Administrator', NULL, NULL, 1, '2025-12-22 16:26:29', NULL, '2025-11-01 15:49:53', '2025-12-22 16:26:29'),
-(2, 'leader', 'leader', NULL, 0, 2, 1004, 'Trưởng dây chuyền', NULL, NULL, 1, '2025-12-20 20:20:28', NULL, '2025-11-01 15:49:53', '2025-12-20 20:20:28'),
-(3, 'bod', 'bod123', NULL, 0, 1, 1005, 'Nguyễn Văn A - Giám Đốc', 'bod@company.com', NULL, 1, '2025-12-22 13:10:45', NULL, '2025-11-01 15:53:44', '2025-12-22 13:10:45'),
+(1, 'admin', 'admin', NULL, 0, 4, 1003, 'Administrator', NULL, NULL, 1, '2025-12-22 18:25:09', NULL, '2025-11-01 15:49:53', '2025-12-22 18:25:09'),
+(2, 'leader', 'leader', NULL, 0, 2, 1004, 'Trưởng dây chuyền', NULL, NULL, 1, '2025-12-22 19:39:47', NULL, '2025-11-01 15:49:53', '2025-12-22 19:39:47'),
+(3, 'bod', 'bod123', NULL, 0, 1, 1005, 'Nguyễn Văn A - Giám Đốc', 'bod@company.com', NULL, 1, '2025-12-22 18:38:19', NULL, '2025-11-01 15:53:44', '2025-12-22 18:38:19'),
 (4, 'line_manage', 'line123', NULL, 0, 2, 1006, 'Trần Văn B - Trưởng line 2', 'linemanager@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
 (5, 'warehouse', 'wh123', NULL, 0, 3, 1007, 'Lê Thị C - Nhân viên kho', 'warehouse@company.com', NULL, 1, '2025-12-22 13:13:59', NULL, '2025-11-01 15:53:45', '2025-12-22 13:13:59'),
 (6, 'qc', 'qc123', NULL, 0, 5, 1008, 'Phạm Văn D - Nhân viên QC', 'qc@company.com', NULL, 1, '2025-12-19 18:21:28', NULL, '2025-11-01 15:53:45', '2025-12-19 18:21:28'),
 (7, 'technical', 'tech123', NULL, 0, 6, 1009, 'Hoàng Văn E - Kỹ thuật viên', 'technical@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
-(8, 'Le Van A', 'worker123', NULL, 0, 7, 1010, 'Nguyễn Thị F - Công nhân', 'worker@company.com', NULL, 1, '2025-12-20 18:12:13', NULL, '2025-11-01 15:53:45', '2025-12-20 18:12:13');
+(8, 'Le Van A', 'worker123', NULL, 0, 7, 1010, 'Le Van A - Công nhân', 'worker@company.com', NULL, 1, '2025-12-22 19:39:03', NULL, '2025-11-01 15:53:45', '2025-12-22 19:39:03');
 
 -- --------------------------------------------------------
 
@@ -2271,7 +2305,9 @@ CREATE TABLE `warehouse_import_requests` (
 
 INSERT INTO `warehouse_import_requests` (`request_id`, `request_code`, `closure_id`, `shift_id`, `product_id`, `product_name`, `product_code`, `quantity`, `unit`, `status`, `qc_by`, `qc_date`, `qc_notes`, `qc_approved_quantity`, `qc_rejected_quantity`, `imported_by`, `imported_date`, `warehouse_location`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
 (1, 'WIR-20251219-001', 1, 1, NULL, 'Ca Sáng - Dây chuyền 1', NULL, 335, 'cái', 'pending_qc', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Đề nghị nhập kho tự động từ phiếu chốt ca', 2, '2025-12-18 17:44:44', '2025-12-18 17:44:44'),
-(2, 'WIR-20251219-002', 2, 3, NULL, 'Ca Sáng - Dây chuyền 2', NULL, 308, 'cái', 'pending_qc', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Đề nghị nhập kho tự động từ phiếu chốt ca', 2, '2025-12-18 17:57:02', '2025-12-18 17:57:02');
+(2, 'WIR-20251219-002', 2, 3, NULL, 'Ca Sáng - Dây chuyền 2', NULL, 308, 'cái', 'pending_qc', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Đề nghị nhập kho tự động từ phiếu chốt ca', 2, '2025-12-18 17:57:02', '2025-12-18 17:57:02'),
+(3, 'WIR-20251223-001', 124, 17, NULL, 'CA-2-KH-1001-1765116526', NULL, 223, 'cái', 'pending_qc', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Đề nghị nhập kho tự động từ phiếu chốt ca', 2, '2025-12-22 18:50:02', '2025-12-22 18:50:02'),
+(4, 'WIR-20251223-002', 125, 19, NULL, 'CA-2-KH-1001-1765116526', NULL, 206, 'cái', 'pending_qc', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Đề nghị nhập kho tự động từ phiếu chốt ca', 2, '2025-12-22 19:32:39', '2025-12-22 19:32:39');
 
 -- --------------------------------------------------------
 
@@ -2783,7 +2819,7 @@ ALTER TABLE `adjustment_requests`
 -- AUTO_INCREMENT for table `audit_log`
 --
 ALTER TABLE `audit_log`
-  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=234;
+  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=252;
 
 --
 -- AUTO_INCREMENT for table `defect_reasons`
@@ -2813,7 +2849,7 @@ ALTER TABLE `finished_receipt`
 -- AUTO_INCREMENT for table `incident_coordination`
 --
 ALTER TABLE `incident_coordination`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `incident_reports`
@@ -2891,13 +2927,13 @@ ALTER TABLE `production_lines`
 -- AUTO_INCREMENT for table `production_records`
 --
 ALTER TABLE `production_records`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 --
 -- AUTO_INCREMENT for table `production_shifts`
 --
 ALTER TABLE `production_shifts`
-  MODIFY `shift_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `shift_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `project`
@@ -2963,7 +2999,7 @@ ALTER TABLE `shiftment`
 -- AUTO_INCREMENT for table `shift_closures`
 --
 ALTER TABLE `shift_closures`
-  MODIFY `closure_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=124;
+  MODIFY `closure_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=126;
 
 --
 -- AUTO_INCREMENT for table `shift_closure_defects`
@@ -2975,19 +3011,19 @@ ALTER TABLE `shift_closure_defects`
 -- AUTO_INCREMENT for table `shift_closure_machines`
 --
 ALTER TABLE `shift_closure_machines`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `shift_machine_staff`
 --
 ALTER TABLE `shift_machine_staff`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `shift_material_confirmations`
 --
 ALTER TABLE `shift_material_confirmations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `simulator_settings`
@@ -2999,13 +3035,13 @@ ALTER TABLE `simulator_settings`
 -- AUTO_INCREMENT for table `staff`
 --
 ALTER TABLE `staff`
-  MODIFY `id_staff` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1034;
+  MODIFY `id_staff` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1035;
 
 --
 -- AUTO_INCREMENT for table `warehouse_import_requests`
 --
 ALTER TABLE `warehouse_import_requests`
-  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `request_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `zones`

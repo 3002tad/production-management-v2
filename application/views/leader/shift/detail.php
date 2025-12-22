@@ -318,8 +318,8 @@
                                                     <td>
                                                         <div class="d-flex px-2 py-1">
                                                             <div class="d-flex flex-column justify-content-center">
-                                                                <h6 class="mb-0 text-sm"><?= $staff->staff_code ?></h6>
-                                                                <p class="text-xs text-secondary mb-0"><?= $staff->full_name ?></p>
+                                                                <h6 class="mb-0 text-sm"><?= $staff->full_name ?></h6>
+                                                                <p class="text-xs text-secondary mb-0"><?= $staff->staff_code ?></p>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -700,13 +700,13 @@ function displayMachineCards(machines) {
         let staffList = '';
         if (machine.assigned_staff && machine.assigned_staff.length > 0) {
             machine.assigned_staff.forEach(function(staff) {
-                // Display staff name (prioritizes staff_name, falls back to user info)
-                const staffNameDisplay = staff.staff_name || 'N/A';
+                // Display staff name
+                const staffNameDisplay = staff.staff_name || '';
                 staffList += `
                     <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
                         <div>
                             <p class="text-sm mb-0">${staffNameDisplay}</p>
-                            <small class="text-muted">${staff.role_name || 'N/A'} - ${staff.department || 'N/A'}</small>
+                            <small class="text-muted">${staff.role_name || ''} ${staff.department || ''}</small>
                         </div>
                         <form method="POST" action="<?= site_url('leader/shift/remove_staff_from_machine'); ?>" style="display:inline;">
                             <input type="hidden" name="shift_id" value="<?= $shift->shift_id ?>">
@@ -1264,7 +1264,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check simulator status immediately
     checkSimulatorStatus();
     
-    // Load production data if on production tab
+    // Load production data immediately on page load (to populate badge count)
+    // Instead of waiting for tab click
+    loadProductionData();
+    
+    // Also load when tab is shown (for re-fetching latest data)
     const productionTab = document.getElementById('production-tab');
     if (productionTab) {
         productionTab.addEventListener('shown.bs.tab', function() {

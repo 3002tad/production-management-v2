@@ -139,6 +139,38 @@
   <script src="<?= site_url('asset/backend/assets/js/plugins/smooth-scrollbar.min.js'); ?>"></script>
   <script src="<?= site_url('asset/backend/assets/js/plugins/chartjs.min.js'); ?>"></script>
   <script src="<?= site_url('asset/backend/assets/js/material-dashboard.min.js?v=3.0.0'); ?>"></script>
+
+  <!-- Auto-hide success alert -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const alerts = document.querySelectorAll('.alert-success');
+      alerts.forEach(function(alert) {
+        // Mark this alert as shown
+        const alertKey = 'alert_shown_' + window.location.pathname;
+        
+        if (!sessionStorage.getItem(alertKey)) {
+          sessionStorage.setItem(alertKey, 'true');
+          
+          setTimeout(function() {
+            if (alert) {
+              alert.style.opacity = '0';
+              alert.style.transition = 'opacity 0.5s ease-out';
+              setTimeout(function() {
+                if (alert && alert.parentNode) {
+                  alert.parentNode.removeChild(alert);
+                }
+              }, 500);
+            }
+          }, 2000);
+        } else {
+          // Alert already shown, remove it immediately
+          if (alert && alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+          }
+        }
+      });
+    });
+  </script>
 </body>
 
 </html>

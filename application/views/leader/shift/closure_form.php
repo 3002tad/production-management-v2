@@ -288,6 +288,82 @@
             </div>
         </div>
 
+        <!-- Quantity Confirmation Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header pb-0">
+                        <h6>
+                            <i class="material-icons text-sm" style="vertical-align: middle;">verified_user</i>
+                            Xác nhận số lượng thực
+                        </h6>
+                        <p class="text-sm text-secondary mb-0">
+                            Các số liệu dưới đây được lấy mặc định từ hệ thống ghi nhận sản xuất. Bạn có thể chỉnh sửa nếu cần.
+                        </p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Sản lượng thô (Raw Production) -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-label">Sản lượng thô (chiếc)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="confirmed_raw_qty" 
+                                               id="confirmed_raw_qty" min="0" 
+                                               value="<?= isset($totals['total_produced']) ? (int)$totals['total_produced'] : 0 ?>"
+                                               placeholder="Sản lượng thô">
+                                        <span class="input-group-text text-secondary text-xs">
+                                            <small>Mặc định: <?= isset($totals['total_produced']) ? number_format($totals['total_produced']) : '0' ?></small>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Thành phẩm (Good Products) -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-label">Thành phẩm (chiếc)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="confirmed_good_qty" 
+                                               id="confirmed_good_qty" min="0" 
+                                               value="<?= isset($totals['total_good']) ? (int)$totals['total_good'] : 0 ?>"
+                                               placeholder="Thành phẩm">
+                                        <span class="input-group-text text-secondary text-xs">
+                                            <small>Mặc định: <?= isset($totals['total_good']) ? number_format($totals['total_good']) : '0' ?></small>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Phế phẩm (Defect Products) -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-label">Phế phẩm (chiếc)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="confirmed_defect_qty" 
+                                               id="confirmed_defect_qty" min="0" 
+                                               value="<?= isset($totals['total_defect']) ? (int)$totals['total_defect'] : 0 ?>"
+                                               placeholder="Phế phẩm">
+                                        <span class="input-group-text text-secondary text-xs">
+                                            <small>Mặc định: <?= isset($totals['total_defect']) ? number_format($totals['total_defect']) : '0' ?></small>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Validation Info -->
+                        <div class="alert alert-info mt-3 mb-0">
+                            <small>
+                                <i class="material-icons text-xs" style="vertical-align: middle;">info</i>
+                                <strong>Lưu ý:</strong> Tổng thành phẩm + phế phẩm nên bằng sản lượng thô. Hệ thống sẽ kiểm tra khi lưu.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notes -->
         <div class="row mt-4">
             <div class="col-12">
@@ -352,6 +428,18 @@ document.addEventListener('DOMContentLoaded', function() {
     closureForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
+        // Validate quantity fields
+        const rawQty = parseInt(document.getElementById('confirmed_raw_qty').value) || 0;
+        const goodQty = parseInt(document.getElementById('confirmed_good_qty').value) || 0;
+        const defectQty = parseInt(document.getElementById('confirmed_defect_qty').value) || 0;
+        
+        // Check if sum of good + defect equals raw
+        if (rawQty > 0 && (goodQty + defectQty !== rawQty)) {
+            alert('Lỗi: Tổng thành phẩm (' + goodQty + ') + phế phẩm (' + defectQty + ') = ' + 
+                  (goodQty + defectQty) + ' không bằng sản lượng thô (' + rawQty + ')');
+            return;
+        }
+        
         // Confirm action
         if (!confirm('Xác nhận chốt ca? Hành động này không thể hoàn tác.')) {
             return;
@@ -384,6 +472,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const postData = new FormData();
         postData.append('shift_id', formData.get('shift_id'));
         postData.append('notes', formData.get('notes'));
+        postData.append('confirmed_raw_qty', rawQty);
+        postData.append('confirmed_good_qty', goodQty);
+        postData.append('confirmed_defect_qty', defectQty);
         postData.append('confirmed_data', JSON.stringify(confirmed_data));
         
         // Send AJAX request

@@ -55,9 +55,11 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="input-group input-group-static mb-4">
-                                    <label>Tên ca *</label>
-                                    <input type="text" class="form-control" name="shift_name" required 
-                                           placeholder="VD: Ca sáng, Ca chiều">
+                                    <label>Tên ca 
+                                        <small class="text-muted">(tùy chọn)</small>
+                                    </label>
+                                    <input type="text" class="form-control" name="shift_name"
+                                           placeholder="Để trống sẽ tự tạo tên như: CA-1-Tên kế hoạch">
                                 </div>
                             </div>
                             <div class="col-md-6">
