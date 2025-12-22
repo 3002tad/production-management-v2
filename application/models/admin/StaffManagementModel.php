@@ -95,8 +95,13 @@ class StaffManagementModel extends CI_Model
         $data['updated_at'] = date('Y-m-d H:i:s');
 
         // Check email unique
-        if (!empty($data['email']) && $this->db->where('email', $data['email'])->count_all_results($this->table) > 0) {
+        if (!empty($data['email']) && $this->exists_email($data['email'])) {
             return ['success' => false, 'message' => 'Email đã tồn tại trong hệ thống.'];
+        }
+
+        // Check phone unique
+        if (!empty($data['phone']) && $this->exists_phone($data['phone'])) {
+            return ['success' => false, 'message' => 'Số điện thoại đã tồn tại trong hệ thống.'];
         }
 
         $this->db->insert($this->table, $data);
@@ -121,8 +126,13 @@ class StaffManagementModel extends CI_Model
         $data['updated_at'] = date('Y-m-d H:i:s');
 
         // Check email unique (exclude current)
-        if (!empty($data['email']) && $this->db->where('email', $data['email'])->where('id_staff !=', $id)->count_all_results($this->table) > 0) {
+        if (!empty($data['email']) && $this->exists_email($data['email'], $id)) {
             return ['success' => false, 'message' => 'Email đã tồn tại trong hệ thống.'];
+        }
+
+        // Check phone unique (exclude current)
+        if (!empty($data['phone']) && $this->exists_phone($data['phone'], $id)) {
+            return ['success' => false, 'message' => 'Số điện thoại đã tồn tại trong hệ thống.'];
         }
 
         $this->db->where('id_staff', $id);
@@ -197,7 +207,18 @@ class StaffManagementModel extends CI_Model
     {
         if (empty($email)) return false;
         $this->db->from($this->table);
-        $this->db->where('email', $email);
+        $this->db->where('email', trim($email));
+        if (!is_null($exclude_id)) {
+            $this->db->where('id_staff <>', (int)$exclude_id);
+        }
+        return $this->db->count_all_results() > 0;
+    }
+
+    public function exists_phone($phone, $exclude_id = null)
+    {
+        if (empty($phone)) return false;
+        $this->db->from($this->table);
+        $this->db->where('phone', trim($phone));
         if (!is_null($exclude_id)) {
             $this->db->where('id_staff <>', (int)$exclude_id);
         }

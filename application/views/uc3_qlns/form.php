@@ -9,38 +9,67 @@
 
 <?php echo form_open(); ?>
 <?php $old = isset($old) ? $old : array(); ?>
+
 <p>
-    <label>Mã nhân sự</label><br />
-    <input type="text" name="code" value="<?php echo isset($old['code']) ? htmlspecialchars($old['code']) : (isset($staff) ? htmlspecialchars($staff->code) : set_value('code')); ?>" <?php echo isset($staff) ? 'readonly' : ''; ?> />
+    <label>Tên nhân sự *</label><br />
+    <input type="text" name="staff_name" required value="<?php echo isset($old['staff_name']) ? htmlspecialchars($old['staff_name']) : (isset($staff) ? htmlspecialchars($staff->staff_name) : ''); ?>" />
 </p>
+
 <p>
-    <label>Tên</label><br />
-    <input type="text" name="name" value="<?php echo isset($old['name']) ? htmlspecialchars($old['name']) : (isset($staff) ? htmlspecialchars($staff->name) : set_value('name')); ?>" />
+    <label>Email *</label><br />
+    <input type="email" name="email" required value="<?php echo isset($old['email']) ? htmlspecialchars($old['email']) : (isset($staff) ? htmlspecialchars($staff->email) : ''); ?>" />
+    <?php if (!empty($duplicate_email)): ?>
+        <div style="color:red; font-size:0.95em; margin-top:6px;">Email đã tồn tại trong hệ thống.</div>
+    <?php endif; ?>
 </p>
+
 <p>
-    <label>Kỹ năng</label><br />
-    <input type="text" name="skill" value="<?php echo isset($old['skill']) ? htmlspecialchars($old['skill']) : (isset($staff) ? htmlspecialchars($staff->skill) : set_value('skill')); ?>" />
-</p>
-<p>
-    <label>Phone (bắt đầu bằng 0, đúng 10 chữ số)</label><br />
-    <input type="text" name="phone" value="<?php echo isset($old['phone']) ? htmlspecialchars($old['phone']) : (isset($staff) ? htmlspecialchars($staff->phone) : set_value('phone')); ?>" placeholder="0xxxxxxxxx" />
+    <label>Số điện thoại * (bắt đầu bằng 0, đúng 10 chữ số)</label><br />
+    <input type="text" name="phone" required value="<?php echo isset($old['phone']) ? htmlspecialchars($old['phone']) : (isset($staff) ? htmlspecialchars($staff->phone) : ''); ?>" placeholder="0xxxxxxxxx" />
     <?php if (!empty($duplicate_phone)): ?>
         <div style="color:red; font-size:0.95em; margin-top:6px;">Số điện thoại đã tồn tại trong hệ thống.</div>
     <?php endif; ?>
 </p>
+
+<p>
+    <label>Bộ phận</label><br />
+    <select name="department">
+        <option value="">-- Chọn bộ phận --</option>
+        <?php if (!empty($departments)): ?>
+            <?php foreach ($departments as $dept): ?>
+                <option value="<?php echo htmlspecialchars($dept); ?>" <?php echo (isset($old['department']) && $old['department'] == $dept) || (isset($staff) && $staff->department == $dept) ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($dept); ?>
+                </option>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </select>
+</p>
+
+<p>
+    <label>Vị trí</label><br />
+    <select name="position">
+        <option value="">-- Chọn vị trí --</option>
+        <?php if (!empty($positions)): ?>
+            <?php foreach ($positions as $pos): ?>
+                <option value="<?php echo htmlspecialchars($pos); ?>" <?php echo (isset($old['position']) && $old['position'] == $pos) || (isset($staff) && $staff->position == $pos) ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($pos); ?>
+                </option>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </select>
+</p>
+
+<p>
+    <label>Trạng thái</label><br />
+    <select name="st_status">
+        <option value="1" <?php echo (isset($old['st_status']) && $old['st_status'] == 1) || (isset($staff) && $staff->st_status == 1) || !isset($staff) ? 'selected' : ''; ?>>Hoạt động</option>
+        <option value="0" <?php echo (isset($old['st_status']) && $old['st_status'] == 0) || (isset($staff) && $staff->st_status == 0) ? 'selected' : ''; ?>>Không hoạt động</option>
+    </select>
+</p>
+
 <p>
     <button type="submit">Lưu</button>
     <a href="<?php echo site_url('UC3_QLNS/Staffs'); ?>">Hủy</a>
- </p>
-
-<?php if (!empty($duplicate_phone) || (!empty($error) && strpos($error, 'điện thoại') !== false)): ?>
-    <div style="margin-top:10px;">
-        <strong>Hành động:</strong>
-        &nbsp;
-        <a href="<?php echo isset($staff) ? site_url('UC3_QLNS/Staffs/edit/'.$staff->id) : site_url('UC3_QLNS/Staffs/create'); ?>">Nhập lại</a>
-        &nbsp;|&nbsp;
-        <a href="<?php echo site_url('UC3_QLNS/Staffs'); ?>">Hủy</a>
-    </div>
-<?php endif; ?>
+</p>
 
 <?php echo form_close(); ?>

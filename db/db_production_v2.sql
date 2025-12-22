@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 22, 2025 at 01:42 PM
+-- Generation Time: Dec 22, 2025 at 05:37 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Database: `db_production`
 --
+CREATE DATABASE IF NOT EXISTS `db_production` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `db_production`;
 
 -- --------------------------------------------------------
 
@@ -292,7 +294,13 @@ INSERT INTO `audit_log` (`log_id`, `user_id`, `username`, `action`, `module`, `r
 (224, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-21 08:58:39'),
 (225, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 12:01:55'),
 (226, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 12:30:33'),
-(227, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 12:30:41');
+(227, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 12:30:41'),
+(228, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 13:10:39'),
+(229, 3, 'bod', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 13:10:45'),
+(230, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 13:11:02'),
+(231, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 13:13:59'),
+(232, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 14:45:09'),
+(233, 1, 'admin', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 16:26:29');
 
 -- --------------------------------------------------------
 
@@ -427,6 +435,13 @@ CREATE TABLE `finished_issue` (
   `status` enum('full','partial','cancelled') DEFAULT 'full' COMMENT 'Trạng thái: full=giao đủ, partial=giao một phần, cancelled=hủy'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Phiếu xuất giao hàng thành phẩm';
 
+--
+-- Dumping data for table `finished_issue`
+--
+
+INSERT INTO `finished_issue` (`id_issue`, `issue_code`, `id_project`, `quantity_requested`, `quantity_issued`, `created_by`, `created_by_name`, `created_date`, `notes`, `status`) VALUES
+(3, 'XK-20251222202312-692', 1001, 10000, 335, 5, 'warehouse', '2025-12-22 20:23:12', '', 'partial');
+
 -- --------------------------------------------------------
 
 --
@@ -434,7 +449,7 @@ CREATE TABLE `finished_issue` (
 --
 
 CREATE TABLE `finished_receipt` (
-  `id_receipt` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `id_receipt` int(11) NOT NULL,
   `receipt_code` varchar(50) NOT NULL COMMENT 'Mã phiếu nhập (tự động sinh)',
   `id_project` int(11) NOT NULL COMMENT 'Liên kết tới project',
   `id_finished_report` int(11) DEFAULT NULL COMMENT 'Liên kết tới báo cáo QC',
@@ -450,6 +465,13 @@ CREATE TABLE `finished_receipt` (
   `qc_approved_by` varchar(50) DEFAULT NULL COMMENT 'User code QC duyệt',
   `requires_qc_approval` tinyint(1) DEFAULT 1 COMMENT 'Bắt buộc QC duyệt trước khi nhập'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Phiếu nhập thành phẩm';
+
+--
+-- Dumping data for table `finished_receipt`
+--
+
+INSERT INTO `finished_receipt` (`id_receipt`, `receipt_code`, `id_project`, `id_finished_report`, `quantity_received`, `quantity_planned`, `created_by`, `created_by_name`, `created_date`, `notes`, `status`, `qc_verified`, `qc_approved_at`, `qc_approved_by`, `requires_qc_approval`) VALUES
+(1, 'NTP-20251222202232-862', 1001, 1, 335, 335, 5, 'warehouse', '2025-12-22 20:22:32', '', 'posted', 0, NULL, NULL, 1);
 
 --
 -- Triggers `finished_receipt`
@@ -519,7 +541,7 @@ CREATE TABLE `finished_stock` (
 --
 
 INSERT INTO `finished_stock` (`id_stock`, `id_product`, `quantity_in_stock`, `quantity_received`, `quantity_issued`, `last_updated`) VALUES
-(1, 1001, 0, 35, 41010, '2025-12-21 15:58:10'),
+(1, 1001, 0, 370, 41345, '2025-12-22 20:23:12'),
 (5, 1002, 0, 10, 0, '2025-12-15 04:40:56'),
 (6, 1003, 2, 200, 0, '2025-12-18 20:19:30'),
 (7, 1004, 0, 50, 0, '2025-12-16 21:36:31');
@@ -2109,11 +2131,11 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`user_id`, `username`, `password`, `temp_password`, `must_change_password`, `role_id`, `staff_id`, `full_name`, `email`, `phone`, `is_active`, `last_login`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'admin', 'admin', NULL, 0, 4, 1003, 'Administrator', NULL, NULL, 1, '2025-12-20 19:53:53', NULL, '2025-11-01 15:49:53', '2025-12-20 19:53:53'),
+(1, 'admin', 'admin', NULL, 0, 4, 1003, 'Administrator', NULL, NULL, 1, '2025-12-22 16:26:29', NULL, '2025-11-01 15:49:53', '2025-12-22 16:26:29'),
 (2, 'leader', 'leader', NULL, 0, 2, 1004, 'Trưởng dây chuyền', NULL, NULL, 1, '2025-12-20 20:20:28', NULL, '2025-11-01 15:49:53', '2025-12-20 20:20:28'),
-(3, 'bod', 'bod123', NULL, 0, 1, 1005, 'Nguyễn Văn A - Giám Đốc', 'bod@company.com', NULL, 1, '2025-12-20 20:18:25', NULL, '2025-11-01 15:53:44', '2025-12-20 20:18:25'),
+(3, 'bod', 'bod123', NULL, 0, 1, 1005, 'Nguyễn Văn A - Giám Đốc', 'bod@company.com', NULL, 1, '2025-12-22 13:10:45', NULL, '2025-11-01 15:53:44', '2025-12-22 13:10:45'),
 (4, 'line_manage', 'line123', NULL, 0, 2, 1006, 'Trần Văn B - Trưởng line 2', 'linemanager@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
-(5, 'warehouse', 'wh123', NULL, 0, 3, 1007, 'Lê Thị C - Nhân viên kho', 'warehouse@company.com', NULL, 1, '2025-12-22 12:30:41', NULL, '2025-11-01 15:53:45', '2025-12-22 12:30:41'),
+(5, 'warehouse', 'wh123', NULL, 0, 3, 1007, 'Lê Thị C - Nhân viên kho', 'warehouse@company.com', NULL, 1, '2025-12-22 13:13:59', NULL, '2025-11-01 15:53:45', '2025-12-22 13:13:59'),
 (6, 'qc', 'qc123', NULL, 0, 5, 1008, 'Phạm Văn D - Nhân viên QC', 'qc@company.com', NULL, 1, '2025-12-19 18:21:28', NULL, '2025-11-01 15:53:45', '2025-12-19 18:21:28'),
 (7, 'technical', 'tech123', NULL, 0, 6, 1009, 'Hoàng Văn E - Kỹ thuật viên', 'technical@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
 (8, 'Le Van A', 'worker123', NULL, 0, 7, 1010, 'Nguyễn Thị F - Công nhân', 'worker@company.com', NULL, 1, '2025-12-20 18:12:13', NULL, '2025-11-01 15:53:45', '2025-12-20 18:12:13');
@@ -2761,7 +2783,7 @@ ALTER TABLE `adjustment_requests`
 -- AUTO_INCREMENT for table `audit_log`
 --
 ALTER TABLE `audit_log`
-  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=228;
+  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=234;
 
 --
 -- AUTO_INCREMENT for table `defect_reasons`
@@ -2779,7 +2801,13 @@ ALTER TABLE `downtime_reasons`
 -- AUTO_INCREMENT for table `finished_issue`
 --
 ALTER TABLE `finished_issue`
-  MODIFY `id_issue` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_issue` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `finished_receipt`
+--
+ALTER TABLE `finished_receipt`
+  MODIFY `id_receipt` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `incident_coordination`

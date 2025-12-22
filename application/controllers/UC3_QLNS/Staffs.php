@@ -136,6 +136,16 @@ class Staffs extends CI_Controller {
                 $this->load->view('leader/VBackend', $data);
                 return;
             }
+            if ($this->staffModel->exists_phone($payload['phone'])) {
+                $data['error'] = 'Số điện thoại đã tồn tại trong hệ thống.';
+                $data['duplicate_phone'] = true;
+                $data['old'] = $payload;
+                $data['departments'] = $this->staffModel->getDepartments();
+                $data['positions'] = $this->staffModel->getPositions();
+                $data['content'] = 'uc3_qlns/form';
+                $this->load->view('leader/VBackend', $data);
+                return;
+            }
 
             $data = [
                 'staff_name' => trim($payload['staff_name']),
@@ -143,7 +153,6 @@ class Staffs extends CI_Controller {
                 'phone'      => trim($payload['phone']),
                 'department' => $payload['department'] ?: 'Chưa Phân Loại',
                 'position'   => $payload['position'] ?: 'Chưa Phân Loại',
-                'staff_group' => $payload['staff_group'] ?: 'worker',
                 'st_status'  => (int)($payload['st_status'] ?: 1)
             ];
 
@@ -181,6 +190,7 @@ class Staffs extends CI_Controller {
 
         if ($this->input->method() === 'post') {
             $payload = $this->input->post();
+            file_put_contents(APPPATH . 'logs/staffs_debug.log', "\n[" . date('Y-m-d H:i:s') . "] EDIT POST for ID $id - Phone: " . ($payload['phone'] ?? 'empty') . "\n", FILE_APPEND);
 
             // validate email on update: must be valid and unique excluding current
             if (!empty($payload['email'])) {
@@ -208,13 +218,39 @@ class Staffs extends CI_Controller {
                 }
             }
 
+            // validate phone on update: must be valid and unique excluding current
+            if (!empty($payload['phone'])) {
+                if (!preg_match('/^0[0-9]{9}$/', $payload['phone'])) {
+                    $data['error'] = 'Số điện thoại không hợp lệ: phải bắt đầu bằng 0 và đúng 10 chữ số (chỉ gồm số).';
+                    $data['old'] = $payload;
+                    $data['staff'] = $staff;
+                    $data['departments'] = $this->staffModel->getDepartments();
+                    $data['positions'] = $this->staffModel->getPositions();
+                    $data['content'] = 'uc3_qlns/form';
+                    $this->load->view('leader/VBackend', $data);
+                    return;
+                }
+                // check duplicate excluding current staff id
+                if ($this->staffModel->exists_phone($payload['phone'], $id)) {
+                    file_put_contents(APPPATH . 'logs/staffs_debug.log', "[" . date('Y-m-d H:i:s') . "] EDIT - Duplicate phone detected for id $id: " . $payload['phone'] . "\n", FILE_APPEND);
+                    $data['error'] = 'Số điện thoại đã tồn tại trong hệ thống.';
+                    $data['duplicate_phone'] = true;
+                    $data['old'] = $payload;
+                    $data['staff'] = $staff;
+                    $data['departments'] = $this->staffModel->getDepartments();
+                    $data['positions'] = $this->staffModel->getPositions();
+                    $data['content'] = 'uc3_qlns/form';
+                    $this->load->view('leader/VBackend', $data);
+                    return;
+                }
+            }
+
             $data = [
                 'staff_name' => trim($payload['staff_name']),
                 'email'      => trim($payload['email']),
                 'phone'      => trim($payload['phone']),
                 'department' => $payload['department'] ?: 'Chưa Phân Loại',
                 'position'   => $payload['position'] ?: 'Chưa Phân Loại',
-                'staff_group' => $payload['staff_group'] ?: 'worker',
                 'st_status'  => (int)($payload['st_status'] ?: 1)
             ];
 

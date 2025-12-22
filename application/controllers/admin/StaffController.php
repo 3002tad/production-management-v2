@@ -85,6 +85,11 @@ class StaffController extends CI_Controller
             redirect('admin/staff/add');
         }
 
+        if (!empty($payload['phone']) && $this->staffModel->exists_phone($payload['phone'])) {
+            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại trong hệ thống.');
+            redirect('admin/staff/add');
+        }
+
         $data = [
             'staff_name' => trim($payload['staff_name']),
             'email'      => trim($payload['email']),
@@ -155,6 +160,11 @@ class StaffController extends CI_Controller
 
         if (!empty($payload['phone']) && !preg_match('/^0[0-9]{9}$/', $payload['phone'])) {
             $this->session->set_flashdata('error', 'Số điện thoại không hợp lệ.');
+            redirect('admin/staff/edit/' . $id);
+        }
+
+        if (!empty($payload['phone']) && $this->staffModel->exists_phone($payload['phone'], $id)) {
+            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại trong hệ thống.');
             redirect('admin/staff/edit/' . $id);
         }
 

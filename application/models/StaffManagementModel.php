@@ -198,11 +198,50 @@ class StaffManagementModel extends CI_Model
     public function exists_email($email, $exclude_id = null)
     {
         if (empty($email)) return false;
-        $this->db->from($this->table);
-        $this->db->where('email', $email);
+        
+        // Trim and clean the email value
+        $email_clean = trim($email);
+        
+        // Use raw SQL query for reliability
+        $sql = 'SELECT COUNT(*) as cnt FROM ' . $this->table . ' WHERE email = ?';
+        $params = [$email_clean];
+        
         if (!is_null($exclude_id)) {
-            $this->db->where('id_staff <>', (int)$exclude_id);
+            $sql .= ' AND id_staff <> ?';
+            $params[] = (int)$exclude_id;
         }
-        return $this->db->count_all_results() > 0;
+        
+        $result = $this->db->query($sql, $params)->row();
+        $count = ($result) ? (int)$result->cnt : 0;
+        
+        return $count > 0;
+    }
+
+    public function exists_phone($phone, $exclude_id = null)
+    {
+        if (empty($phone)) {
+            return false;
+        }
+        
+        // Trim and clean the phone value
+        $phone_clean = trim($phone);
+        
+        // Use query_binding for safer query
+        $sql = 'SELECT COUNT(*) as cnt FROM ' . $this->table . ' WHERE phone = ?';
+        $params = [$phone_clean];
+        
+        if (!is_null($exclude_id)) {
+            $sql .= ' AND id_staff <> ?';
+            $params[] = (int)$exclude_id;
+        }
+        
+        $result = $this->db->query($sql, $params)->row();
+        $count = ($result) ? (int)$result->cnt : 0;
+        
+        // Write to file for debugging
+        $debug_msg = "\n[" . date('Y-m-d H:i:s') . "] exists_phone - Phone: '$phone_clean', Exclude ID: " . ($exclude_id ?? 'null') . ", Count: $count, SQL: $sql\n";
+        file_put_contents(APPPATH . 'logs/phone_check.log', $debug_msg, FILE_APPEND);
+        
+        return $count > 0;
     }
 }

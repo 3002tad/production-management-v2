@@ -8,6 +8,8 @@ class Admin extends CI_Controller
     {
         parent::__construct();
         $this->load->model('CrudModel', 'crudModel');
+        // Staff management model (admin namespace) for email/phone uniqueness checks
+        $this->load->model('admin/StaffManagementModel', 'staffAdminModel');
         $this->load->library('session');
         
         // Check if user is logged in
@@ -703,11 +705,26 @@ class Admin extends CI_Controller
 
     public function addStaff()
     {
+        $email = trim($this->input->post('email'));
+        $phone = trim($this->input->post('phone'));
+
+        // Email uniqueness check
+        if (!empty($email) && $this->staffAdminModel->exists_email($email)) {
+            $this->session->set_flashdata('error', 'Email đã tồn tại trong hệ thống.');
+            redirect(site_url('Admin/staff'));
+        }
+
+        // Phone uniqueness check
+        if (!empty($phone) && $this->staffAdminModel->exists_phone($phone)) {
+            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại trong hệ thống.');
+            redirect(site_url('Admin/staff'));
+        }
+
         $add = [
             'id_staff'   => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
             'staff_name' => trim($this->input->post('staff_name')),
-            'phone'      => trim($this->input->post('phone')),
-            'email'      => trim($this->input->post('email')),
+            'phone'      => $phone,
+            'email'      => $email,
             'department' => trim($this->input->post('department')) ?: null,
             'position'   => trim($this->input->post('position')) ?: null,
             'st_status'  => (int)($this->input->post('st_status') ?? 1),
@@ -723,10 +740,25 @@ class Admin extends CI_Controller
     {
         $id_staff = $this->input->post('id_staff');
 
+        $email = trim($this->input->post('email'));
+        $phone = trim($this->input->post('phone'));
+
+        // Email uniqueness check (exclude current staff)
+        if (!empty($email) && $this->staffAdminModel->exists_email($email, $id_staff)) {
+            $this->session->set_flashdata('error', 'Email đã tồn tại trong hệ thống.');
+            redirect(site_url('Admin/staff/' . $id_staff . '/update'));
+        }
+
+        // Phone uniqueness check (exclude current staff)
+        if (!empty($phone) && $this->staffAdminModel->exists_phone($phone, $id_staff)) {
+            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại trong hệ thống.');
+            redirect(site_url('Admin/staff/' . $id_staff . '/update'));
+        }
+
         $update = [
             'staff_name' => trim($this->input->post('staff_name')),
-            'phone'      => trim($this->input->post('phone')),
-            'email'      => trim($this->input->post('email')),
+            'phone'      => $phone,
+            'email'      => $email,
             'department' => trim($this->input->post('department')) ?: null,
             'position'   => trim($this->input->post('position')) ?: null,
             'st_status'  => (int)($this->input->post('st_status') ?? 1),
