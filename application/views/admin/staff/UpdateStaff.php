@@ -27,8 +27,8 @@
             <div class="d-flex pt-4" method="post">
                 <div class="col-8">
                     <div class="card border-0 d-flex p-4 pt-0 mb-2 bg-gray-100">
-                    <?php if ($this->session->flashdata('error')): ?>
-                        <div class="alert alert-danger" role="alert"><?= $this->session->flashdata('error'); ?></div>
+                    <?php if (!empty($error)): ?>
+                        <div class="alert alert-danger" role="alert"><?= $error; ?></div>
                     <?php endif; ?>
                     <form class="pt-4" action="<?= site_url('admin/updatestaff'); ?>" method="post">
                         <span><?= lang('table_staff_name'); ?></span></br>

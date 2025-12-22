@@ -705,69 +705,141 @@ class Admin extends CI_Controller
 
     public function addStaff()
     {
-        $email = trim($this->input->post('email'));
-        $phone = trim($this->input->post('phone'));
+        if ($this->input->method() === 'post') {
+            $email = trim($this->input->post('email'));
+            $phone = trim($this->input->post('phone'));
+            $error = null;
 
-        // Email uniqueness check
-        if (!empty($email) && $this->staffAdminModel->exists_email($email)) {
-            $this->session->set_flashdata('error', 'Email đã tồn tại trong hệ thống.');
+            // Email uniqueness check
+            if (!empty($email) && $this->staffAdminModel->exists_email($email)) {
+                $error = 'Email đã tồn tại trong hệ thống.';
+            }
+            // Phone uniqueness check
+            elseif (!empty($phone) && $this->staffAdminModel->exists_phone($phone)) {
+                $error = 'Số điện thoại đã tồn tại trong hệ thống.';
+            }
+
+            if ($error) {
+                // Show form again with error message
+                $data = [
+                    'error' => $error,
+                    'staff_name' => $this->input->post('staff_name'),
+                    'email' => $email,
+                    'phone' => $phone,
+                    'department' => $this->input->post('department'),
+                    'position' => $this->input->post('position'),
+                    'st_status' => $this->input->post('st_status') ?? 1,
+                    'content' => 'admin/staff/addstaff',
+                    'navlink' => 'staff',
+                ];
+                $this->load->view('admin/vbackend', $data);
+                return;
+            }
+
+            $add = [
+                'id_staff'   => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
+                'staff_name' => trim($this->input->post('staff_name')),
+                'phone'      => $phone,
+                'email'      => $email,
+                'department' => trim($this->input->post('department')) ?: null,
+                'position'   => trim($this->input->post('position')) ?: null,
+                'st_status'  => (int)($this->input->post('st_status') ?? 1),
+            ];
+
+            // skills removed — do not include skills field
+            $this->crudModel->addData('staff', $add);
+
+            $this->session->set_flashdata('success', 'Thêm nhân viên thành công.');
             redirect(site_url('Admin/staff'));
         }
 
-        // Phone uniqueness check
-        if (!empty($phone) && $this->staffAdminModel->exists_phone($phone)) {
-            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại trong hệ thống.');
-            redirect(site_url('Admin/staff'));
-        }
-
-        $add = [
-            'id_staff'   => $this->crudModel->generateCode(1, 'id_staff', 'staff'),
-            'staff_name' => trim($this->input->post('staff_name')),
-            'phone'      => $phone,
-            'email'      => $email,
-            'department' => trim($this->input->post('department')) ?: null,
-            'position'   => trim($this->input->post('position')) ?: null,
-            'st_status'  => (int)($this->input->post('st_status') ?? 1),
+        // GET request - show form
+        $data = [
+            'staff' => $this->db->query('SELECT * FROM staff')->result(),
+            'content' => 'admin/staff/addstaff',
+            'navlink' => 'staff',
         ];
-
-        // skills removed — do not include skills field
-        $this->crudModel->addData('staff', $add);
-
-        redirect(site_url('Admin/staff'));
+        $this->load->view('admin/vbackend', $data);
     }
 
     public function updateStaff()
     {
         $id_staff = $this->input->post('id_staff');
 
-        $email = trim($this->input->post('email'));
-        $phone = trim($this->input->post('phone'));
+        if ($this->input->method() === 'post' && $id_staff) {
+            $email = trim($this->input->post('email'));
+            $phone = trim($this->input->post('phone'));
+            $error = null;
 
-        // Email uniqueness check (exclude current staff)
-        if (!empty($email) && $this->staffAdminModel->exists_email($email, $id_staff)) {
-            $this->session->set_flashdata('error', 'Email đã tồn tại trong hệ thống.');
-            redirect(site_url('Admin/staff/' . $id_staff . '/update'));
+            // Email uniqueness check (exclude current staff)
+            if (!empty($email) && $this->staffAdminModel->exists_email($email, $id_staff)) {
+                $error = 'Email đã tồn tại trong hệ thống.';
+            }
+            // Phone uniqueness check (exclude current staff)
+            elseif (!empty($phone) && $this->staffAdminModel->exists_phone($phone, $id_staff)) {
+                $error = 'Số điện thoại đã tồn tại trong hệ thống.';
+            }
+
+            if ($error) {
+                // Show form again with error message
+                $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id_staff)->row();
+                $data = [
+                    'error' => $error,
+                    'detail' => [
+                        'id_staff' => $tampil->id_staff,
+                        'staff_name' => $this->input->post('staff_name'),
+                        'phone' => $phone,
+                        'email' => $email,
+                        'department' => $this->input->post('department'),
+                        'position' => $this->input->post('position'),
+                        'st_status' => $this->input->post('st_status'),
+                    ],
+                    'content' => 'admin/staff/updatestaff',
+                    'navlink' => 'staff',
+                ];
+                $this->load->view('admin/vbackend', $data);
+                return;
+            }
+
+            $update = [
+                'staff_name' => trim($this->input->post('staff_name')),
+                'phone'      => $phone,
+                'email'      => $email,
+                'department' => trim($this->input->post('department')) ?: null,
+                'position'   => trim($this->input->post('position')) ?: null,
+                'st_status'  => (int)($this->input->post('st_status') ?? 1),
+            ];
+
+            // skills removed — do not update skills field
+            $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
+
+            $this->session->set_flashdata('success', 'Cập nhật nhân viên thành công.');
+            redirect(site_url('Admin/staff'));
         }
 
-        // Phone uniqueness check (exclude current staff)
-        if (!empty($phone) && $this->staffAdminModel->exists_phone($phone, $id_staff)) {
-            $this->session->set_flashdata('error', 'Số điện thoại đã tồn tại trong hệ thống.');
-            redirect(site_url('Admin/staff/' . $id_staff . '/update'));
+        // GET request for edit form
+        if (!$id_staff) {
+            $id_staff = $this->uri->segment(3);
         }
+        
+        $tampil = $this->crudModel->getDataWhere('staff', 'id_staff', $id_staff)->row();
 
-        $update = [
-            'staff_name' => trim($this->input->post('staff_name')),
-            'phone'      => $phone,
-            'email'      => $email,
-            'department' => trim($this->input->post('department')) ?: null,
-            'position'   => trim($this->input->post('position')) ?: null,
-            'st_status'  => (int)($this->input->post('st_status') ?? 1),
+        $data = [
+            'detail' => [
+                'id_staff' => $tampil->id_staff,
+                'staff_name' => $tampil->staff_name,
+                'phone' => $tampil->phone,
+                'email' => $tampil->email,
+                'department' => $tampil->department,
+                'position' => $tampil->position,
+                'st_status' => $tampil->st_status,
+            ],
+
+            'content' => 'admin/staff/updatestaff',
+            'navlink' => 'staff',
         ];
 
-        // skills removed — do not update skills field
-        $this->crudModel->updateData('staff', 'id_staff', $id_staff, $update);
-
-        redirect(site_url('Admin/staff'));
+        $this->load->view('admin/vbackend', $data);
     }
 
     public function deleteStaff()
