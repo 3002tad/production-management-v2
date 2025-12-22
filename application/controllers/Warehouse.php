@@ -1406,6 +1406,11 @@ class Warehouse extends CI_Controller
                     // /warehouse/finished/receipt_save
                     return $this->finished_receipt_save();
                     break;
+                case 'get_project_info':
+                    // /warehouse/finished/get_project_info/1001
+                    $id_project = isset($params[1]) ? $params[1] : null;
+                    return $this->finished_get_project_info($id_project);
+                    break;
                 case 'deliveries':
                 case 'issues':
                     if ($action === 'new') {
@@ -2094,6 +2099,62 @@ class Warehouse extends CI_Controller
             $this->session->set_flashdata('error', $error_msg);
             redirect('warehouse/finished/receipt_form');
         }
+    }
+
+    /**
+     * Get project info via AJAX
+     */
+    public function finished_get_project_info($id_project = null)
+    {
+        header('Content-Type: application/json');
+        
+        if (!$id_project) {
+            echo json_encode(['success' => false, 'message' => 'Project ID không hợp lệ']);
+            exit;
+        }
+        
+        try {
+            $id_project = (int)$id_project;
+            
+            if (!$this->db->table_exists('project')) {
+                echo json_encode(['success' => false, 'message' => 'Bảng project không tồn tại']);
+                exit;
+            }
+            
+            // Get project info
+            $project = $this->db->select('id_project, project_name, qty_request as qty_target')
+                               ->where('id_project', $id_project)
+                               ->get('project')
+                               ->row();
+            
+            if (!$project) {
+                echo json_encode(['success' => false, 'message' => 'Không tìm thấy dự án']);
+                exit;
+            }
+            
+            // Get quantity already received for this project
+            $qty_received = 0;
+            if ($this->db->table_exists('finished_receipt')) {
+                $result = $this->db->select('SUM(quantity_received) as total')
+                                  ->where('id_project', $id_project)
+                                  ->where('status', 'posted')
+                                  ->get('finished_receipt')
+                                  ->row();
+                if ($result && $result->total) {
+                    $qty_received = (int)$result->total;
+                }
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'qty_target' => (int)$project->qty_target,
+                'qty_received' => $qty_received
+            ]);
+        } catch (Exception $e) {
+            log_message('error', 'Error in finished_get_project_info: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Lỗi hệ thống']);
+        }
+        exit;
     }
 
     /**

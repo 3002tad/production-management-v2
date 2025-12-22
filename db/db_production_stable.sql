@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 21, 2025 at 09:59 AM
+-- Generation Time: Dec 22, 2025 at 01:42 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -20,8 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Database: `db_production`
 --
-CREATE DATABASE IF NOT EXISTS `db_production` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `db_production`;
 
 -- --------------------------------------------------------
 
@@ -291,7 +289,10 @@ INSERT INTO `audit_log` (`log_id`, `user_id`, `username`, `action`, `module`, `r
 (221, 3, 'bod', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:20:22'),
 (222, 2, 'leader', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-20 20:20:28'),
 (223, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-21 08:27:50'),
-(224, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-21 08:58:39');
+(224, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-21 08:58:39'),
+(225, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 12:01:55'),
+(226, 5, 'warehouse', 'logout', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 12:30:33'),
+(227, 5, 'warehouse', 'login', 'auth', NULL, NULL, NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '2025-12-22 12:30:41');
 
 -- --------------------------------------------------------
 
@@ -328,16 +329,16 @@ INSERT INTO `capacity_config` (`id_config`, `level`, `level_name`, `hours_per_sh
 --
 
 CREATE TABLE `customer` (
-  `id_cust` int(25) NOT NULL,
-  `cust_name` varchar(50) NOT NULL,
-  `address` varchar(50) NOT NULL,
-  `telp` varchar(20) NOT NULL COMMENT 'Số điện thoại',
-  `email` varchar(25) NOT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT '1=Hoạt động, 0=Ngừng',
-  `notes` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `created_by` int(11) DEFAULT NULL
+  `id_cust` int(25) NOT NULL COMMENT 'PK - Mã khách hàng',
+  `cust_name` varchar(50) NOT NULL COMMENT 'Tên khách hàng',
+  `address` varchar(50) NOT NULL COMMENT 'Địa chỉ khách hàng',
+  `telp` varchar(20) NOT NULL COMMENT 'Số điện thoại liên hệ',
+  `email` varchar(25) NOT NULL COMMENT 'Email liên hệ',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'Trạng thái: 1=Hoạt động, 0=Ngừng; kiểm tra khi tạo đơn',
+  `notes` text DEFAULT NULL COMMENT 'Ghi chú/Thông tin thêm về khách (có thể cập nhật nhanh)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Thời gian tạo bản ghi',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'Thời gian bản ghi được cập nhật lần cuối',
+  `created_by` int(11) DEFAULT NULL COMMENT 'ID người tạo (user_id) - dùng cho audit'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -426,14 +427,6 @@ CREATE TABLE `finished_issue` (
   `status` enum('full','partial','cancelled') DEFAULT 'full' COMMENT 'Trạng thái: full=giao đủ, partial=giao một phần, cancelled=hủy'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Phiếu xuất giao hàng thành phẩm';
 
---
--- Dumping data for table `finished_issue`
---
-
-INSERT INTO `finished_issue` (`id_issue`, `issue_code`, `id_project`, `quantity_requested`, `quantity_issued`, `created_by`, `created_by_name`, `created_date`, `notes`, `status`) VALUES
-(1, 'XK-20251221152902-701', 1003, 900, 2, 5, 'warehouse', '2025-12-21 15:29:02', '', 'partial'),
-(2, 'XK-20251221155810-628', 1003, 900, 8, 5, 'warehouse', '2025-12-21 15:58:10', '', 'partial');
-
 -- --------------------------------------------------------
 
 --
@@ -441,7 +434,7 @@ INSERT INTO `finished_issue` (`id_issue`, `issue_code`, `id_project`, `quantity_
 --
 
 CREATE TABLE `finished_receipt` (
-  `id_receipt` int(11) NOT NULL,
+  `id_receipt` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `receipt_code` varchar(50) NOT NULL COMMENT 'Mã phiếu nhập (tự động sinh)',
   `id_project` int(11) NOT NULL COMMENT 'Liên kết tới project',
   `id_finished_report` int(11) DEFAULT NULL COMMENT 'Liên kết tới báo cáo QC',
@@ -457,15 +450,6 @@ CREATE TABLE `finished_receipt` (
   `qc_approved_by` varchar(50) DEFAULT NULL COMMENT 'User code QC duyệt',
   `requires_qc_approval` tinyint(1) DEFAULT 1 COMMENT 'Bắt buộc QC duyệt trước khi nhập'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Phiếu nhập thành phẩm';
-
---
--- Dumping data for table `finished_receipt`
---
-
-INSERT INTO `finished_receipt` (`id_receipt`, `receipt_code`, `id_project`, `id_finished_report`, `quantity_received`, `quantity_planned`, `created_by`, `created_by_name`, `created_date`, `notes`, `status`, `qc_verified`, `qc_approved_at`, `qc_approved_by`, `requires_qc_approval`) VALUES
-(1, 'NTP-20231107180000-001', 1001, 1001, 20, 20, 1, 'John Doe', '2023-11-07 18:00:00', 'Nhập từ QC đợt 1', 'posted', 0, NULL, NULL, 1),
-(2, 'NTP-20231108090000-002', 1001, 1001, 15, 20, 1, 'John Doe', '2023-11-08 09:00:00', 'Nhập từ QC đợt 2', 'posted', 0, NULL, NULL, 1),
-(7, 'NTP-20251214180952-657', 1001, 1, 5000, 5000, 5, 'warehouse', '2025-12-14 18:09:52', '', 'posted', 0, NULL, NULL, 1);
 
 --
 -- Triggers `finished_receipt`
@@ -513,8 +497,7 @@ CREATE TABLE `finished_report` (
 
 INSERT INTO `finished_report` (`id_finished`, `id_project`, `total_finished`, `fdate`) VALUES
 (1, 1001, 5000, '2025-12-18 18:11:20'),
-(2, 1001, 3000, '2025-12-18 18:11:20'),
-(1001, 1001, 2000, '2025-11-02 11:39:09');
+(2, 1001, 3000, '2025-12-18 18:11:20');
 
 -- --------------------------------------------------------
 
@@ -1101,16 +1084,16 @@ INSERT INTO `plan_shift` (`id_planshift`, `id_plan`, `id_shift`, `id_staff`, `st
 --
 
 CREATE TABLE `product` (
-  `id_product` int(25) NOT NULL,
-  `product_name` varchar(50) NOT NULL,
-  `summary` text DEFAULT NULL,
-  `application` varchar(100) NOT NULL COMMENT 'Màu mực: Xanh, Đen, Đỏ, Nhiều màu',
+  `id_product` int(25) NOT NULL COMMENT 'PK - Mã sản phẩm',
+  `product_name` varchar(50) NOT NULL COMMENT 'Tên sản phẩm',
+  `summary` text DEFAULT NULL COMMENT 'Mô tả ngắn sản phẩm',
+  `application` varchar(100) NOT NULL COMMENT 'Ứng dụng / màu mực (vd: Xanh, Đen, Đỏ...)',
   `diameter` decimal(3,1) NOT NULL DEFAULT 0.5 COMMENT 'Đường kính bi viết (mm)',
-  `bom` longtext DEFAULT NULL COMMENT 'JSON BOM',
-  `is_active` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `created_by` int(11) DEFAULT NULL
+  `bom` longtext DEFAULT NULL COMMENT 'JSON BOM - Định mức NVL cho sản phẩm',
+  `is_active` tinyint(1) DEFAULT 1 COMMENT 'Trạng thái: 1=Hoạt động, 0=Ngừng',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Thời gian tạo bản ghi',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'Thời gian cập nhật gần nhất',
+  `created_by` int(11) DEFAULT NULL COMMENT 'ID người tạo (user_id) - audit'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -1241,25 +1224,25 @@ INSERT INTO `production_shifts` (`shift_id`, `shift_code`, `shift_name`, `line_i
 --
 
 CREATE TABLE `project` (
-  `id_project` int(25) NOT NULL,
-  `project_name` varchar(50) NOT NULL,
-  `id_cust` int(25) NOT NULL,
-  `id_product` int(25) NOT NULL,
-  `diameter` decimal(3,1) NOT NULL COMMENT 'Đường kính bi viết (mm): 0.5, 0.7, 1.0',
-  `qty_request` int(15) NOT NULL,
-  `entry_date` date NOT NULL,
-  `pr_status` int(5) NOT NULL,
-  `risk_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Cờ nguy cơ trễ hạn: 0=Bình thường, 1=Nguy cơ trễ',
-  `customer_request` text DEFAULT NULL COMMENT 'Yêu cầu đặc biệt của khách hàng',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Thời gian tạo đơn hàng',
-  `stock_allocation` longtext DEFAULT NULL COMMENT 'JSON phân bổ kho',
-  `cancel_reason` text DEFAULT NULL,
-  `warning_flag` tinyint(1) DEFAULT 0,
-  `warning_type` varchar(50) DEFAULT NULL,
-  `warning_details` longtext DEFAULT NULL,
-  `capacity_level_used` tinyint(4) DEFAULT 1,
-  `material_shifts_available` int(11) DEFAULT NULL,
-  `finished_stock_available` int(11) DEFAULT 0,
+  `id_project` int(25) NOT NULL COMMENT 'PK - Mã đơn / ID dự án',
+  `project_name` varchar(50) NOT NULL COMMENT 'Tên đơn hàng',
+  `id_cust` int(25) NOT NULL COMMENT 'FK -> customer.id_cust (khách hàng)',
+  `id_product` int(25) NOT NULL COMMENT 'FK -> product.id_product (sản phẩm/BOM)',
+  `diameter` decimal(3,1) NOT NULL COMMENT 'Đường kính bi viết (mm): 0.5,0.7,1.0',
+  `qty_request` int(15) NOT NULL COMMENT 'Số lượng yêu cầu (cái)',
+  `entry_date` date NOT NULL COMMENT 'Hạn giao / ngày cần hoàn thành',
+  `pr_status` int(5) NOT NULL COMMENT 'Trạng thái đơn (ví dụ: 1=duyệt, 4=hủy)',
+  `risk_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Cờ nguy cơ trễ: 0=bình thường, 1=nguy cơ (hiển thị)',
+  `customer_request` text DEFAULT NULL COMMENT 'Yêu cầu đặc biệt của khách (ghi chú)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Thời gian tạo bản ghi',
+  `stock_allocation` longtext DEFAULT NULL COMMENT 'JSON phân bổ kho - dùng để phân bổ/hoàn trả tồn',
+  `cancel_reason` text DEFAULT NULL COMMENT 'Lý do hủy (ghi khi soft-delete)',
+  `warning_flag` tinyint(1) DEFAULT 0 COMMENT 'Cờ cảnh báo phân tích năng lực',
+  `warning_type` varchar(50) DEFAULT NULL COMMENT 'Kiểu cảnh báo (vd: material_shortage)',
+  `warning_details` longtext DEFAULT NULL COMMENT 'Chi tiết cảnh báo (JSON/text)',
+  `capacity_level_used` tinyint(4) DEFAULT 1 COMMENT 'Mức công suất dự kiến dùng (1/2)',
+  `material_shifts_available` int(11) DEFAULT NULL COMMENT 'Số ca NVL khả dụng (ước tính)',
+  `finished_stock_available` int(11) DEFAULT 0 COMMENT 'Tồn thành phẩm có sẵn (ảnh hưởng tính sản xuất)',
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng dự án - qty_request: cái (số lượng bút), diameter: mm (đường kính bi)';
 
@@ -2104,21 +2087,21 @@ INSERT INTO `system_config` (`config_key`, `config_value`, `config_type`, `descr
 --
 
 CREATE TABLE `user` (
-  `user_id` int(11) NOT NULL,
-  `username` varchar(11) NOT NULL,
-  `password` varchar(11) NOT NULL,
-  `temp_password` varchar(50) DEFAULT NULL COMMENT 'Mật khẩu tạm (plaintext) sau reset, NULL khi đã đổi',
-  `must_change_password` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1=Bắt buộc đổi password lần đầu, 0=Bình thường',
-  `role_id` int(11) NOT NULL COMMENT 'ID vai trò (bắt buộc)',
-  `staff_id` int(11) DEFAULT NULL,
-  `full_name` varchar(100) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
-  `is_active` tinyint(1) DEFAULT 1,
-  `last_login` timestamp NULL DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `user_id` int(11) NOT NULL COMMENT 'PK - Mã người dùng',
+  `username` varchar(11) NOT NULL COMMENT 'Tên đăng nhập',
+  `password` varchar(11) NOT NULL COMMENT 'Mật khẩu',
+  `temp_password` varchar(50) DEFAULT NULL COMMENT 'Mật khẩu tạm sau reset; NULL khi đã đổi',
+  `must_change_password` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1=Bắt buộc đổi mật khẩu lần đầu',
+  `role_id` int(11) NOT NULL COMMENT 'FK -> role_id (vai trò/permission)',
+  `staff_id` int(11) DEFAULT NULL COMMENT 'FK -> staff.id_staff',
+  `full_name` varchar(100) DEFAULT NULL COMMENT 'Tên đầy đủ hiển thị',
+  `email` varchar(100) DEFAULT NULL COMMENT 'Email liên hệ',
+  `phone` varchar(20) DEFAULT NULL COMMENT 'Số điện thoại',
+  `is_active` tinyint(1) DEFAULT 1 COMMENT '1=Hoạt động, 0=Ngừng',
+  `last_login` timestamp NULL DEFAULT NULL COMMENT 'Lần đăng nhập cuối',
+  `created_by` int(11) DEFAULT NULL COMMENT 'ID người tạo (user_id) - audit',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Thời gian tạo',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'Thời gian cập nhật lần cuối'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2130,7 +2113,7 @@ INSERT INTO `user` (`user_id`, `username`, `password`, `temp_password`, `must_ch
 (2, 'leader', 'leader', NULL, 0, 2, 1004, 'Trưởng dây chuyền', NULL, NULL, 1, '2025-12-20 20:20:28', NULL, '2025-11-01 15:49:53', '2025-12-20 20:20:28'),
 (3, 'bod', 'bod123', NULL, 0, 1, 1005, 'Nguyễn Văn A - Giám Đốc', 'bod@company.com', NULL, 1, '2025-12-20 20:18:25', NULL, '2025-11-01 15:53:44', '2025-12-20 20:18:25'),
 (4, 'line_manage', 'line123', NULL, 0, 2, 1006, 'Trần Văn B - Trưởng line 2', 'linemanager@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
-(5, 'warehouse', 'wh123', NULL, 0, 3, 1007, 'Lê Thị C - Nhân viên kho', 'warehouse@company.com', NULL, 1, '2025-12-21 08:27:50', NULL, '2025-11-01 15:53:45', '2025-12-21 08:27:50'),
+(5, 'warehouse', 'wh123', NULL, 0, 3, 1007, 'Lê Thị C - Nhân viên kho', 'warehouse@company.com', NULL, 1, '2025-12-22 12:30:41', NULL, '2025-11-01 15:53:45', '2025-12-22 12:30:41'),
 (6, 'qc', 'qc123', NULL, 0, 5, 1008, 'Phạm Văn D - Nhân viên QC', 'qc@company.com', NULL, 1, '2025-12-19 18:21:28', NULL, '2025-11-01 15:53:45', '2025-12-19 18:21:28'),
 (7, 'technical', 'tech123', NULL, 0, 6, 1009, 'Hoàng Văn E - Kỹ thuật viên', 'technical@company.com', NULL, 1, NULL, NULL, '2025-11-01 15:53:45', '2025-12-11 15:22:31'),
 (8, 'Le Van A', 'worker123', NULL, 0, 7, 1010, 'Nguyễn Thị F - Công nhân', 'worker@company.com', NULL, 1, '2025-12-20 18:12:13', NULL, '2025-11-01 15:53:45', '2025-12-20 18:12:13');
@@ -2400,6 +2383,12 @@ ALTER TABLE `finished_issue`
   ADD KEY `idx_project` (`id_project`),
   ADD KEY `idx_created_date` (`created_date`),
   ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `finished_receipt`
+--
+ALTER TABLE `finished_receipt`
+  ADD PRIMARY KEY (`id_receipt`);
 
 --
 -- Indexes for table `finished_report`
@@ -2772,13 +2761,7 @@ ALTER TABLE `adjustment_requests`
 -- AUTO_INCREMENT for table `audit_log`
 --
 ALTER TABLE `audit_log`
-  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=225;
-
---
--- AUTO_INCREMENT for table `customer`
---
-ALTER TABLE `customer`
-  MODIFY `id_cust` int(25) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1003;
+  MODIFY `log_id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=228;
 
 --
 -- AUTO_INCREMENT for table `defect_reasons`
@@ -2871,12 +2854,6 @@ ALTER TABLE `plan_shift`
   MODIFY `id_planshift` int(15) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1003;
 
 --
--- AUTO_INCREMENT for table `product`
---
-ALTER TABLE `product`
-  MODIFY `id_product` int(25) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1006;
-
---
 -- AUTO_INCREMENT for table `production_lines`
 --
 ALTER TABLE `production_lines`
@@ -2898,7 +2875,7 @@ ALTER TABLE `production_shifts`
 -- AUTO_INCREMENT for table `project`
 --
 ALTER TABLE `project`
-  MODIFY `id_project` int(25) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1005;
+  MODIFY `id_project` int(25) NOT NULL AUTO_INCREMENT COMMENT 'PK - Mã đơn / ID dự án', AUTO_INCREMENT=1005;
 
 --
 -- AUTO_INCREMENT for table `qc_attachments`
@@ -2995,12 +2972,6 @@ ALTER TABLE `simulator_settings`
 --
 ALTER TABLE `staff`
   MODIFY `id_staff` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1034;
-
---
--- AUTO_INCREMENT for table `user`
---
-ALTER TABLE `user`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `warehouse_import_requests`

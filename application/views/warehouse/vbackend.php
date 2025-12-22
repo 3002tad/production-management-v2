@@ -475,6 +475,33 @@
             alert(<?php echo json_encode($alert); ?>);
         </script>
     <?php endif; ?>
+
+    <!-- Success Toast for Login - Only on main warehouse page and only once -->
+    <?php
+        $success_msg = $CI->session->flashdata('success');
+        // Only show success toast on the main warehouse page after login and only once per session
+        $isMainWarehouse = isset($navlink) && $navlink === 'warehouse';
+        $has_shown_login_toast = $CI->session->userdata('has_shown_login_toast');
+        
+        if (!empty($success_msg) && $isMainWarehouse && !$has_shown_login_toast):
+            // Mark that we've shown the login toast
+            $CI->session->set_userdata('has_shown_login_toast', true);
+    ?>
+        <div id="successToast" class="alert alert-success alert-dismissible fade show" style="position: fixed; top: 16px; right: 16px; z-index: 1080; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.15); display: block; min-width: 300px;">
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <strong>Thành công!</strong> <?= htmlspecialchars($success_msg, ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var toast = document.getElementById('successToast');
+                if (toast) {
+                    setTimeout(function() {
+                        toast.style.display = 'none';
+                    }, 3000);
+                }
+            });
+        </script>
+    <?php endif; ?>
 </body>
 
 </html>

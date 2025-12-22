@@ -65,6 +65,7 @@
                             data-qty-passed="<?= $batch->qty_passed; ?>"
                             data-qty-received="<?= $batch->qty_already_received; ?>"
                             data-project="<?= $batch->project_name; ?>"
+                            data-project-id="<?= isset($batch->id_project) ? $batch->id_project : ''; ?>"
                             data-date="<?= $batch->fdate; ?>">
                       <?= $batch->project_name; ?> (<?= $batch->fdate; ?>) 
                       <?= !empty($batch->qc_session_code) ? " - QC: " . $batch->qc_session_code : ""; ?>
@@ -83,48 +84,44 @@
               <?php endif; ?>
             </div>
 
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Thành phẩm đã sản xuất</label>
-                <input type="text" id="qty_planned" class="form-control" readonly>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Đã Nhập</label>
-                <input type="text" id="qty_already_received" class="form-control" readonly>
-              </div>
-            </div>
-
             <div class="mb-3">
               <label for="id_project" class="form-label">Dự Án / Đơn Hàng <span class="text-danger">*</span></label>
-              <select id="id_project" name="id_project" class="form-select" required onchange="updateProjectInfo()">
-                <option value="">-- Chọn dự án --</option>
-                <?php if (!empty($projects)): ?>
-                  <?php foreach ($projects as $proj): ?>
-                    <option value="<?= $proj->id_project; ?>"
-                            data-target="<?= $proj->qty_target; ?>"
-                            data-received="<?= $proj->qty_received; ?>">
-                      <?= $proj->project_name; ?>
-                    </option>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </select>
+              <input type="hidden" id="id_project" name="id_project">
+              <input type="text" id="project_display" class="form-control" readonly>
             </div>
 
-            <div class="row" id="project_stats_row" style="display:none;">
+            <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label text-primary">Tổng Nhu Cầu Dự Án</label>
-                <input type="text" id="proj_qty_target" class="form-control bg-light font-weight-bold" readonly>
+                <label class="form-label">Tổng Nhu Cầu Dự Án</label>
+                <div class="input-group">
+                  <input type="text" id="proj_qty_target" class="form-control bg-light" readonly>
+                  <span class="input-group-text">cái</span>
+                </div>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label text-success">Tổng Đã Nhập Dự Án</label>
-                <input type="text" id="proj_qty_received" class="form-control bg-light font-weight-bold" readonly>
+                <label class="form-label">Tổng Đã Nhập Dự Án</label>
+                <div class="input-group">
+                  <input type="text" id="proj_qty_received" class="form-control bg-light" readonly>
+                  <span class="input-group-text">cái</span>
+                </div>
               </div>
             </div>
 
-            <div class="mb-3">
-              <label for="quantity_received" class="form-label">Số Lượng Nhập <span class="text-danger">*</span></label>
-              <input type="number" id="quantity_received" name="quantity_received" class="form-control" min="1" required placeholder="Nhập số lượng">
-              <small class="text-muted">Vui lòng nhập số lượng thực tế</small>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tổng Sản Lượng QC Đã Duyệt</label>
+                <div class="input-group">
+                  <input type="text" id="qty_planned" class="form-control bg-light" readonly>
+                  <span class="input-group-text">cái</span>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="quantity_received" class="form-label">Số Lượng Nhập Thực Tế <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="number" id="quantity_received" name="quantity_received" class="form-control" min="1" required placeholder="Nhập số lượng">
+                  <span class="input-group-text">cái</span>
+                </div>
+              </div>
             </div>
 
             <div class="mb-3">
@@ -154,36 +151,74 @@ function updateBatchInfo() {
   const select = document.getElementById('id_finished_report');
   const option = select.options[select.selectedIndex];
   
-  document.getElementById('qty_planned').value = option.getAttribute('data-qty-passed') || '';
-  document.getElementById('qty_already_received').value = option.getAttribute('data-qty-received') || '';
+  // Update QC approved quantity
+  const qtyPassed = option.getAttribute('data-qty-passed') || '0';
+  document.getElementById('qty_planned').value = qtyPassed;
   
-  // Tự động chọn dự án tương ứng
+  // Auto-load project
+  const projectId = option.getAttribute('data-project-id');
   const projectName = option.getAttribute('data-project');
+  
+  console.log('Selected batch - Project ID:', projectId, 'Project Name:', projectName);
+  
+  if (projectId) {
+    document.getElementById('id_project').value = projectId;
+  }
+  
   if (projectName) {
-    const projSelect = document.getElementById('id_project');
-    for (let i = 0; i < projSelect.options.length; i++) {
-      if (projSelect.options[i].text.trim() === projectName.trim()) {
-        projSelect.selectedIndex = i;
-        updateProjectInfo();
-        break;
+    document.getElementById('project_display').value = projectName;
+  }
+  
+  // Default values in case fetch fails
+  document.getElementById('proj_qty_target').value = '0';
+  document.getElementById('proj_qty_received').value = '0';
+  
+  // If we have a project ID, fetch its details
+  if (projectId) {
+    // Call the Finished controller's get_project_info method directly, bypassing Warehouse _remap
+    const url = '<?= site_url('warehouse/finished/get_project_info/'); ?>' + projectId;
+    console.log('Fetching project info from:', url);
+    
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       }
-    }
+    })
+      .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+          throw new Error('Network response was not ok. Status: ' + response.status);
+        }
+        // Get response text first to see what we're getting
+        return response.text();
+      })
+      .then(text => {
+        console.log('Raw response text:', text.substring(0, 200));
+        // Try to parse as JSON
+        try {
+          const data = JSON.parse(text);
+          console.log('Parsed JSON data:', data);
+          if (data && data.success) {
+            const target = data.qty_target || 0;
+            const received = data.qty_received || 0;
+            console.log('Setting values - Target:', target, 'Received:', received);
+            document.getElementById('proj_qty_target').value = target;
+            document.getElementById('proj_qty_received').value = received;
+          } else {
+            console.warn('Project data unsuccessful:', data);
+          }
+        } catch (parseErr) {
+          console.error('Failed to parse JSON:', parseErr);
+          console.error('Response was HTML/other format');
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching project info:', err);
+      });
   }
   
   document.getElementById('quantity_received').focus();
-}
-
-function updateProjectInfo() {
-  const select = document.getElementById('id_project');
-  const option = select.options[select.selectedIndex];
-  const statsRow = document.getElementById('project_stats_row');
-  
-  if (select.value) {
-    statsRow.style.display = 'flex';
-    document.getElementById('proj_qty_target').value = (option.getAttribute('data-target') || '0') + ' cái';
-    document.getElementById('proj_qty_received').value = (option.getAttribute('data-received') || '0') + ' cái';
-  } else {
-    statsRow.style.display = 'none';
-  }
 }
 </script>

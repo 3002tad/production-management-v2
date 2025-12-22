@@ -33,7 +33,12 @@ class Finished extends CI_Controller {
 
         $role_name = $this->session->userdata('role_name');
         $role_id = $this->session->userdata('role_id');
-        if (!($role_name === 'warehouse_staff' || $role_id == 3)) {
+        
+        // Allow AJAX requests to get_project_info without strict role checking
+        $current_method = $this->router->method;
+        $is_ajax_info_request = $current_method === 'get_project_info';
+        
+        if (!$is_ajax_info_request && !($role_name === 'warehouse_staff' || $role_id == 3)) {
             show_error('Unauthorized access', 403);
         }
 
@@ -105,6 +110,52 @@ class Finished extends CI_Controller {
         ];
 
         $this->load->view('warehouse/vbackend', $data);
+    }
+
+    /**
+     * get_project_info - Get project info via AJAX
+     */
+    public function get_project_info($id_project = null)
+    {
+        header('Content-Type: application/json');
+        
+        if (!$id_project) {
+            echo json_encode(['success' => false, 'message' => 'Project ID required', 'qty_target' => 0, 'qty_received' => 0]);
+            return;
+        }
+
+        try {
+            // Get project basic info
+            $project = $this->db->where('id_project', $id_project)
+                               ->get('project')
+                               ->row();
+            
+            if (!$project) {
+                echo json_encode(['success' => false, 'message' => 'Project not found', 'qty_target' => 0, 'qty_received' => 0]);
+                return;
+            }
+
+            // Get total received quantity for this project
+            $qty_received = 0;
+            $received_row = $this->db->select('SUM(quantity_received) as total_received')
+                                    ->where('id_project', $id_project)
+                                    ->where('status', 'posted')
+                                    ->get('finished_receipt')
+                                    ->row();
+            
+            if ($received_row && !is_null($received_row->total_received)) {
+                $qty_received = (int)$received_row->total_received;
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'qty_target' => isset($project->qty_request) ? (int)$project->qty_request : 0,
+                'qty_received' => $qty_received,
+                'project_name' => isset($project->project_name) ? $project->project_name : 'Unknown'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage(), 'qty_target' => 0, 'qty_received' => 0]);
+        }
     }
 
     /**
@@ -197,7 +248,20 @@ class Finished extends CI_Controller {
         $receipt_id = $this->FinishedReceiptModel->createReceipt($receipt_data);
 
         if ($receipt_id) {
-            $this->FinishedReceiptModel->updateStockAfterReceipt($quantity_received, 1);
+            // Get product ID from project
+            $id_product = 1; // Default product
+            if ($this->db->table_exists('project')) {
+                $proj = $this->db->select('id_product')
+                                ->where('id_project', $id_project)
+                                ->get('project')
+                                ->row();
+                if ($proj && $proj->id_product) {
+                    $id_product = $proj->id_product;
+                }
+            }
+            
+            // Update stock after receipt
+            $this->FinishedReceiptModel->updateStockAfterReceipt($quantity_received, $id_product);
             $this->session->set_flashdata('success', 'Nhập thành công - Phiếu #' . $receipt_id);
             redirect('warehouse/finished/receipt_view/' . $receipt_id);
         } else {

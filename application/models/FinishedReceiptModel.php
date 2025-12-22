@@ -40,6 +40,7 @@ class FinishedReceiptModel extends CI_Model {
                       sc.closed_by,
                       sc.status,
                       sc.created_at,
+                      p.id_project,
                       p.project_name,
                       qs.code AS qc_session_code,
                       qd.decided_at AS qc_date,
