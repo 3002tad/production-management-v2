@@ -342,7 +342,7 @@ class UC8_planning extends CI_Controller
                 $label = $mname ?? ('Máy ' . ($mid ?? ''));
                 if (!empty($mcode) && preg_match('/^QC[^0-9]*(\d+)/i', $mcode, $matches)) {
                     $num = intval($matches[1]);
-                    $label = 'Dây chuyền ' . ($num > 0 ? $num : $matches[1]);
+                    $label = 'Công Suất ' . ($num > 0 ? $num : $matches[1]);
                 }
 
                 $machines[] = (object)[
@@ -402,7 +402,7 @@ class UC8_planning extends CI_Controller
             $label_val = $mname ?? ('Máy ' . ($mid ?? ''));
             if (!empty($mcode) && preg_match('/^QC[^0-9]*(\\d+)/i', $mcode, $matches)) {
                 $num = intval($matches[1]);
-                $label_val = 'Dây chuyền ' . ($num > 0 ? $num : $matches[1]);
+                $label_val = 'Công Suất ' . ($num > 0 ? $num : $matches[1]);
             }
             $label = htmlspecialchars($label_val . ' (công suất: ' . ($m->capacity ?? 0) . ')', ENT_QUOTES);
             // mark selected machine when editing existing plan
