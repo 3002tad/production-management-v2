@@ -244,12 +244,12 @@ class FinishedReceiptModel extends CI_Model {
 
         $receipt = $this->getReceiptById($receipt_id);
         if (!$receipt) {
-            return false;
+            throw new Exception('Phiếu nhập không tồn tại.');
         }
 
-        // Update receipt status
-        $this->db->where('id_receipt', $receipt_id)
-                 ->update('finished_receipt', ['status' => 'cancelled']);
+        if ($receipt->status === 'cancelled') {
+            throw new Exception('Phiếu nhập này đã được hủy trước đó.');
+        }
 
         // Lấy id_product từ project liên kết với phiếu nhập
         $product_id = 1; // Mặc định
@@ -259,6 +259,17 @@ class FinishedReceiptModel extends CI_Model {
                 $product_id = $proj->id_product;
             }
         }
+
+        // KIỂM TRA TỒN KHO: Không cho phép hủy nếu khiến tồn kho bị âm
+        $stock = $this->db->where('id_product', $product_id)->get('finished_stock')->row();
+        if (!$stock || ($stock->quantity_in_stock < $receipt->quantity_received)) {
+            $current_stock = $stock ? $stock->quantity_in_stock : 0;
+            throw new Exception("Không thể hủy phiếu: Tồn kho hiện tại ({$current_stock}) không đủ để trừ đi số lượng trong phiếu ({$receipt->quantity_received}).");
+        }
+
+        // Update receipt status
+        $this->db->where('id_receipt', $receipt_id)
+                 ->update('finished_receipt', ['status' => 'cancelled']);
 
         // Reverse stock update
         $this->db->set('quantity_in_stock', 'quantity_in_stock - ' . $receipt->quantity_received, FALSE)

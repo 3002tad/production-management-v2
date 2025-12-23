@@ -2305,17 +2305,21 @@ class Warehouse extends CI_Controller
 
         // Use model method to cancel so stock reversal logic runs
         $ok = false;
+        $error_msg = 'Lỗi: Không thể hủy phiếu';
         try {
             $ok = $this->FinishedReceiptModel->cancelReceipt($receipt_id);
         } catch (Exception $e) {
             log_message('error', 'Error cancelling receipt: ' . $e->getMessage());
+            $error_msg = $e->getMessage();
             $ok = false;
         }
 
         if ($ok) {
+            $this->session->unset_userdata('error'); // Xóa lỗi cũ nếu có
             $this->session->set_flashdata('success', 'Hủy phiếu thành công');
         } else {
-            $this->session->set_flashdata('error', 'Lỗi: Không thể hủy phiếu');
+            $this->session->unset_userdata('success'); // Xóa thành công cũ nếu có
+            $this->session->set_flashdata('error', $error_msg);
         }
 
         redirect('warehouse/finished/receipt');

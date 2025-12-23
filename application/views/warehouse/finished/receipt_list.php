@@ -45,6 +45,24 @@
             </div>
           <?php endif; ?>
 
+          <?php if ($this->session->flashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show text-white" role="alert">
+              <strong>Lỗi!</strong> <?= $this->session->flashdata('error'); ?>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          <?php endif; ?>
+
+          <script>
+            // Tự động ẩn thông báo sau 5 giây
+            setTimeout(function() {
+              let alerts = document.querySelectorAll('.alert');
+              alerts.forEach(function(alert) {
+                let bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+              });
+            }, 5000);
+          </script>
+
           <div class="table-responsive">
             <table class="table table-hover table-striped">
               <thead class="table-light">

@@ -240,10 +240,21 @@ class Finished extends CI_Controller {
             show_error('Phiếu không tồn tại', 404);
         }
 
-        if ($this->FinishedReceiptModel->cancelReceipt($receipt_id)) {
+        $ok = false;
+        $error_msg = 'Lỗi: Không thể hủy phiếu';
+        try {
+            $ok = $this->FinishedReceiptModel->cancelReceipt($receipt_id);
+        } catch (Exception $e) {
+            $error_msg = $e->getMessage();
+            $ok = false;
+        }
+
+        if ($ok) {
+            $this->session->unset_userdata('error');
             $this->session->set_flashdata('success', 'Hủy phiếu thành công');
         } else {
-            $this->session->set_flashdata('error', 'Lỗi: Không thể hủy phiếu');
+            $this->session->unset_userdata('success');
+            $this->session->set_flashdata('error', $error_msg);
         }
 
         redirect('warehouse/finished/receipt');
