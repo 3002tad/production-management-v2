@@ -1505,6 +1505,14 @@ class Warehouse extends CI_Controller
                     $id_project = isset($params[1]) ? $params[1] : null;
                     return $this->finished_get_project_info($id_project);
                     break;
+                case 'receipt_cancel':
+                    $id = isset($params[1]) ? $params[1] : null;
+                    return $this->finished_receipt_cancel($id);
+                    break;
+                case 'delivery_cancel':
+                    $id = isset($params[1]) ? $params[1] : null;
+                    return $this->finished_delivery_cancel($id);
+                    break;
                 case 'deliveries':
                 case 'issues':
                     if ($action === 'new') {
@@ -2294,31 +2302,34 @@ class Warehouse extends CI_Controller
      */
     public function finished_delivery_cancel($issue_id = null)
     {
+        $this->load->model('FinishedIssueModel');
+
         if (!$issue_id) {
             $this->session->set_flashdata('error', 'ID phiếu không hợp lệ');
             redirect('warehouse/finished/deliveries');
         }
 
-        $issue = $this->db->where('id_issue', (int)$issue_id)
-                         ->get('finished_issue')
-                         ->row();
+        $issue = $this->FinishedIssueModel->getIssueById($issue_id);
 
         if (!$issue) {
             $this->session->set_flashdata('error', 'Phiếu không tồn tại');
             redirect('warehouse/finished/deliveries');
         }
 
-        // Cancel issue and reverse stock
-        $this->db->where('id_issue', (int)$issue_id)->update('finished_issue', ['status' => 'cancelled']);
-
-        // Reverse stock update
-        if ($this->db->table_exists('finished_stock')) {
-            $this->db->set('quantity_in_stock', 'quantity_in_stock + ' . $issue->quantity_issued, FALSE)
-                     ->where('id_product', 1)
-                     ->update('finished_stock');
+        $ok = false;
+        try {
+            $ok = $this->FinishedIssueModel->cancelIssue($issue_id);
+        } catch (Exception $e) {
+            log_message('error', 'Error cancelling issue: ' . $e->getMessage());
+            $ok = false;
         }
 
-        $this->session->set_flashdata('success', 'Hủy phiếu thành công');
+        if ($ok) {
+            $this->session->set_flashdata('success', 'Hủy phiếu thành công');
+        } else {
+            $this->session->set_flashdata('error', 'Lỗi: Không thể hủy phiếu');
+        }
+
         redirect('warehouse/finished/deliveries');
     }
 
@@ -2328,7 +2339,7 @@ class Warehouse extends CI_Controller
     public function finished_receipt_cancel($receipt_id = null)
     {
         $this->load->model('FinishedReceiptModel');
-        
+
         if (!$receipt_id) {
             $this->session->set_flashdata('error', 'ID phiếu không hợp lệ');
             redirect('warehouse/finished/receipt');
@@ -2341,10 +2352,21 @@ class Warehouse extends CI_Controller
             redirect('warehouse/finished/receipt');
         }
 
-        // Cancel receipt
-        $this->db->where('id_receipt', $receipt_id)->update('finished_receipt', ['status' => 'cancelled']);
+        // Use model method to cancel so stock reversal logic runs
+        $ok = false;
+        try {
+            $ok = $this->FinishedReceiptModel->cancelReceipt($receipt_id);
+        } catch (Exception $e) {
+            log_message('error', 'Error cancelling receipt: ' . $e->getMessage());
+            $ok = false;
+        }
 
-        $this->session->set_flashdata('success', 'Hủy phiếu thành công');
+        if ($ok) {
+            $this->session->set_flashdata('success', 'Hủy phiếu thành công');
+        } else {
+            $this->session->set_flashdata('error', 'Lỗi: Không thể hủy phiếu');
+        }
+
         redirect('warehouse/finished/receipt');
     }
 
