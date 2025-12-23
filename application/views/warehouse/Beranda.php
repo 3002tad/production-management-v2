@@ -258,13 +258,14 @@
                                             <input type="date" name="date_out" class="form-control" id="dateOutInput" required />
                                         </div>
                                         <div class="form-group col-md-5">
-                                            <label class="form-label text-xs mb-1">Ca sản xuất</label>
-                                            <select name="id_planshift" class="form-control" id="shiftSelect" required>
-                                                <option value="">-- Chọn ca --</option>
+                                            <label class="form-label text-xs mb-1 font-weight-bold text-info">Ca sản xuất (Bắt buộc)</label>
+                                            <select name="id_planshift" class="form-control border border-info" id="shiftSelect" required style="background-color: #f8fdff; font-weight: bold;">
+                                                <option value="">-- Chọn ca sản xuất --</option>
                                                 <?php foreach (($shifts ?? []) as $s): ?>
-                                                        <option value="<?= (int)$s->id_planshift ?>" data-date="<?= $s->confirmed_date ?? '' ?>"><?= htmlspecialchars($s->ps_name ?? '') ?></option>
+                                                        <option value="<?= (int)$s->id_planshift ?>" data-date="<?= $s->shift_date ?? '' ?>"><?= htmlspecialchars($s->ps_name ?? '') ?></option>
                                                 <?php endforeach; ?>
                                             </select>
+                                            <small class="text-muted" style="font-size: 10px;">Chọn ca để hiển thị danh sách NVL</small>
                                         </div>
                                         <div class="form-group col-md-8">
                                             <label class="form-label text-xs mb-1">Ghi chú</label>
@@ -292,7 +293,7 @@
                                         </table>
 
                                         <!-- Table: fallback all materials -->
-                                        <table id="tableAllMaterials" class="table table-sm table-hover align-items-center">
+                                        <table id="tableAllMaterials" class="table table-sm table-hover align-items-center d-none">
                                             <thead class="text-warning" style="position: sticky; top: 0; background: #fff; z-index: 1;">
                                                 <tr>
                                                     <th>NVL</th>
@@ -616,7 +617,8 @@
                                     data.shifts.forEach(function(shift){
                                         const shiftId = parseInt(shift.id_planshift||0);
                                         const shiftName = shift.ps_name || '';
-                                        html += '<option value="' + shiftId + '">' + shiftName + '</option>';
+                                        const shiftDate = shift.shift_date || '';
+                                        html += '<option value="' + shiftId + '" data-date="' + shiftDate + '">' + shiftName + '</option>';
                                     });
                                     
                                     if(shiftSelect){
@@ -639,10 +641,11 @@
                             
                             async function loadPlanItems(planId, shiftId){
                                 console.log('loadPlanItems called with planId:', planId, 'shiftId:', shiftId);
-                                if(!planId){
-                                    // show all materials
+                                if(!planId || !shiftId){
+                                    // If no plan or no shift, hide both tables
                                     if(tbodyPlan) tbodyPlan.innerHTML = '';
-                                    setTableMode(false);
+                                    if(tablePlan) tablePlan.classList.add('d-none');
+                                    if(tableAll) tableAll.classList.add('d-none');
                                     return;
                                 }
                                 try{
@@ -740,12 +743,18 @@
                             if(planSelect){
                                 planSelect.addEventListener('change', function(){ 
                                     loadPlanItems(this.value, shiftSelect ? shiftSelect.value : null); 
+                                    if(this.value && (!shiftSelect || !shiftSelect.value)) {
+                                        if(shiftSelect) shiftSelect.style.boxShadow = '0 0 10px rgba(23, 193, 232, 0.5)';
+                                    }
                                 });
                             } else {
                                 // Fallback: Try to find and attach to any dynamically added plan select
                                 document.addEventListener('change', function(e){
                                     if(e.target && e.target.matches('#modalStockOut select[name="id_plan"]')){
                                         loadPlanItems(e.target.value, shiftSelect ? shiftSelect.value : null);
+                                        if(e.target.value && (!shiftSelect || !shiftSelect.value)) {
+                                            if(shiftSelect) shiftSelect.style.boxShadow = '0 0 10px rgba(23, 193, 232, 0.5)';
+                                        }
                                     }
                                 });
                             }
@@ -753,6 +762,15 @@
                             // Also reload plan items when shift is changed
                             if(shiftSelect){
                                 shiftSelect.addEventListener('change', function(){
+                                    this.style.boxShadow = ''; // Remove highlight
+                                    
+                                    // Update date_out based on selected shift's data-date
+                                    var selectedOption = this.options[this.selectedIndex];
+                                    if(selectedOption && selectedOption.getAttribute('data-date')) {
+                                        var shiftDate = selectedOption.getAttribute('data-date');
+                                        if(dateOutInput) dateOutInput.value = shiftDate;
+                                    }
+
                                     var planSelect = getPlanSelect();
                                     if(planSelect && planSelect.value) {
                                         loadPlanItems(planSelect.value, this.value);
@@ -760,8 +778,9 @@
                                 });
                             }
                             
-                            // init mode: all materials enabled
-                            setTableMode(false);
+                            // init mode: hide both tables until plan/shift selected
+                            if(tablePlan) tablePlan.classList.add('d-none');
+                            if(tableAll) tableAll.classList.add('d-none');
 
                             // Auto-fill quantity when material is selected in stock-in modal
                             var materialSelect = document.querySelector('#modalStockIn select[name="id_material"]');

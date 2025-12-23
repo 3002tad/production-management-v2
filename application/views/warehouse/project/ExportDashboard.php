@@ -41,9 +41,10 @@
                         <tr>
                             <td><?= htmlspecialchars($it['id_material'] ?? ($it['id'] ?? '-')) ?></td>
                             <td><?= htmlspecialchars($it['name'] ?? '-') ?></td>
-                            <td><?= (int)($it['planned'] ?? 0) ?></td>
-                            <td><?= (int)($it['exported'] ?? 0) ?></td>
-                            <td><?= (int)($it['remaining'] ?? 0) ?></td>
+                            <?php $u = htmlspecialchars($it['uom'] ?? ''); ?>
+                            <td><?= (int)($it['planned'] ?? 0) . ($u !== '' ? ' ' . $u : '') ?></td>
+                            <td><?= (int)($it['exported'] ?? 0) . ($u !== '' ? ' ' . $u : '') ?></td>
+                            <td><?= (int)($it['remaining'] ?? 0) . ($u !== '' ? ' ' . $u : '') ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
