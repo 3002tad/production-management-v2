@@ -12,18 +12,18 @@
                     <input type="text" name="material_name" class="form-control" required />
                 </div>
                 <div class="form-group col-md-4">
-                    <label>Loại NVL</label>
-                    <input type="text" name="material_type" class="form-control" />
+                    <label>Loại NVL *</label>
+                    <input type="text" name="material_type" class="form-control" required />
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group col-md-3">
                     <label>Tồn ban đầu</label>
-                    <input type="number" name="stock" class="form-control" value="0" />
+                    <input type="number" name="stock" class="form-control" value="0" required />
                 </div>
                 <div class="form-group col-md-3">
                     <label>Tồn tối thiểu</label>
-                    <input type="number" name="min_stock" class="form-control" value="0" />
+                    <input type="number" name="min_stock" class="form-control" value="0" required />
                 </div>
                 <div class="form-group col-md-3">
                     <label>Đơn vị tính *</label>

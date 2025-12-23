@@ -212,11 +212,11 @@
                                         </div>
                                         <div class="form-group col-md-3">
                                             <label class="form-label text-xs mb-1">Ngày nhập</label>
-                                            <input type="date" name="date_entry" class="form-control" />
+                                            <input type="date" name="date_entry" class="form-control" required />
                                         </div>
                                         <div class="form-group col-md-6">
                                             <label class="form-label text-xs mb-1">Nhà cung cấp</label>
-                                            <input type="text" name="supplier" class="form-control" />
+                                            <input type="text" name="supplier" class="form-control" required />
                                         </div>
                                         <div class="form-group col-md-6">
                                             <label class="form-label text-xs mb-1">Đính kèm</label>
@@ -245,8 +245,8 @@
                                 <div class="modal-body">
                                     <div class="form-row g-3">
                                         <div class="form-group col-md-4">
-                                            <label class="form-label text-xs mb-1">Kế hoạch (tuỳ chọn)</label>
-                                            <select name="id_plan" class="form-control">
+                                            <label class="form-label text-xs mb-1">Kế hoạch</label>
+                                            <select name="id_plan" class="form-control" required>
                                                 <option value="">-- Chọn kế hoạch --</option>
                                                 <?php foreach (($plans ?? []) as $p): ?>
                                                         <option value="<?= (int)$p->id_plan ?>"><?= htmlspecialchars($p->plan_name) ?></option>
@@ -255,11 +255,11 @@
                                         </div>
                                         <div class="form-group col-md-3">
                                             <label class="form-label text-xs mb-1">Ngày xuất</label>
-                                            <input type="date" name="date_out" class="form-control" id="dateOutInput" />
+                                            <input type="date" name="date_out" class="form-control" id="dateOutInput" required />
                                         </div>
                                         <div class="form-group col-md-5">
-                                            <label class="form-label text-xs mb-1">Ca sản xuất (tuỳ chọn)</label>
-                                            <select name="id_planshift" class="form-control" id="shiftSelect">
+                                            <label class="form-label text-xs mb-1">Ca sản xuất</label>
+                                            <select name="id_planshift" class="form-control" id="shiftSelect" required>
                                                 <option value="">-- Chọn ca --</option>
                                                 <?php foreach (($shifts ?? []) as $s): ?>
                                                         <option value="<?= (int)$s->id_planshift ?>" data-date="<?= $s->confirmed_date ?? '' ?>"><?= htmlspecialchars($s->ps_name ?? '') ?></option>
@@ -268,7 +268,7 @@
                                         </div>
                                         <div class="form-group col-md-8">
                                             <label class="form-label text-xs mb-1">Ghi chú</label>
-                                            <input type="text" name="note" class="form-control" />
+                                            <input type="text" name="note" class="form-control" required />
                                         </div>
                                         <div class="form-group col-md-4">
                                             <label class="form-label text-xs mb-1">Đính kèm</label>

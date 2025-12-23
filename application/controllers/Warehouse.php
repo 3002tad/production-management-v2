@@ -579,9 +579,18 @@ class Warehouse extends CI_Controller
     {
         $id_material = $this->uri->segment(3);
 
-        $ref_in_use = $this->db->query('SELECT 1 FROM p_material WHERE id_material = ?', [$id_material])->num_rows() > 0;
-        if ($ref_in_use) {
-            $this->session->set_flashdata('material_alert', 'Không thể xóa vì đang được sử dụng');
+        // 1. Check in material_out (Actual usage/stock out)
+        $in_material_out = false;
+        if ($this->db->table_exists('material_out')) {
+            $in_material_out = $this->db->query('SELECT 1 FROM material_out WHERE id_material = ?', [$id_material])->num_rows() > 0;
+        }
+
+        // 2. Check in product BOM (Definition)
+        // BOM is stored as JSON string in product.bom
+        $in_bom = $this->db->query("SELECT 1 FROM product WHERE bom LIKE ?", ['%"id_material":"'.$id_material.'"%'])->num_rows() > 0;
+
+        if ($in_material_out || $in_bom) {
+            $this->session->set_flashdata('material_alert', 'Không thể xóa vì nguyên liệu đã được phân cho dự án hoặc sản phẩm');
             $this->session->set_flashdata('material_alert_level', 'error');
             redirect(site_url('warehouse/material'));
             return;
