@@ -161,17 +161,36 @@ class FinishedIssueModel extends CI_Model {
             return false;
         }
 
+        $qty = (int)($issue->quantity_issued ?? 0);
+
+        // Determine product id to reverse stock for (use project's id_product if available)
+        $product_id = 1;
+        if (!empty($issue->id_project)) {
+            $proj = $this->db->select('id_product')->get_where('project', ['id_project' => $issue->id_project])->row();
+            if ($proj && !empty($proj->id_product)) {
+                $product_id = (int)$proj->id_product;
+            }
+        }
+
+        // Begin transaction to ensure atomic update
+        $this->db->trans_start();
+
         // Update issue status
         $this->db->where('id_issue', $issue_id)
                  ->update('finished_issue', ['status' => 'cancelled']);
 
-        // Reverse stock update (thêm lại số lượng đã xuất)
-        $this->db->set('quantity_in_stock', 'quantity_in_stock + ' . $issue->quantity_issued, FALSE)
-                 ->set('quantity_issued', 'quantity_issued - ' . $issue->quantity_issued, FALSE)
-                 ->where('id_product', 1)
-                 ->update('finished_stock');
+        // Reverse stock update only when there is a positive quantity and the stock table exists
+        if ($qty > 0 && $this->db->table_exists('finished_stock')) {
+            // Use GREATEST to avoid negative quantity_issued values
+            $this->db->set('quantity_in_stock', 'quantity_in_stock + ' . $qty, FALSE)
+                     ->set('quantity_issued', 'GREATEST(quantity_issued - ' . $qty . ', 0)', FALSE)
+                     ->where('id_product', $product_id)
+                     ->update('finished_stock');
+        }
 
-        return true;
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
     }
 
     /**
