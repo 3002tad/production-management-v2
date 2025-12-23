@@ -47,28 +47,71 @@ class Warehouse extends CI_Controller
         // Load materials
         $materials = $this->crudModel->getData('material')->result();
 
+        // Precompute total exported per plan and material
+        $exports_sums = [];
+        if ($this->db->table_exists('material_out')) {
+            $rows = $this->db->query('SELECT id_plan, id_material, SUM(quantity) as total_qty FROM material_out GROUP BY id_plan, id_material')->result();
+            foreach ($rows as $r) {
+                $pid = (int)($r->id_plan ?? 0);
+                $mid = (int)$r->id_material;
+                $qty = (int)$r->total_qty;
+                if ($pid <= 0 || $mid <= 0) continue;
+                if (!isset($exports_sums[$pid])) $exports_sums[$pid] = [];
+                $exports_sums[$pid][$mid] = $qty;
+            }
+        }
+
+        // Match planned materials by name to material id
+        $material_by_name = [];
+        foreach ($materials as $m) {
+            $nm = isset($m->material_name) ? $m->material_name : (isset($m->name) ? $m->name : null);
+            if ($nm) $material_by_name[mb_strtolower(trim($nm))] = (int)(isset($m->id_material) ? $m->id_material : (isset($m->id) ? $m->id : 0));
+        }
+
         // Compute required materials per material from active plans
         // Priority: BOM from product table > materials column in planning table
-        $sql = "SELECT pl.id_plan, pl.materials, pl.qty_target, pr.bom 
+        $sql = "SELECT pl.id_plan, pl.materials, pl.qty_target, pr.bom, pl.plan_name 
                 FROM planning pl
                 LEFT JOIN project p ON pl.id_project = p.id_project
                 LEFT JOIN product pr ON p.id_product = pr.id_product
                 WHERE pl.pl_status = 1";
-        $plans = $this->db->query($sql)->result();
+        $plans_query = $this->db->query($sql)->result();
         
-        $need_by_name = [];
-        foreach ($plans as $pl) {
+        $need_remaining_by_id = [];
+        $plans_data = [];
+        foreach ($plans_query as $pl) {
+            $plan_id = (int)$pl->id_plan;
             $qty_target = (int)($pl->qty_target ?? 0);
             $bom_data = !empty($pl->bom) ? json_decode($pl->bom, true) : null;
+            $items = [];
+            $total_planned = 0;
+            $total_exported = 0;
 
             if (is_array($bom_data) && !empty($bom_data)) {
                 foreach ($bom_data as $bom_item) {
                     $name = $bom_item['material_name'] ?? 'Unknown';
+                    $mid = (int)($bom_item['id_material'] ?? 0);
                     $qty_per_unit = (float)($bom_item['quantity_per_unit'] ?? 0);
                     $planned = (int)ceil($qty_per_unit * $qty_target);
                     
-                    if (!isset($need_by_name[$name])) $need_by_name[$name] = 0;
-                    $need_by_name[$name] += max(0, $planned);
+                    $exported = ($mid && isset($exports_sums[$plan_id][$mid])) ? (int)$exports_sums[$plan_id][$mid] : 0;
+                    $remaining = max(0, $planned - $exported);
+                    
+                    if ($mid > 0) {
+                        if (!isset($need_remaining_by_id[$mid])) $need_remaining_by_id[$mid] = 0;
+                        $need_remaining_by_id[$mid] += $remaining;
+                    }
+
+                    $items[] = [
+                        'name' => $name,
+                        'id_material' => $mid,
+                        'planned' => $planned,
+                        'exported' => $exported,
+                        'remaining' => $remaining,
+                        'uom' => $bom_item['uom'] ?? '',
+                    ];
+                    $total_planned += $planned;
+                    $total_exported += min($planned, $exported);
                 }
             } else {
                 // Fallback to parsing pl.materials
@@ -83,35 +126,66 @@ class Warehouse extends CI_Controller
                     if (!$parts || count($parts) < 2) continue;
                     $name = trim($parts[0]);
                     
-                    $qty = 0;
+                    $planned = 0;
                     for ($i = 1; $i < count($parts); $i++) {
                         $part = trim($parts[$i]);
                         if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
-                            $qty = (int)str_replace([',', '.'], '', $m[1]);
+                            $planned = (int)str_replace([',', '.'], '', $m[1]);
                             break;
                         } else if (preg_match('/^[\d,\.]+$/', $part)) {
-                            $qty = (int)str_replace([',', '.'], '', $part);
+                            $planned = (int)str_replace([',', '.'], '', $part);
                             break;
                         }
                     }
-                    if (!isset($need_by_name[$name])) $need_by_name[$name] = 0;
-                    $need_by_name[$name] += max(0, $qty);
+                    
+                    $key = mb_strtolower($name);
+                    $mid = isset($material_by_name[$key]) ? (int)$material_by_name[$key] : 0;
+                    $exported = ($mid && isset($exports_sums[$plan_id][$mid])) ? (int)$exports_sums[$plan_id][$mid] : 0;
+                    $remaining = max(0, $planned - $exported);
+
+                    if ($mid > 0) {
+                        if (!isset($need_remaining_by_id[$mid])) $need_remaining_by_id[$mid] = 0;
+                        $need_remaining_by_id[$mid] += $remaining;
+                    }
+
+                    $items[] = [
+                        'name' => $name,
+                        'id_material' => $mid,
+                        'planned' => $planned,
+                        'exported' => $exported,
+                        'remaining' => $remaining,
+                        'uom' => '',
+                    ];
+                    $total_planned += $planned;
+                    $total_exported += min($planned, $exported);
                 }
             }
+            $progress_pct = $total_planned > 0 ? round(($total_exported / $total_planned) * 100, 1) : 0.0;
+            $plans_data[] = [
+                'id_plan' => $plan_id,
+                'plan_name' => $pl->plan_name,
+                'items' => $items,
+                'total_planned' => $total_planned,
+                'total_exported' => $total_exported,
+                'progress_pct' => $progress_pct,
+            ];
         }
 
-        // Attach qty_to_import to materials by matching by material_name
+        // Attach qty_to_import and qty_to_export to materials
         foreach ($materials as $m) {
-            $name = isset($m->material_name) ? $m->material_name : (isset($m->name) ? $m->name : null);
+            $mid = (int)(isset($m->id_material) ? $m->id_material : (isset($m->id) ? $m->id : 0));
             $stock = isset($m->stock) ? (int)$m->stock : (isset($m->qty) ? (int)$m->qty : 0);
             $min_stock = isset($m->min_stock) ? (int)$m->min_stock : 0;
-            $required = ($name && isset($need_by_name[$name])) ? (int)$need_by_name[$name] : 0;
-            // Add 20% buffer for defect prediction
-            $required_with_buffer = (int)ceil($required * 1.2);
-            // Also ensure post-import stock meets minimum threshold
+            
+            $remaining = isset($need_remaining_by_id[$mid]) ? (int)$need_remaining_by_id[$mid] : 0;
+            
+            // qty_to_export is just the remaining requirement
+            $m->qty_to_export = $remaining;
+            
+            // qty_to_import includes buffer and min_stock
+            $required_with_buffer = (int)ceil($remaining * 1.2);
             $target_stock_level = max($required_with_buffer, $min_stock);
             $m->qty_to_import = max(0, $target_stock_level - $stock);
-            $m->qty_required_raw = $required; // optional diagnostics
         }
 
         // Load active shifts and plans for inline stock-out modal
@@ -141,129 +215,6 @@ class Warehouse extends CI_Controller
         }
         if ($this->db->table_exists('planning')) {
             $plans = $this->db->query('SELECT id_plan, plan_name, materials FROM planning WHERE pl_status = 1 ORDER BY id_plan DESC')->result();
-        }
-
-        // Precompute total exported per plan and material
-        $exports_sums = [];
-        if ($this->db->table_exists('material_out')) {
-            $rows = $this->db->query('SELECT id_plan, id_material, SUM(quantity) as total_qty FROM material_out GROUP BY id_plan, id_material')->result();
-            foreach ($rows as $r) {
-                $pid = (int)($r->id_plan ?? 0);
-                $mid = (int)$r->id_material;
-                $qty = (int)$r->total_qty;
-                if ($pid <= 0 || $mid <= 0) continue;
-                if (!isset($exports_sums[$pid])) $exports_sums[$pid] = [];
-                $exports_sums[$pid][$mid] = $qty;
-            }
-        }
-
-        // Compute remaining quantity to export per material across active plans
-        // Match planned materials by name to material id
-        $material_by_name = [];
-        foreach ($materials as $m) {
-            $nm = isset($m->material_name) ? $m->material_name : (isset($m->name) ? $m->name : null);
-            if ($nm) $material_by_name[mb_strtolower(trim($nm))] = (int)(isset($m->id_material) ? $m->id_material : (isset($m->id) ? $m->id : 0));
-        }
-        $need_export_by_material = [];
-        $plans_data = [];
-        if (!empty($plans)) {
-            foreach ($plans as $pl) {
-                $plan_id = (int)$pl->id_plan;
-                $qty_target = (int)($pl->qty_target ?? 0);
-                $bom_data = !empty($pl->bom) ? json_decode($pl->bom, true) : null;
-                $items = [];
-                $total_planned = 0;
-                $total_exported = 0;
-
-                if (is_array($bom_data) && !empty($bom_data)) {
-                    foreach ($bom_data as $bom_item) {
-                        $name = $bom_item['material_name'] ?? 'Unknown';
-                        $mid = (int)($bom_item['id_material'] ?? 0);
-                        $qty_per_unit = (float)($bom_item['quantity_per_unit'] ?? 0);
-                        $planned = (int)ceil($qty_per_unit * $qty_target);
-                        
-                        $exported = ($mid && isset($exports_sums[$plan_id][$mid])) ? (int)$exports_sums[$plan_id][$mid] : 0;
-                        $remaining = max(0, $planned - $exported);
-                        
-                        if ($mid > 0) {
-                            if (!isset($need_export_by_material[$mid])) $need_export_by_material[$mid] = 0;
-                            $need_export_by_material[$mid] += $remaining;
-                        }
-
-                        $items[] = [
-                            'name' => $name,
-                            'id_material' => $mid,
-                            'planned' => $planned,
-                            'exported' => $exported,
-                            'remaining' => $remaining,
-                            'uom' => $bom_item['uom'] ?? (isset($material_uom_by_id[$mid]) ? $material_uom_by_id[$mid] : ''),
-                        ];
-                        $total_planned += $planned;
-                        $total_exported += min($planned, $exported);
-                    }
-                } else {
-                    // Fallback to parsing pl.materials
-                    $arr = [];
-                    if (!empty($pl->materials)) {
-                        $decoded = json_decode($pl->materials, true);
-                        if (is_array($decoded)) $arr = $decoded;
-                    }
-                    foreach ($arr as $line) {
-                        if (!is_string($line)) continue;
-                        $parts = preg_split('/\s+—\s+/u', $line);
-                        if (!$parts || count($parts) < 2) continue;
-                        $name = trim($parts[0]);
-                        
-                        $planned = 0;
-                        for ($i = 1; $i < count($parts); $i++) {
-                            $part = trim($parts[$i]);
-                            if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
-                                $planned = (int)str_replace([',', '.'], '', $m[1]);
-                                break;
-                            } else if (preg_match('/^[\d,\.]+$/', $part)) {
-                                $planned = (int)str_replace([',', '.'], '', $part);
-                                break;
-                            }
-                        }
-                        
-                        $key = mb_strtolower($name);
-                        $mid = isset($material_by_name[$key]) ? (int)$material_by_name[$key] : 0;
-                        $exported = ($mid && isset($exports_sums[$plan_id][$mid])) ? (int)$exports_sums[$plan_id][$mid] : 0;
-                        $remaining = max(0, $planned - $exported);
-
-                        if ($mid > 0) {
-                            if (!isset($need_export_by_material[$mid])) $need_export_by_material[$mid] = 0;
-                            $need_export_by_material[$mid] += $remaining;
-                        }
-
-                        $items[] = [
-                            'name' => $name,
-                            'id_material' => $mid,
-                            'planned' => $planned,
-                            'exported' => $exported,
-                            'remaining' => $remaining,
-                            'uom' => isset($material_uom_by_id[$mid]) ? $material_uom_by_id[$mid] : '',
-                        ];
-                        $total_planned += $planned;
-                        $total_exported += min($planned, $exported);
-                    }
-                }
-                $progress_pct = $total_planned > 0 ? round(($total_exported / $total_planned) * 100, 1) : 0.0;
-                $plans_data[] = [
-                    'id_plan' => $plan_id,
-                    'plan_name' => $pl->plan_name,
-                    'items' => $items,
-                    'total_planned' => $total_planned,
-                    'total_exported' => $total_exported,
-                    'progress_pct' => $progress_pct,
-                ];
-            }
-        }
-
-        // Attach qty_to_export to materials
-        foreach ($materials as $m) {
-            $mid = (int)(isset($m->id_material) ? $m->id_material : (isset($m->id) ? $m->id : 0));
-            $m->qty_to_export = isset($need_export_by_material[$mid]) ? (int)$need_export_by_material[$mid] : 0;
         }
 
         // Build plan name lookup for recent stock-out display
@@ -2395,52 +2346,89 @@ class Warehouse extends CI_Controller
                 ->set_output(json_encode(['error' => 'Material not found']));
         }
 
-        // Load materials with qty_to_import (same logic as index())
-        $materials = $this->crudModel->getData('material')->result();
-        
-        // Compute required imports per material from planning.materials
-        $plans = $this->db->query('SELECT materials FROM planning WHERE pl_status = 1')->result();
-        $need_by_name = [];
-        foreach ($plans as $pl) {
-            $arr = [];
-            if (!empty($pl->materials)) {
-                $decoded = json_decode($pl->materials, true);
-                if (is_array($decoded)) {
-                    $arr = $decoded;
-                }
+        // Precompute total exported per plan and material
+        $exports_sums = [];
+        if ($this->db->table_exists('material_out')) {
+            $rows = $this->db->query('SELECT id_plan, id_material, SUM(quantity) as total_qty FROM material_out GROUP BY id_plan, id_material')->result();
+            foreach ($rows as $r) {
+                $pid = (int)($r->id_plan ?? 0);
+                $mid = (int)$r->id_material;
+                $qty = (int)$r->total_qty;
+                if ($pid <= 0 || $mid <= 0) continue;
+                if (!isset($exports_sums[$pid])) $exports_sums[$pid] = [];
+                $exports_sums[$pid][$mid] = $qty;
             }
-            foreach ($arr as $line) {
-                if (!is_string($line)) continue;
-                $parts = preg_split('/\s+—\s+/u', $line);
-                if (!$parts || count($parts) < 2) continue;
-                $name = trim($parts[0]);
-                
-                // Try to extract quantity from remaining parts
-                $qty = 0;
-                for ($i = 1; $i < count($parts); $i++) {
-                    $part = trim($parts[$i]);
-                    // Look for "Yêu cầu: XXX" pattern
-                    if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
-                        $qty = (int)str_replace([',', '.'], '', $m[1]);
-                        break;
-                    } else if (preg_match('/^[\d,\.]+$/', $part)) {
-                        // If just a number, use it
-                        $qty = (int)str_replace([',', '.'], '', $part);
-                        break;
+        }
+
+        // Compute required materials per material from active plans
+        // Priority: BOM from product table > materials column in planning table
+        $sql = "SELECT pl.id_plan, pl.materials, pl.qty_target, pr.bom 
+                FROM planning pl
+                LEFT JOIN project p ON pl.id_project = p.id_project
+                LEFT JOIN product pr ON p.id_product = pr.id_product
+                WHERE pl.pl_status = 1";
+        $plans = $this->db->query($sql)->result();
+        
+        $need_remaining = 0;
+        $target_mid = (int)$material->id_material;
+        $target_name = mb_strtolower(trim($material->material_name ?? $material->name ?? ''));
+
+        foreach ($plans as $pl) {
+            $plan_id = (int)$pl->id_plan;
+            $qty_target = (int)($pl->qty_target ?? 0);
+            $bom_data = !empty($pl->bom) ? json_decode($pl->bom, true) : null;
+
+            if (is_array($bom_data) && !empty($bom_data)) {
+                foreach ($bom_data as $bom_item) {
+                    $mid = (int)($bom_item['id_material'] ?? 0);
+                    $name = mb_strtolower(trim($bom_item['material_name'] ?? ''));
+                    
+                    if ($mid === $target_mid || ($mid <= 0 && $name === $target_name)) {
+                        $qty_per_unit = (float)($bom_item['quantity_per_unit'] ?? 0);
+                        $planned = (int)ceil($qty_per_unit * $qty_target);
+                        $exported = ($mid && isset($exports_sums[$plan_id][$mid])) ? (int)$exports_sums[$plan_id][$mid] : 0;
+                        $need_remaining += max(0, $planned - $exported);
                     }
                 }
-                
-                if (!isset($need_by_name[$name])) $need_by_name[$name] = 0;
-                $need_by_name[$name] += max(0, $qty);
+            } else {
+                // Fallback to parsing pl.materials
+                $arr = [];
+                if (!empty($pl->materials)) {
+                    $decoded = json_decode($pl->materials, true);
+                    if (is_array($decoded)) $arr = $decoded;
+                }
+                foreach ($arr as $line) {
+                    if (!is_string($line)) continue;
+                    $parts = preg_split('/\s+—\s+/u', $line);
+                    if (!$parts || count($parts) < 2) continue;
+                    $name = mb_strtolower(trim($parts[0]));
+                    
+                    if ($name === $target_name) {
+                        $planned = 0;
+                        for ($i = 1; $i < count($parts); $i++) {
+                            $part = trim($parts[$i]);
+                            if (preg_match('/Yêu\s*cầu:\s*([\d,\.]+)/u', $part, $m)) {
+                                $planned = (int)str_replace([',', '.'], '', $m[1]);
+                                break;
+                            } else if (preg_match('/^[\d,\.]+$/', $part)) {
+                                $planned = (int)str_replace([',', '.'], '', $part);
+                                break;
+                            }
+                        }
+                        $exported = ($target_mid && isset($exports_sums[$plan_id][$target_mid])) ? (int)$exports_sums[$plan_id][$target_mid] : 0;
+                        $need_remaining += max(0, $planned - $exported);
+                    }
+                }
             }
         }
 
         // Calculate qty_to_import for this material
-        $name = isset($material->material_name) ? $material->material_name : (isset($material->name) ? $material->name : null);
         $stock = isset($material->stock) ? (int)$material->stock : (isset($material->qty) ? (int)$material->qty : 0);
         $min_stock = isset($material->min_stock) ? (int)$material->min_stock : 0;
-        $required = ($name && isset($need_by_name[$name])) ? (int)$need_by_name[$name] : 0;
-        $required_with_buffer = (int)ceil($required * 1.2);
+        
+        // Add 20% buffer for defect prediction
+        $required_with_buffer = (int)ceil($need_remaining * 1.2);
+        // Also ensure post-import stock meets minimum threshold
         $target_stock_level = max($required_with_buffer, $min_stock);
         $qty_to_import = max(0, $target_stock_level - $stock);
 
