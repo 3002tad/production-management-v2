@@ -245,14 +245,23 @@
                 ?>
 
                 <?php foreach ($machines_grouped as $zone_key => $zone): ?>
+                <?php
+                    // Skip the special "Chưa phân khu" (unassigned) zone now that backups are shown in their own tab
+                    if (isset($zone['zone_name']) && trim($zone['zone_name']) === 'Chưa phân khu') {
+                        continue;
+                    }
+                ?>
                 <?php 
                     $zone_color = $zone_colors[$color_index % count($zone_colors)];
                     $color_index++;
                     
-                    // Count machines in this zone
+                    // Count machines in this zone (exclude backup machines)
                     $zone_machine_count = 0;
                     foreach ($zone['lines'] as $line) {
-                        $zone_machine_count += count($line['machines']);
+                        foreach ($line['machines'] as $m_temp) {
+                            if (isset($m_temp->machine_role) && $m_temp->machine_role === 'backup') continue;
+                            $zone_machine_count++;
+                        }
                     }
                 ?>
                 
@@ -275,9 +284,12 @@
                     <div class="card-body p-3">
                         <?php foreach ($zone['lines'] as $line_key => $line): ?>
                         <?php
-                            // Count active machines in this line
+                            // Count active machines in this line (exclude backup machines)
                             $line_active_count = 0;
+                            $line_machine_count = 0;
                             foreach ($line['machines'] as $machine) {
+                                if (isset($machine->machine_role) && $machine->machine_role === 'backup') continue;
+                                $line_machine_count++;
                                 if ($machine->status === 'active') {
                                     $line_active_count++;
                                 }
@@ -321,13 +333,14 @@
                                 </div>
                                 <div>
                                     <span class="badge badge-sm bg-gradient-success"><?= $line_active_count ?> HOẠT ĐỘNG</span>
-                                    <span class="badge badge-sm bg-gradient-secondary"><?= count($line['machines']) ?> TỔNG</span>
+                                    <span class="badge badge-sm bg-gradient-secondary"><?= $line_machine_count ?> TỔNG</span>
                                 </div>
                             </div>
 
                             <!-- Machines in Line -->
                             <div class="row">
                                 <?php foreach ($line['machines'] as $machine): ?>
+                                <?php if (isset($machine->machine_role) && $machine->machine_role === 'backup') continue; // skip backup machines in main listing ?>
                                 <div class="col-md-6 col-lg-4 mb-3">
                                     <div class="card machine-card h-100 hover-shadow" style="border-left: 3px solid <?= $status_colors[$machine->status] ?? '#ccc' ?>;">
                                         <div class="card-body p-3">
@@ -374,7 +387,7 @@
                                                     </a>
                                                 </div>
                                                 <div>
-                                                    <button onclick="deleteMachine(<?= $machine->id ?>, '<?= $machine->code ?>')" class="btn btn-link text-danger px-2 mb-0" title="Xóa máy">
+                                                    <button type="button" onclick="deleteMachine(<?= $machine->id ?>, '<?= $machine->code ?>')" class="btn btn-link text-danger px-2 mb-0" title="Xóa máy" style="position:relative; z-index:5;">
                                                         <i class="material-icons text-sm">delete</i>
                                                     </button>
                                                 </div>
@@ -497,9 +510,9 @@
                                                 <a href="<?= site_url('leader/machine/edit/' . $machine->id); ?>" class="btn btn-link text-warning px-2 mb-0" title="Chỉnh sửa">
                                                     <i class="material-icons text-sm">edit</i>
                                                 </a>
-                                                <button onclick="deleteMachine(<?= $machine->id ?>, '<?= $machine->code ?>')" class="btn btn-link text-danger px-2 mb-0" title="Xóa máy">
-                                                    <i class="material-icons text-sm">delete</i>
-                                                </button>
+                                                    <button type="button" onclick="deleteMachine(<?= $machine->id ?>, '<?= $machine->code ?>')" class="btn btn-link text-danger px-2 mb-0" title="Xóa máy" style="position:relative; z-index:5;">
+                                                        <i class="material-icons text-sm">delete</i>
+                                                    </button>
                                             </div>
                                         </div>
                                     </div>

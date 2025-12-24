@@ -124,10 +124,13 @@
                         </div>
                         
                         <?php if ($can_edit): ?>
-                        <div class="d-flex justify-content-end mt-3">
+                        <div class="d-flex justify-content-end gap-2 mt-3">
                             <a href="<?= site_url('leader/machine/edit/' . $machine->id); ?>" class="btn btn-primary btn-sm">
                                 <i class="material-icons text-sm me-2">edit</i>Chỉnh sửa thông tin
                             </a>
+                            <button onclick="deleteMachine(<?= $machine->id ?>, '<?= $machine->code ?>')" class="btn btn-danger btn-sm">
+                                <i class="material-icons text-sm me-2">delete</i>Xóa máy
+                            </button>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -272,4 +275,29 @@ setTimeout(function() {
         }
     });
 }, 5000);
+
+// Delete machine function
+function deleteMachine(machineId, machineCode) {
+    if (confirm('Bạn có chắc chắn muốn xóa máy "' + machineCode + '"?\n\nCảnh báo: Thao tác này sẽ xóa tất cả dữ liệu liên quan (lịch bảo trì, log trạng thái). Không thể hoàn tác!')) {
+        fetch('<?= site_url('leader/machine/delete/') ?>' + machineId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '<?= site_url('leader/machine/') ?>';
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi xóa máy');
+        });
+    }
+}
 </script>

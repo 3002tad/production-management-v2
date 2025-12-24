@@ -90,13 +90,7 @@
                                         <small class="form-text text-muted">Máy chính: sử dụng thường xuyên. Máy dự phòng: thay thế khi máy chính gặp sự cố.</small>
                                     </div>
                                 </div>
-                                <div class="col-md-8">
-                                    <div class="input-group input-group-outline mb-3 is-filled">
-                                        <label class="form-label">Vị trí đặt máy</label>
-                                        <input type="text" class="form-control" name="location" value="<?= $machine->location ?>" maxlength="100" 
-                                               placeholder="VD: Khu A - Line 1">
-                                    </div>
-                                </div>
+                                <!-- 'Vị trí đặt máy' removed to match create view -->
                             </div>
                             
                             <!-- Status Change Reason -->
@@ -112,9 +106,17 @@
                             
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="input-group input-group-outline mb-3 is-filled">
-                                        <label class="form-label">Dây chuyền</label>
-                                        <input type="text" class="form-control" value="<?= $machine->line_name ?>" readonly>
+                                    <div class="input-group input-group-static mb-3">
+                                        <label>Dây chuyền <span id="lineHint" class="text-muted" style="font-weight:normal; font-size:12px;">(Bắt buộc cho máy chính, có thể để trống cho máy dự phòng)</span></label>
+                                        <select class="form-control" name="line_id" id="line_id">
+                                            <option value="">-- Chọn dây chuyền --</option>
+                                            <?php foreach ($lines as $line): ?>
+                                                <option value="<?= $line->id ?>" <?= isset($machine->line_id) && $machine->line_id == $line->id ? 'selected' : '' ?>>
+                                                    <?= $line->line_name ?> (<?= $line->line_code ?>)
+                                                    <?php if (!empty($line->zone_name)): ?> - <?= $line->zone_name ?><?php endif; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -245,4 +247,28 @@ setTimeout(function() {
         }
     });
 }, 5000);
+
+// Toggle line requirement based on machine role (keep in sync with create view)
+document.querySelector('select[name="machine_role"]').addEventListener('change', function(e) {
+    const role = e.target.value;
+    const lineSelect = document.getElementById('line_id');
+    const lineHint = document.getElementById('lineHint');
+    if (!lineSelect) return;
+    if (role === 'backup') {
+        lineSelect.removeAttribute('required');
+        lineHint.textContent = '(Không bắt buộc cho máy dự phòng)';
+    } else {
+        lineSelect.setAttribute('required', 'required');
+        lineHint.textContent = '(Bắt buộc cho máy chính)';
+    }
+});
+
+// Initialize line requirement state on load
+(function() {
+    const roleSelect = document.querySelector('select[name="machine_role"]');
+    if (roleSelect) {
+        const ev = new Event('change');
+        roleSelect.dispatchEvent(ev);
+    }
+})();
 </script>

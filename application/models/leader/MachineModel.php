@@ -242,13 +242,14 @@ class MachineModel extends CI_Model
                 ];
             }
 
-            // Prepare data
+            // Prepare data (include machine_role)
             $machine_data = [
                 'code' => trim($data['code']),
                 'name' => trim($data['name']),
                 'capacity' => floatval($data['capacity']),
                 'stage_type' => $data['stage_type'],
                 'status' => $data['status'] ?? 'active',
+                'machine_role' => !empty($data['machine_role']) && in_array($data['machine_role'], ['primary','backup']) ? $data['machine_role'] : 'primary',
                 'description' => trim($data['description'] ?? ''),
                 'location' => trim($data['location'] ?? ''),
                 'line_id' => !empty($data['line_id']) ? intval($data['line_id']) : null,
@@ -334,6 +335,8 @@ class MachineModel extends CI_Model
                 'status' => $data['status'],
                 'description' => trim($data['description'] ?? ''),
                 'location' => trim($data['location'] ?? ''),
+                'machine_role' => !empty($data['machine_role']) && in_array($data['machine_role'], ['primary','backup']) ? $data['machine_role'] : 'primary',
+                'line_id' => !empty($data['line_id']) ? intval($data['line_id']) : null,
                 'purchase_date' => !empty($data['purchase_date']) ? $data['purchase_date'] : null,
                 'warranty_until' => !empty($data['warranty_until']) ? $data['warranty_until'] : null,
                 'updated_by' => $data['updated_by'] ?? null

@@ -95,8 +95,8 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="input-group input-group-static mb-4">
-                                        <label>Dây chuyền *</label>
-                                        <select class="form-control" name="line_id" required>
+                                        <label>Dây chuyền <span id="lineHint" class="text-muted" style="font-weight:normal; font-size:12px;">(Bắt buộc cho máy chính, có thể để trống cho máy dự phòng)</span></label>
+                                        <select class="form-control" name="line_id" id="line_id">
                                             <option value="">-- Chọn dây chuyền --</option>
                                             <?php foreach ($lines as $line): ?>
                                                 <option value="<?= $line->id ?>">
@@ -193,6 +193,21 @@ document.getElementById('createMachineForm').addEventListener('submit', function
     // Show loading state
     submitBtn.innerHTML = '<i class="material-icons text-sm">hourglass_empty</i>&nbsp;&nbsp;Đang lưu...';
     submitBtn.disabled = true;
+});
+
+// Toggle line requirement based on machine role
+document.querySelector('select[name="machine_role"]').addEventListener('change', function(e) {
+    const role = e.target.value;
+    const lineSelect = document.getElementById('line_id');
+    const lineHint = document.getElementById('lineHint');
+    if (role === 'backup') {
+        // backup machines may be unassigned to a line
+        lineSelect.removeAttribute('required');
+        lineHint.textContent = '(Không bắt buộc cho máy dự phòng)';
+    } else {
+        lineSelect.setAttribute('required', 'required');
+        lineHint.textContent = '(Bắt buộc cho máy chính)';
+    }
 });
 
 // Auto-hide alerts

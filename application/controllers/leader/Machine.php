@@ -168,9 +168,9 @@ class Machine extends CI_Controller
         }
 
         try {
-            // Validate machine_role
-            $machine_role = $this->input->post('machine_role', 'primary');
-            if (!in_array($machine_role, ['primary', 'backup'])) {
+            // Read machine_role safely, default to 'primary' when missing or invalid
+            $machine_role = $this->input->post('machine_role');
+            if (empty($machine_role) || !in_array($machine_role, ['primary', 'backup'])) {
                 $machine_role = 'primary';
             }
             
@@ -261,9 +261,17 @@ class Machine extends CI_Controller
             return;
         }
 
+        // Load production lines for selection (same as create)
+        $this->db->select('pl.*, z.zone_name');
+        $this->db->from('production_lines pl');
+        $this->db->join('zones z', 'pl.zone_id = z.zone_id', 'left');
+        $this->db->order_by('z.zone_code, pl.line_code');
+        $lines = $this->db->get()->result();
+
         $data = [
             'title' => 'Chỉnh sửa Máy: ' . $machine->code,
             'machine' => $machine,
+            'lines' => $lines,
             'content' => 'leader/machine/edit',
             'navlink' => 'machine',
         ];
@@ -287,15 +295,30 @@ class Machine extends CI_Controller
             if (!in_array($machine_role, ['primary', 'backup'])) {
                 $machine_role = 'primary';
             }
-            
+
+            // If machine is primary, require line_id
+            $line_id = $this->input->post('line_id');
+            if ($machine_role === 'primary' && empty($line_id)) {
+                $this->session->set_flashdata('error_js', json_encode([
+                    'message' => 'Máy chính cần phải chọn Dây chuyền.'
+                ]));
+                redirect('leader/machine/edit/' . $id);
+                return;
+            }
+
+            // Include code to satisfy validation (validateMachineData expects code)
+            $current = $this->MachineModel->getMachineById($id);
+            $code_for_validation = $current ? $current->code : $this->input->post('code');
+
             $update_data = [
+                'code' => $code_for_validation,
                 'name' => $this->input->post('name'),
                 'capacity' => $this->input->post('capacity'),
                 'stage_type' => $this->input->post('stage_type'),
                 'status' => $this->input->post('status'),
                 'machine_role' => $machine_role,
                 'description' => $this->input->post('description'),
-                'location' => $this->input->post('location'),
+                'line_id' => !empty($line_id) ? $line_id : null,
                 'purchase_date' => $this->input->post('purchase_date'),
                 'warranty_until' => $this->input->post('warranty_until'),
                 'status_reason' => $this->input->post('status_reason'),
@@ -523,8 +546,10 @@ class Machine extends CI_Controller
             }
 
             // Check if machine is assigned to any shift
+            $this->db->reset_query();
             $this->db->where('machine_id', $machine_id);
-            $shift_count = $this->db->count_all_results('shift_machine_staff');
+            $shift_query = $this->db->get('shift_machine_staff');
+            $shift_count = $shift_query->num_rows();
             
             if ($shift_count > 0) {
                 echo json_encode([
@@ -535,13 +560,16 @@ class Machine extends CI_Controller
             }
 
             // Delete related records first (maintenance schedules, status logs)
+            $this->db->reset_query();
             $this->db->where('machine_id', $machine_id);
             $this->db->delete('machine_maintenances');
             
+            $this->db->reset_query();
             $this->db->where('machine_id', $machine_id);
             $this->db->delete('machine_status_logs');
             
             // Delete machine
+            $this->db->reset_query();
             $this->db->where('id', $machine_id);
             if ($this->db->delete('machines')) {
                 echo json_encode([
