@@ -846,8 +846,31 @@ class Admin extends CI_Controller
     {
         $id_staff = $this->uri->segment(3);
 
-        $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
+        // Check references that would prevent deletion
+        $this->db->reset_query();
+        $this->db->from('plan_shift');
+        $this->db->where('id_staff', $id_staff);
+        $plans_count = $this->db->count_all_results();
 
+        $this->db->reset_query();
+        $this->db->from('user');
+        $this->db->where('staff_id', $id_staff);
+        $user_count = $this->db->count_all_results();
+
+        $this->db->reset_query();
+        $this->db->from('shift_machine_staff');
+        $this->db->where('staff_id', $id_staff);
+        $shift_assign_count = $this->db->count_all_results();
+
+        if ($plans_count > 0 || $user_count > 0 || $shift_assign_count > 0) {
+            $this->session->set_flashdata('error', 'Không thể xóa nhân viên: nhân sự đang hoạt động hoặc được phân công trong hệ thống. Vui lòng kiểm tra và hủy các phân công/trạng thái trước khi xóa.');
+            redirect(site_url('Admin/staff'));
+            return;
+        }
+
+        // Safe to delete
+        $this->crudModel->deleteData('staff', 'id_staff', $id_staff);
+        $this->session->set_flashdata('success', 'Xóa nhân viên thành công.');
         redirect(site_url('Admin/staff'));
     }
 

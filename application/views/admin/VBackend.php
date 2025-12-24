@@ -591,6 +591,26 @@
   <div id="loginSuccessToast" class="alert alert-success" style="position: fixed; top: 16px; right: 16px; z-index: 1080; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.15); display: none;">
     <strong>Thành công!</strong> Đăng nhập thành công!
   </div>
+  <script>
+    // Auto-hide all .alert elements after 2 seconds (fade then remove)
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+          // don't attempt to remove alerts that are part of persistent UI if flagged
+          if (alert.dataset && alert.dataset.noAutoHide === '1') return;
+
+          // fade out
+          alert.style.transition = 'opacity 0.5s, max-height 0.5s';
+          alert.style.opacity = '0';
+          alert.style.maxHeight = '0';
+          setTimeout(function() {
+            if (alert && alert.parentNode) alert.parentNode.removeChild(alert);
+          }, 500);
+        });
+      }, 2000);
+    });
+  </script>
 </body>
 
 </html>
