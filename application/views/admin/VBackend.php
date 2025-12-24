@@ -592,15 +592,12 @@
     <strong>Thành công!</strong> Đăng nhập thành công!
   </div>
   <script>
-    // Auto-hide all .alert elements after 2 seconds (fade then remove)
+    // Auto-hide only flash alerts (.alert-dismissible) after 2 seconds (fade then remove)
     document.addEventListener('DOMContentLoaded', function() {
       setTimeout(function() {
-        var alerts = document.querySelectorAll('.alert');
+        var alerts = document.querySelectorAll('.alert-dismissible');
         alerts.forEach(function(alert) {
-          // don't attempt to remove alerts that are part of persistent UI if flagged
           if (alert.dataset && alert.dataset.noAutoHide === '1') return;
-
-          // fade out
           alert.style.transition = 'opacity 0.5s, max-height 0.5s';
           alert.style.opacity = '0';
           alert.style.maxHeight = '0';
