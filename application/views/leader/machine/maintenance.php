@@ -48,22 +48,7 @@
     </nav>
 
     <div class="container-fluid py-4">
-        <!-- Flash Messages -->
-        <?php if ($this->session->flashdata('success_js')): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <span class="alert-icon"><i class="material-icons">check_circle</i></span>
-            <span class="alert-text">Thao tác thành công!</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php endif; ?>
-        
-        <?php if ($this->session->flashdata('error_js')): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span class="alert-icon"><i class="material-icons">error</i></span>
-            <span class="alert-text">Có lỗi xảy ra, vui lòng kiểm tra lại!</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php endif; ?>
+        <!-- Flash messages are intentionally hidden on the maintenance page -->
 
         <!-- Machine Info Header -->
         <div class="row mb-4">
@@ -237,9 +222,21 @@
                                                     <i class="material-icons text-sm me-2">visibility</i>Xem
                                                 </button>
                                                 <?php if (in_array($maintenance->status, ['planned', 'in_progress'])): ?>
+                                                <?php if ($maintenance->status === 'planned'): ?>
+                                                <form method="POST" action="<?= site_url('leader/machine/startMaintenance/' . $maintenance->id) ?>" style="display:inline;">
+                                                    <button type="submit" class="btn btn-link text-warning px-3 mb-0" onclick="return confirm('Xác nhận bắt đầu bảo trì này?');">
+                                                        <i class="material-icons text-sm me-2">play_arrow</i>Bắt đầu
+                                                    </button>
+                                                </form>
+                                                <?php endif; ?>
                                                 <button class="btn btn-link text-dark px-3 mb-0" onclick="editMaintenance(<?= $maintenance->id ?>)">
                                                     <i class="material-icons text-sm me-2">edit</i>Sửa
                                                 </button>
+                                                <form method="POST" action="<?= site_url('leader/machine/completeMaintenance/' . $maintenance->id) ?>" style="display:inline;">
+                                                    <button type="submit" class="btn btn-link text-success px-3 mb-0" onclick="return confirm('Xác nhận hoàn thành lịch bảo trì này?');">
+                                                        <i class="material-icons text-sm me-2">check_circle</i>Hoàn thành
+                                                    </button>
+                                                </form>
                                                 <?php endif; ?>
                                             </div>
                                         </td>

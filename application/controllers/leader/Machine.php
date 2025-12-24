@@ -62,6 +62,81 @@ class Machine extends CI_Controller
     }
 
     /**
+     * Bắt đầu thực hiện lịch bảo trì: chuyển lịch sang 'in_progress' và chuyển trạng thái máy sang 'maintenance'
+     */
+    public function startMaintenance($maintenance_id)
+    {
+        if (!$this->can_manage_maintenance) {
+            $this->session->set_flashdata('error', 'Không có quyền bắt đầu bảo trì');
+            redirect('leader/machine/');
+            return;
+        }
+
+        // Tìm bản ghi lịch bảo trì
+        $maintenance = $this->db->get_where('machine_maintenances', ['id' => $maintenance_id])->row();
+        if (!$maintenance) {
+            $this->session->set_flashdata('error', 'Không tìm thấy lịch bảo trì');
+            redirect('leader/machine/');
+            return;
+        }
+
+        // Chỉ cho phép bắt đầu khi ở trạng thái 'planned'
+        if ($maintenance->status !== 'planned') {
+            $this->session->set_flashdata('error', 'Chỉ có lịch ở trạng thái "Đã lên lịch" mới có thể bắt đầu');
+            redirect('leader/machine/maintenance/' . $maintenance->machine_id);
+            return;
+        }
+
+        // Lấy thông tin máy
+        $machine = $this->MachineModel->getMachineById($maintenance->machine_id);
+        if (!$machine) {
+            $this->session->set_flashdata('error', 'Không tìm thấy máy liên quan');
+            redirect('leader/machine/');
+            return;
+        }
+
+        try {
+            $this->db->trans_start();
+
+            // Cập nhật trạng thái lịch bảo trì
+            $this->db->where('id', $maintenance_id);
+            $this->db->update('machine_maintenances', [
+                'status' => 'in_progress'
+            ]);
+
+            // Cập nhật trạng thái máy về maintenance nếu chưa phải
+            $old_status = $machine->status;
+            if ($old_status !== 'maintenance') {
+                $this->db->where('id', $machine->id);
+                $this->db->update('machines', [
+                    'status' => 'maintenance',
+                    'updated_by' => $this->session->userdata('username')
+                ]);
+
+                $this->MachineModel->logStatusChange($machine->id, $old_status, 'maintenance', 'Bắt đầu bảo trì #' . $maintenance_id, $this->session->userdata('username'));
+            }
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception('Cập nhật cơ sở dữ liệu thất bại');
+            }
+
+            $this->session->set_flashdata('success_js', json_encode([
+                'title' => 'Bắt đầu',
+                'message' => 'Đã bắt đầu thực hiện bảo trì'
+            ]));
+
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi bắt đầu bảo trì: ' . $e->getMessage()
+            ]));
+        }
+
+        redirect('leader/machine/maintenance/' . $maintenance->machine_id);
+    }
+
+    /**
      * Dashboard - Danh sách máy grouped by zone and line
      */
     public function index()
@@ -441,6 +516,88 @@ class Machine extends CI_Controller
             ]));
             redirect('leader/machine/maintenance/' . $machine_id);
         }
+    }
+
+    /**
+     * Đánh dấu lịch bảo trì là hoàn thành và chuyển trạng thái máy về active
+     */
+    public function completeMaintenance($maintenance_id)
+    {
+        if (!$this->can_manage_maintenance) {
+            $this->session->set_flashdata('error', 'Không có quyền hoàn thành lịch bảo trì');
+            redirect('leader/machine/');
+            return;
+        }
+
+        // Tìm bản ghi lịch bảo trì
+        $maintenance = $this->db->get_where('machine_maintenances', ['id' => $maintenance_id])->row();
+        if (!$maintenance) {
+            $this->session->set_flashdata('error', 'Không tìm thấy lịch bảo trì');
+            redirect('leader/machine/');
+            return;
+        }
+
+        // Nếu đã hoàn thành hoặc đã hủy thì không thể hoàn thành lại
+        if (in_array($maintenance->status, ['completed', 'cancelled'])) {
+            $this->session->set_flashdata('error', 'Lịch bảo trì đã ở trạng thái "' . $maintenance->status . '"');
+            redirect('leader/machine/maintenance/' . $maintenance->machine_id);
+            return;
+        }
+
+        // Lấy thông tin máy
+        $machine = $this->MachineModel->getMachineById($maintenance->machine_id);
+        if (!$machine) {
+            $this->session->set_flashdata('error', 'Không tìm thấy máy liên quan');
+            redirect('leader/machine/');
+            return;
+        }
+
+        try {
+            $this->db->trans_start();
+
+            // Cập nhật lịch bảo trì
+            $actual_cost = $this->input->post('actual_cost');
+            $update_maintenance = [
+                'status' => 'completed',
+                'completed_at' => date('Y-m-d H:i:s')
+            ];
+            if ($actual_cost !== null && $actual_cost !== '') {
+                $update_maintenance['actual_cost'] = floatval($actual_cost);
+            }
+
+            $this->db->where('id', $maintenance_id);
+            $this->db->update('machine_maintenances', $update_maintenance);
+
+            // Nếu máy không ở trạng thái active thì chuyển về active và ghi log
+            $old_status = $machine->status;
+            if ($old_status !== 'active') {
+                $this->db->where('id', $machine->id);
+                $this->db->update('machines', [
+                    'status' => 'active',
+                    'updated_by' => $this->session->userdata('username')
+                ]);
+
+                $this->MachineModel->logStatusChange($machine->id, $old_status, 'active', 'Hoàn thành bảo trì #' . $maintenance_id, $this->session->userdata('username'));
+            }
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception('Cập nhật cơ sở dữ liệu thất bại');
+            }
+
+            $this->session->set_flashdata('success_js', json_encode([
+                'title' => 'Hoàn thành',
+                'message' => 'Đã hoàn thành lịch bảo trì và cập nhật trạng thái máy'
+            ]));
+
+        } catch (Exception $e) {
+            $this->session->set_flashdata('error_js', json_encode([
+                'message' => 'Lỗi khi hoàn thành bảo trì: ' . $e->getMessage()
+            ]));
+        }
+
+        redirect('leader/machine/maintenance/' . $maintenance->machine_id);
     }
 
     /**
